@@ -1,22 +1,12 @@
 "use client";
 
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 
-import {
-  useRouter,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import {
-  issueDemoData,
-} from "@/lib/issueDemoData";
+import { issueDemoData } from "@/lib/issueDemoData";
 
-import {
-  RefreshCw,
-  CheckCircle2,
-} from "lucide-react";
+import { RefreshCw, CheckCircle2 } from "lucide-react";
 
 type RealIssue = {
   id: string;
@@ -55,260 +45,194 @@ export default function IssuesPageClient({
   realIssues: RealIssue[];
   hasLiveData: boolean;
 }) {
-  const router =
-    useRouter();
+  const router = useRouter();
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
-  const [
+  const [clientFilter, setClientFilter] = useState("all");
+
+  const [sourceFilter, setSourceFilter] = useState("all");
+
+  const [severityFilter, setSeverityFilter] = useState("all");
+
+  const [statusFilter, setStatusFilter] = useState("Open");
+
+  const [scanning, setScanning] = useState(false);
+
+  const issues: DisplayIssue[] = useMemo(() => {
+    if (hasLiveData) {
+      return realIssues.map(convertRealIssue);
+    }
+
+    return issueDemoData.map((issue) => ({
+      id: issue.id,
+
+      source: issue.source,
+
+      client: issue.client,
+
+      issueType: issue.issueType,
+
+      item: issue.item,
+
+      accountType: issue.accountType || "Not applicable",
+
+      currentValue: issue.currentValue || "Not available",
+
+      expectedValue: issue.expectedValue || "Not available",
+
+      severity: issue.severity,
+
+      status: issue.status,
+
+      detectedAt: issue.detectedAt,
+    }));
+  }, [hasLiveData, realIssues]);
+
+  const clients = useMemo(
+    () => Array.from(new Set(issues.map((issue) => issue.client))).sort(),
+    [issues],
+  );
+
+  const sources = useMemo(
+    () => Array.from(new Set(issues.map((issue) => issue.source))).sort(),
+    [issues],
+  );
+
+  const filteredIssues = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    return issues.filter((issue) => {
+      const matchesSearch =
+        !value ||
+        issue.item.toLowerCase().includes(value) ||
+        issue.issueType.toLowerCase().includes(value) ||
+        issue.client.toLowerCase().includes(value);
+
+      const matchesClient =
+        clientFilter === "all" || issue.client === clientFilter;
+
+      const matchesSource =
+        sourceFilter === "all" || issue.source === sourceFilter;
+
+      const matchesSeverity =
+        severityFilter === "all" || issue.severity === severityFilter;
+
+      const matchesStatus =
+        statusFilter === "all" || issue.status === statusFilter;
+
+      return (
+        matchesSearch &&
+        matchesClient &&
+        matchesSource &&
+        matchesSeverity &&
+        matchesStatus
+      );
+    });
+  }, [
+    issues,
+    search,
     clientFilter,
-    setClientFilter,
-  ] = useState("all");
-
-  const [
     sourceFilter,
-    setSourceFilter,
-  ] = useState("all");
-
-  const [
     severityFilter,
-    setSeverityFilter,
-  ] = useState("all");
-
-  const [
     statusFilter,
-    setStatusFilter,
-  ] = useState("Open");
+  ]);
 
-  const [scanning, setScanning] =
-    useState(false);
+  const openCount = issues.filter((issue) => issue.status === "Open").length;
 
-  const issues:
-    DisplayIssue[] =
-    useMemo(() => {
-      if (hasLiveData) {
-        return realIssues.map(
-          convertRealIssue
-        );
+  const criticalCount = issues.filter(
+    (issue) => issue.status === "Open" && issue.severity === "Critical",
+  ).length;
+
+  const warningCount = issues.filter(
+    (issue) => issue.status === "Open" && issue.severity === "Warning",
+  ).length;
+
+  const resolvedCount = issues.filter(
+    (issue) => issue.status === "Resolved",
+  ).length;
+
+async function handleScan() {
+  if (!hasLiveData) {
+    alert(
+      "Live Smartlead or EmailGuard data is not available yet."
+    );
+
+    return;
+  }
+
+  setScanning(true);
+
+  try {
+    const response = await fetch(
+      "/api/issues/scan",
+      {
+        method: "POST",
       }
-
-      return issueDemoData.map(
-        (issue) => ({
-          id:
-            issue.id,
-
-          source:
-            issue.source,
-
-          client:
-            issue.client,
-
-          issueType:
-            issue.issueType,
-
-          item:
-            issue.item,
-
-          accountType:
-            issue.accountType ||
-            "Not applicable",
-
-          currentValue:
-            issue.currentValue ||
-            "Not available",
-
-          expectedValue:
-            issue.expectedValue ||
-            "Not available",
-
-          severity:
-            issue.severity,
-
-          status:
-            issue.status,
-
-          detectedAt:
-            issue.detectedAt,
-        })
-      );
-    }, [
-      hasLiveData,
-      realIssues,
-    ]);
-
-  const clients =
-    useMemo(
-      () =>
-        Array.from(
-          new Set(
-            issues.map(
-              (issue) =>
-                issue.client
-            )
-          )
-        ).sort(),
-      [issues]
     );
 
-  const sources =
-    useMemo(
-      () =>
-        Array.from(
-          new Set(
-            issues.map(
-              (issue) =>
-                issue.source
-            )
-          )
-        ).sort(),
-      [issues]
-    );
+    const result =
+      await response.json();
 
-  const filteredIssues =
-    useMemo(() => {
-      const value =
-        search
-          .trim()
-          .toLowerCase();
-
-      return issues.filter(
-        (issue) => {
-          const matchesSearch =
-            !value ||
-            issue.item
-              .toLowerCase()
-              .includes(value) ||
-            issue.issueType
-              .toLowerCase()
-              .includes(value) ||
-            issue.client
-              .toLowerCase()
-              .includes(value);
-
-          const matchesClient =
-            clientFilter ===
-              "all" ||
-            issue.client ===
-              clientFilter;
-
-          const matchesSource =
-            sourceFilter ===
-              "all" ||
-            issue.source ===
-              sourceFilter;
-
-          const matchesSeverity =
-            severityFilter ===
-              "all" ||
-            issue.severity ===
-              severityFilter;
-
-          const matchesStatus =
-            statusFilter ===
-              "all" ||
-            issue.status ===
-              statusFilter;
-
-          return (
-            matchesSearch &&
-            matchesClient &&
-            matchesSource &&
-            matchesSeverity &&
-            matchesStatus
-          );
-        }
-      );
-    }, [
-      issues,
-      search,
-      clientFilter,
-      sourceFilter,
-      severityFilter,
-      statusFilter,
-    ]);
-
-  const openCount =
-    issues.filter(
-      (issue) =>
-        issue.status === "Open"
-    ).length;
-
-  const criticalCount =
-    issues.filter(
-      (issue) =>
-        issue.status ===
-          "Open" &&
-        issue.severity ===
-          "Critical"
-    ).length;
-
-  const warningCount =
-    issues.filter(
-      (issue) =>
-        issue.status ===
-          "Open" &&
-        issue.severity ===
-          "Warning"
-    ).length;
-
-  const resolvedCount =
-    issues.filter(
-      (issue) =>
-        issue.status ===
-        "Resolved"
-    ).length;
-
-  async function handleScan() {
-    if (!hasLiveData) {
+    if (!response.ok) {
       alert(
-        "Smartlead live data is not available yet."
+        result.error ||
+          "Issue scan failed."
       );
+
       return;
     }
 
-    setScanning(true);
+    alert(
+      `Scan completed
 
-    try {
-      const response =
-        await fetch(
-          "/api/issues/scan",
-          {
-            method:
-              "POST",
-          }
-        );
-
-      const result =
-        await response.json();
-
-      if (!response.ok) {
-        alert(
-          result.error ||
-            "Issue scan failed."
-        );
-
-        return;
+Smartlead accounts checked: ${
+        result.summary?.accountsChecked ?? 0
       }
 
-      alert(
-        `Scan completed
+EmailGuard domains checked: ${
+        result.summary?.domainsChecked ?? 0
+      }
 
-Accounts checked: ${result.summary.accountsChecked}
-Open issues: ${result.summary.openIssues}
-Warnings: ${result.summary.warnings}
-Resolved: ${result.summary.resolved}`
-      );
+Open issues: ${
+        result.summary?.openIssues ?? 0
+      }
 
-      router.refresh();
-    } catch {
-      alert(
-        "Unable to scan issues."
-      );
-    } finally {
-      setScanning(false);
-    }
+Smartlead issues: ${
+        result.summary?.smartleadIssues ?? 0
+      }
+
+EmailGuard issues: ${
+        result.summary?.emailGuardIssues ?? 0
+      }
+
+Critical: ${
+        result.summary?.critical ?? 0
+      }
+
+Warnings: ${
+        result.summary?.warnings ?? 0
+      }
+
+Resolved: ${
+        result.summary?.resolved ?? 0
+      }`
+    );
+
+    router.refresh();
+  } catch (error) {
+    console.error(
+      "Issue scan error:",
+      error
+    );
+
+    alert(
+      "Unable to scan issues."
+    );
+  } finally {
+    setScanning(false);
   }
+}
 
   return (
     <div
@@ -321,8 +245,7 @@ Resolved: ${result.summary.resolved}`
       <div
         style={{
           display: "flex",
-          alignItems:
-            "flex-start",
+          alignItems: "flex-start",
           marginBottom: 26,
         }}
       >
@@ -345,8 +268,7 @@ Resolved: ${result.summary.resolved}`
               fontSize: 14,
             }}
           >
-            Review account settings
-            that need attention.
+            Review account settings that need attention.
           </p>
         </div>
 
@@ -354,80 +276,51 @@ Resolved: ${result.summary.resolved}`
           style={{
             marginLeft: "auto",
             display: "flex",
-            alignItems:
-              "center",
+            alignItems: "center",
             gap: 10,
           }}
         >
           <div
             style={{
-              background:
-                hasLiveData
-                  ? "#ECFDF5"
-                  : "#EFF6FF",
-              color:
-                hasLiveData
-                  ? "#047857"
-                  : "#2563EB",
+              background: hasLiveData ? "#ECFDF5" : "#EFF6FF",
+              color: hasLiveData ? "#047857" : "#2563EB",
               borderRadius: 8,
-              padding:
-                "7px 10px",
+              padding: "7px 10px",
               fontSize: 11,
               fontWeight: 700,
             }}
           >
-            {hasLiveData
-              ? "Live Data"
-              : "Demo Mode"}
+            {hasLiveData ? "Live Data" : "Demo Mode"}
           </div>
 
           <button
             type="button"
-            onClick={
-              handleScan
-            }
-            disabled={
-              scanning
-            }
+            onClick={handleScan}
+            disabled={scanning}
             style={{
               height: 40,
               border: 0,
               borderRadius: 9,
-              background:
-                "#111827",
-              color:
-                "#FFFFFF",
+              background: "#111827",
+              color: "#FFFFFF",
               display: "flex",
-              alignItems:
-                "center",
+              alignItems: "center",
               gap: 7,
-              padding:
-                "0 13px",
-              cursor:
-                scanning
-                  ? "not-allowed"
-                  : "pointer",
+              padding: "0 13px",
+              cursor: scanning ? "not-allowed" : "pointer",
               fontWeight: 700,
               fontSize: 12,
-              opacity:
-                scanning
-                  ? 0.7
-                  : 1,
+              opacity: scanning ? 0.7 : 1,
             }}
           >
             <RefreshCw
               size={15}
               style={{
-                animation:
-                  scanning
-                    ? "spin 0.8s linear infinite"
-                    : "none",
+                animation: scanning ? "spin 0.8s linear infinite" : "none",
               }}
             />
 
-            {scanning
-              ? "Scanning"
-              : "Scan Now"}
+            {scanning ? "Scanning" : "Scan Now"}
           </button>
         </div>
       </div>
@@ -435,49 +328,24 @@ Resolved: ${result.summary.resolved}`
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 14,
           marginBottom: 22,
         }}
       >
-        <SummaryCard
-          title="Open Issues"
-          value={openCount}
-          warning
-        />
+        <SummaryCard title="Open Issues" value={openCount} warning />
 
-        <SummaryCard
-          title="Critical"
-          value={
-            criticalCount
-          }
-          danger
-        />
+        <SummaryCard title="Critical" value={criticalCount} danger />
 
-        <SummaryCard
-          title="Warnings"
-          value={
-            warningCount
-          }
-          warning
-        />
+        <SummaryCard title="Warnings" value={warningCount} warning />
 
-        <SummaryCard
-          title="Resolved"
-          value={
-            resolvedCount
-          }
-          success
-        />
+        <SummaryCard title="Resolved" value={resolvedCount} success />
       </div>
 
       <div
         style={{
-          background:
-            "#FFFFFF",
-          border:
-            "1px solid #E5E7EB",
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
           borderRadius: 14,
           padding: 18,
           marginBottom: 20,
@@ -486,132 +354,75 @@ Resolved: ${result.summary.resolved}`
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "2fr 1fr 1fr 1fr 1fr",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
             gap: 10,
           }}
         >
           <input
             value={search}
-            onChange={(event) =>
-              setSearch(
-                event.target.value
-              )
-            }
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search email, issue or client"
             style={inputStyle}
           />
 
           <select
-            value={
-              clientFilter
-            }
-            onChange={(event) =>
-              setClientFilter(
-                event.target.value
-              )
-            }
+            value={clientFilter}
+            onChange={(event) => setClientFilter(event.target.value)}
             style={inputStyle}
           >
-            <option value="all">
-              All Clients
-            </option>
+            <option value="all">All Clients</option>
 
-            {clients.map(
-              (client) => (
-                <option
-                  key={client}
-                  value={client}
-                >
-                  {client}
-                </option>
-              )
-            )}
+            {clients.map((client) => (
+              <option key={client} value={client}>
+                {client}
+              </option>
+            ))}
           </select>
 
           <select
-            value={
-              sourceFilter
-            }
-            onChange={(event) =>
-              setSourceFilter(
-                event.target.value
-              )
-            }
+            value={sourceFilter}
+            onChange={(event) => setSourceFilter(event.target.value)}
             style={inputStyle}
           >
-            <option value="all">
-              All Sources
-            </option>
+            <option value="all">All Sources</option>
 
-            {sources.map(
-              (source) => (
-                <option
-                  key={source}
-                  value={source}
-                >
-                  {source}
-                </option>
-              )
-            )}
+            {sources.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
           </select>
 
           <select
-            value={
-              severityFilter
-            }
-            onChange={(event) =>
-              setSeverityFilter(
-                event.target.value
-              )
-            }
+            value={severityFilter}
+            onChange={(event) => setSeverityFilter(event.target.value)}
             style={inputStyle}
           >
-            <option value="all">
-              All Severity
-            </option>
+            <option value="all">All Severity</option>
 
-            <option value="Critical">
-              Critical
-            </option>
+            <option value="Critical">Critical</option>
 
-            <option value="Warning">
-              Warning
-            </option>
+            <option value="Warning">Warning</option>
           </select>
 
           <select
-            value={
-              statusFilter
-            }
-            onChange={(event) =>
-              setStatusFilter(
-                event.target.value
-              )
-            }
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
             style={inputStyle}
           >
-            <option value="all">
-              All Status
-            </option>
+            <option value="all">All Status</option>
 
-            <option value="Open">
-              Open
-            </option>
+            <option value="Open">Open</option>
 
-            <option value="Resolved">
-              Resolved
-            </option>
+            <option value="Resolved">Resolved</option>
           </select>
         </div>
       </div>
 
       <div
         style={{
-          background:
-            "#FFFFFF",
-          border:
-            "1px solid #E5E7EB",
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
           borderRadius: 14,
           overflow: "hidden",
         }}
@@ -619,8 +430,7 @@ Resolved: ${result.summary.resolved}`
         <div
           style={{
             padding: 18,
-            borderBottom:
-              "1px solid #E5E7EB",
+            borderBottom: "1px solid #E5E7EB",
           }}
         >
           <div
@@ -634,192 +444,115 @@ Resolved: ${result.summary.resolved}`
 
           <div
             style={{
-              color:
-                "#64748B",
+              color: "#64748B",
               fontSize: 12,
               marginTop: 4,
             }}
           >
-            {
-              filteredIssues.length
-            }{" "}
-            issues shown
+            {filteredIssues.length} issues shown
           </div>
         </div>
 
         <table
           style={{
             width: "100%",
-            borderCollapse:
-              "collapse",
-            tableLayout:
-              "fixed",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
           }}
         >
           <thead>
             <tr
               style={{
-                background:
-                  "#F8FAFC",
+                background: "#F8FAFC",
               }}
             >
-              <TableHeader
-                text="Client"
-                width="10%"
-              />
+              <TableHeader text="Client" width="10%" />
 
-              <TableHeader
-                text="Email"
-                width="18%"
-              />
+              <TableHeader text="Email" width="18%" />
 
-              <TableHeader
-                text="Issue"
-                width="12%"
-              />
+              <TableHeader text="Issue" width="12%" />
 
-              <TableHeader
-                text="Account Type"
-                width="15%"
-              />
+              <TableHeader text="Account Type" width="15%" />
 
-              <TableHeader
-                text="Current"
-                width="10%"
-              />
+              <TableHeader text="Current" width="10%" />
 
-              <TableHeader
-                text="Expected"
-                width="10%"
-              />
+              <TableHeader text="Expected" width="10%" />
 
-              <TableHeader
-                text="Severity"
-                width="9%"
-              />
+              <TableHeader text="Severity" width="9%" />
 
-              <TableHeader
-                text="Status"
-                width="8%"
-              />
+              <TableHeader text="Status" width="8%" />
 
-              <TableHeader
-                text="Detected"
-                width="12%"
-              />
+              <TableHeader text="Detected" width="12%" />
             </tr>
           </thead>
 
           <tbody>
-            {filteredIssues.map(
-              (issue) => (
-                <tr
-                  key={issue.id}
-                  style={{
-                    borderTop:
-                      "1px solid #F1F5F9",
-                  }}
-                >
-                  <TableCell>
-                    {issue.client}
-                  </TableCell>
+            {filteredIssues.map((issue) => (
+              <tr
+                key={issue.id}
+                style={{
+                  borderTop: "1px solid #F1F5F9",
+                }}
+              >
+                <TableCell>{issue.client}</TableCell>
 
-                  <TableCell>
-                    <strong
-                      style={{
-                        color:
-                          "#111827",
-                      }}
-                    >
-                      {issue.item}
-                    </strong>
-                  </TableCell>
+                <TableCell>
+                  <strong
+                    style={{
+                      color: "#111827",
+                    }}
+                  >
+                    {issue.item}
+                  </strong>
+                </TableCell>
 
-                  <TableCell>
-                    {
-                      issue.issueType
-                    }
-                  </TableCell>
+                <TableCell>{issue.issueType}</TableCell>
 
-                  <TableCell>
-                    {
-                      issue.accountType
-                    }
-                  </TableCell>
+                <TableCell>{issue.accountType}</TableCell>
 
-                  <TableCell>
-                    <span
-                      style={{
-                        color:
-                          issue.status ===
-                          "Open"
-                            ? "#B45309"
-                            : "#64748B",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {
-                        issue.currentValue
-                      }
-                    </span>
-                  </TableCell>
+                <TableCell>
+                  <span
+                    style={{
+                      color: issue.status === "Open" ? "#B45309" : "#64748B",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {issue.currentValue}
+                  </span>
+                </TableCell>
 
-                  <TableCell>
-                    {
-                      issue.expectedValue
-                    }
-                  </TableCell>
+                <TableCell>{issue.expectedValue}</TableCell>
 
-                  <TableCell>
-                    <SeverityBadge
-                      value={
-                        issue.severity
-                      }
-                    />
-                  </TableCell>
+                <TableCell>
+                  <SeverityBadge value={issue.severity} />
+                </TableCell>
 
-                  <TableCell>
-                    <StatusBadge
-                      value={
-                        issue.status
-                      }
-                    />
-                  </TableCell>
+                <TableCell>
+                  <StatusBadge value={issue.status} />
+                </TableCell>
 
-                  <TableCell>
-                    {
-                      issue.detectedAt
-                    }
-                  </TableCell>
-                </tr>
-              )
-            )}
+                <TableCell>{issue.detectedAt}</TableCell>
+              </tr>
+            ))}
           </tbody>
         </table>
 
-        {filteredIssues.length ===
-          0 && (
+        {filteredIssues.length === 0 && (
           <div
             style={{
               padding: 40,
-              textAlign:
-                "center",
-              color:
-                "#64748B",
+              textAlign: "center",
+              color: "#64748B",
               fontSize: 13,
             }}
           >
-            <CheckCircle2
-              size={27}
-              color="#10B981"
-            />
+            <CheckCircle2 size={27} color="#10B981" />
 
             <div
               style={{
                 marginTop: 10,
                 fontWeight: 700,
-                color:
-                  "#047857",
+                color: "#047857",
               }}
             >
               No issues found
@@ -843,48 +576,29 @@ Resolved: ${result.summary.resolved}`
   );
 }
 
-function convertRealIssue(
-  issue: RealIssue
-): DisplayIssue {
+function convertRealIssue(issue: RealIssue): DisplayIssue {
   return {
-    id:
-      issue.id,
+    id: issue.id,
 
-    source:
-      issue.source,
+    source: issue.source,
 
-    client:
-      issue.client ||
-      "Unassigned",
+    client: issue.client || "Unassigned",
 
-    issueType:
-      issue.issue_type,
+    issueType: issue.issue_type,
 
-    item:
-      issue.item,
+    item: issue.item,
 
-    accountType:
-      issue.account_type ||
-      "Unclassified",
+    accountType: issue.account_type || "Unclassified",
 
-    currentValue:
-      issue.current_value ||
-      "Not available",
+    currentValue: issue.current_value || "Not available",
 
-    expectedValue:
-      issue.expected_value ||
-      "Not available",
+    expectedValue: issue.expected_value || "Not available",
 
-    severity:
-      issue.severity,
+    severity: issue.severity,
 
-    status:
-      issue.status,
+    status: issue.status,
 
-    detectedAt:
-      formatDateTime(
-        issue.first_seen_at
-      ),
+    detectedAt: formatDateTime(issue.first_seen_at),
   };
 }
 
@@ -901,39 +615,32 @@ function SummaryCard({
   warning?: boolean;
   danger?: boolean;
 }) {
-  let color =
-    "#111827";
+  let color = "#111827";
 
   if (success) {
-    color =
-      "#047857";
+    color = "#047857";
   }
 
   if (warning) {
-    color =
-      "#B45309";
+    color = "#B45309";
   }
 
   if (danger) {
-    color =
-      "#B91C1C";
+    color = "#B91C1C";
   }
 
   return (
     <div
       style={{
-        background:
-          "#FFFFFF",
-        border:
-          "1px solid #E5E7EB",
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
         borderRadius: 13,
         padding: 18,
       }}
     >
       <div
         style={{
-          color:
-            "#64748B",
+          color: "#64748B",
           fontSize: 12,
         }}
       >
@@ -954,29 +661,16 @@ function SummaryCard({
   );
 }
 
-function SeverityBadge({
-  value,
-}: {
-  value: string;
-}) {
-  const critical =
-    value === "Critical";
+function SeverityBadge({ value }: { value: string }) {
+  const critical = value === "Critical";
 
   return (
     <span
       style={{
-        display:
-          "inline-block",
-        background:
-          critical
-            ? "#FEF2F2"
-            : "#FEF3C7",
-        color:
-          critical
-            ? "#B91C1C"
-            : "#B45309",
-        padding:
-          "5px 7px",
+        display: "inline-block",
+        background: critical ? "#FEF2F2" : "#FEF3C7",
+        color: critical ? "#B91C1C" : "#B45309",
+        padding: "5px 7px",
         borderRadius: 7,
         fontSize: 9,
         fontWeight: 700,
@@ -987,29 +681,16 @@ function SeverityBadge({
   );
 }
 
-function StatusBadge({
-  value,
-}: {
-  value: string;
-}) {
-  const resolved =
-    value === "Resolved";
+function StatusBadge({ value }: { value: string }) {
+  const resolved = value === "Resolved";
 
   return (
     <span
       style={{
-        display:
-          "inline-block",
-        background:
-          resolved
-            ? "#ECFDF5"
-            : "#FEF3C7",
-        color:
-          resolved
-            ? "#047857"
-            : "#B45309",
-        padding:
-          "5px 7px",
+        display: "inline-block",
+        background: resolved ? "#ECFDF5" : "#FEF3C7",
+        color: resolved ? "#047857" : "#B45309",
+        padding: "5px 7px",
         borderRadius: 7,
         fontSize: 9,
         fontWeight: 700,
@@ -1020,26 +701,17 @@ function StatusBadge({
   );
 }
 
-function TableHeader({
-  text,
-  width,
-}: {
-  text: string;
-  width?: string;
-}) {
+function TableHeader({ text, width }: { text: string; width?: string }) {
   return (
     <th
       style={{
         width,
-        padding:
-          "11px 9px",
+        padding: "11px 9px",
         textAlign: "left",
-        color:
-          "#64748B",
+        color: "#64748B",
         fontSize: 10,
         fontWeight: 650,
-        whiteSpace:
-          "nowrap",
+        whiteSpace: "nowrap",
       }}
     >
       {text}
@@ -1047,27 +719,17 @@ function TableHeader({
   );
 }
 
-function TableCell({
-  children,
-}: {
-  children:
-    React.ReactNode;
-}) {
+function TableCell({ children }: { children: React.ReactNode }) {
   return (
     <td
       style={{
-        padding:
-          "12px 9px",
-        color:
-          "#475569",
+        padding: "12px 9px",
+        color: "#475569",
         fontSize: 11,
-        verticalAlign:
-          "middle",
+        verticalAlign: "middle",
         overflow: "hidden",
-        textOverflow:
-          "ellipsis",
-        whiteSpace:
-          "nowrap",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
       }}
     >
       {children}
@@ -1075,17 +737,10 @@ function TableCell({
   );
 }
 
-function formatDateTime(
-  value: string
-) {
-  const date =
-    new Date(value);
+function formatDateTime(value: string) {
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
@@ -1096,17 +751,12 @@ const inputStyle = {
   width: "100%",
   minWidth: 0,
   height: 42,
-  border:
-    "1px solid #D1D5DB",
+  border: "1px solid #D1D5DB",
   borderRadius: 9,
-  padding:
-    "0 11px",
-  background:
-    "#FFFFFF",
-  color:
-    "#111827",
+  padding: "0 11px",
+  background: "#FFFFFF",
+  color: "#111827",
   fontSize: 13,
   outline: "none",
-  boxSizing:
-    "border-box" as const,
+  boxSizing: "border-box" as const,
 };

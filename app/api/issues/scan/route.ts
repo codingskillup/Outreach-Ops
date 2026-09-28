@@ -7,10 +7,7 @@ import {
   isAccountType,
 } from "@/lib/accountRules";
 
-type RawData = Record<
-  string,
-  unknown
->;
+type RawData = Record<string, unknown>;
 
 type Account = {
   id: string;
@@ -21,21 +18,58 @@ type Account = {
   raw_data: RawData | null;
 };
 
+type Domain = {
+  id: string;
+  integration_id: string | null;
+  domain: string;
+  client: string | null;
+  spf_status: string | null;
+  dkim_status: string | null;
+  dmarc_status: string | null;
+  dmarc_policy: string | null;
+  reporting_status: string | null;
+  overall_status: string | null;
+};
+
 type DetectedIssue = {
   user_id: string;
-  integration_id: string;
-  email_account_id: string;
+
+  integration_id:
+    | string
+    | null;
+
+  email_account_id:
+    | string
+    | null;
+
   issue_key: string;
+
   source: string;
+
   client: string;
+
   issue_type: string;
+
   item: string;
-  account_type: string | null;
-  current_value: string | null;
-  expected_value: string | null;
+
+  account_type:
+    | string
+    | null;
+
+  current_value:
+    | string
+    | null;
+
+  expected_value:
+    | string
+    | null;
+
   severity: string;
+
   status: string;
+
   last_seen_at: string;
+
   resolved_at: null;
 };
 
@@ -52,8 +86,7 @@ export async function POST() {
     if (!user) {
       return NextResponse.json(
         {
-          error:
-            "Unauthorized",
+          error: "Unauthorized",
         },
         {
           status: 401,
@@ -61,11 +94,11 @@ export async function POST() {
       );
     }
 
-    const {
-      data: accounts,
-      error: accountsError,
-    } =
-      await supabase
+    const [
+      accountsResult,
+      domainsResult,
+    ] = await Promise.all([
+      supabase
         .from("email_accounts")
         .select(`
           id,
@@ -78,13 +111,37 @@ export async function POST() {
         .eq(
           "user_id",
           user.id
-        );
+        ),
 
-    if (accountsError) {
+      supabase
+        .from("domains")
+        .select(`
+          id,
+          integration_id,
+          domain,
+          client,
+          spf_status,
+          dkim_status,
+          dmarc_status,
+          dmarc_policy,
+          reporting_status,
+          overall_status
+        `)
+        .eq(
+          "user_id",
+          user.id
+        ),
+    ]);
+
+    if (
+      accountsResult.error
+    ) {
       return NextResponse.json(
         {
           error:
-            accountsError.message,
+            accountsResult
+              .error
+              .message,
         },
         {
           status: 500,
@@ -93,13 +150,37 @@ export async function POST() {
     }
 
     if (
-      !accounts ||
-      accounts.length === 0
+      domainsResult.error
     ) {
       return NextResponse.json(
         {
           error:
-            "No synced email accounts found. Smartlead sync is required first.",
+            domainsResult
+              .error
+              .message,
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const accounts =
+      (accountsResult.data ||
+        []) as Account[];
+
+    const domains =
+      (domainsResult.data ||
+        []) as Domain[];
+
+    if (
+      accounts.length === 0 &&
+      domains.length === 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "No synced Smartlead accounts or EmailGuard domains found.",
         },
         {
           status: 400,
@@ -114,11 +195,21 @@ export async function POST() {
       DetectedIssue[] = [];
 
     for (
-      const account of
-      accounts as Account[]
+      const account of accounts
     ) {
       scanAccount(
         account,
+        user.id,
+        now,
+        detected
+      );
+    }
+
+    for (
+      const domain of domains
+    ) {
+      scanDomain(
+        domain,
         user.id,
         now,
         detected
@@ -141,7 +232,9 @@ export async function POST() {
             }
           );
 
-      if (upsertError) {
+      if (
+        upsertError
+      ) {
         return NextResponse.json(
           {
             error:
@@ -155,8 +248,10 @@ export async function POST() {
     }
 
     const {
-      data: currentOpenIssues,
-      error: currentIssuesError,
+      data:
+        currentOpenIssues,
+      error:
+        currentIssuesError,
     } =
       await supabase
         .from("issues")
@@ -169,19 +264,18 @@ export async function POST() {
           user.id
         )
         .eq(
-          "source",
-          "Smartlead"
-        )
-        .eq(
           "status",
           "Open"
         );
 
-    if (currentIssuesError) {
+    if (
+      currentIssuesError
+    ) {
       return NextResponse.json(
         {
           error:
-            currentIssuesError.message,
+            currentIssuesError
+              .message,
         },
         {
           status: 500,
@@ -217,7 +311,8 @@ export async function POST() {
       resolvedIds.length > 0
     ) {
       const {
-        error: resolveError,
+        error:
+          resolveError,
       } =
         await supabase
           .from("issues")
@@ -236,11 +331,14 @@ export async function POST() {
             resolvedIds
           );
 
-      if (resolveError) {
+      if (
+        resolveError
+      ) {
         return NextResponse.json(
           {
             error:
-              resolveError.message,
+              resolveError
+                .message,
           },
           {
             status: 500,
@@ -248,6 +346,20 @@ export async function POST() {
         );
       }
     }
+
+    const smartleadIssues =
+      detected.filter(
+        (issue) =>
+          issue.source ===
+          "Smartlead"
+      ).length;
+
+    const emailGuardIssues =
+      detected.filter(
+        (issue) =>
+          issue.source ===
+          "EmailGuard"
+      ).length;
 
     const critical =
       detected.filter(
@@ -270,8 +382,15 @@ export async function POST() {
         accountsChecked:
           accounts.length,
 
+        domainsChecked:
+          domains.length,
+
         openIssues:
           detected.length,
+
+        smartleadIssues,
+
+        emailGuardIssues,
 
         critical,
 
@@ -327,7 +446,7 @@ function scanAccount(
       account.account_type
     )
   ) {
-    addIssue(
+    addAccountIssue(
       detected,
       {
         userId,
@@ -372,7 +491,7 @@ function scanAccount(
     dailyLimit !==
       rules.dailyLimit
   ) {
-    addIssue(
+    addAccountIssue(
       detected,
       {
         userId,
@@ -413,7 +532,7 @@ function scanAccount(
     warmupEnabled !==
       rules.warmupEnabled
   ) {
-    addIssue(
+    addAccountIssue(
       detected,
       {
         userId,
@@ -454,7 +573,7 @@ function scanAccount(
     warmupDaily !==
       rules.warmupDaily
   ) {
-    addIssue(
+    addAccountIssue(
       detected,
       {
         userId,
@@ -495,7 +614,7 @@ function scanAccount(
     replyRate !==
       rules.replyRate
   ) {
-    addIssue(
+    addAccountIssue(
       detected,
       {
         userId,
@@ -523,7 +642,142 @@ function scanAccount(
   }
 }
 
-function addIssue(
+function scanDomain(
+  domain: Domain,
+  userId: string,
+  now: string,
+  detected: DetectedIssue[]
+) {
+  const client =
+    domain.client ||
+    "Unassigned";
+
+  if (
+    normalizeValue(
+      domain.spf_status
+    ) === "invalid"
+  ) {
+    addDomainIssue(
+      detected,
+      {
+        userId,
+        domain,
+        client,
+        now,
+
+        key:
+          "spf",
+
+        issueType:
+          "SPF",
+
+        currentValue:
+          domain.spf_status,
+
+        expectedValue:
+          "Valid",
+
+        severity:
+          "Warning",
+      }
+    );
+  }
+
+  if (
+    normalizeValue(
+      domain.dkim_status
+    ) === "invalid"
+  ) {
+    addDomainIssue(
+      detected,
+      {
+        userId,
+        domain,
+        client,
+        now,
+
+        key:
+          "dkim",
+
+        issueType:
+          "DKIM",
+
+        currentValue:
+          domain.dkim_status,
+
+        expectedValue:
+          "Valid",
+
+        severity:
+          "Warning",
+      }
+    );
+  }
+
+  if (
+    normalizeValue(
+      domain.dmarc_status
+    ) === "invalid"
+  ) {
+    addDomainIssue(
+      detected,
+      {
+        userId,
+        domain,
+        client,
+        now,
+
+        key:
+          "dmarc",
+
+        issueType:
+          "DMARC",
+
+        currentValue:
+          domain.dmarc_status,
+
+        expectedValue:
+          "Valid",
+
+        severity:
+          "Critical",
+      }
+    );
+  }
+
+  if (
+    normalizeValue(
+      domain.reporting_status
+    ) === "not monitored"
+  ) {
+    addDomainIssue(
+      detected,
+      {
+        userId,
+        domain,
+        client,
+        now,
+
+        key:
+          "dmarc_reporting",
+
+        issueType:
+          "DMARC Reporting",
+
+        currentValue:
+          domain.reporting_status,
+
+        expectedValue:
+          "Monitored",
+
+        severity:
+          "Warning",
+      }
+    );
+  }
+}
+
+function addAccountIssue(
   detected: DetectedIssue[],
   options: {
     userId: string;
@@ -554,7 +808,7 @@ function addIssue(
       options.account.id,
 
     issue_key:
-      `${options.account.id}:${options.key}`,
+      `account:${options.account.id}:${options.key}`,
 
     source:
       "Smartlead",
@@ -590,6 +844,86 @@ function addIssue(
     resolved_at:
       null,
   });
+}
+
+function addDomainIssue(
+  detected: DetectedIssue[],
+  options: {
+    userId: string;
+    domain: Domain;
+    client: string;
+    now: string;
+    key: string;
+    issueType: string;
+    currentValue:
+      | string
+      | null;
+    expectedValue:
+      | string
+      | null;
+    severity: string;
+  }
+) {
+  detected.push({
+    user_id:
+      options.userId,
+
+    integration_id:
+      options.domain
+        .integration_id,
+
+    email_account_id:
+      null,
+
+    issue_key:
+      `domain:${options.domain.id}:${options.key}`,
+
+    source:
+      "EmailGuard",
+
+    client:
+      options.client,
+
+    issue_type:
+      options.issueType,
+
+    item:
+      options.domain.domain,
+
+    account_type:
+      null,
+
+    current_value:
+      options.currentValue,
+
+    expected_value:
+      options.expectedValue,
+
+    severity:
+      options.severity,
+
+    status:
+      "Open",
+
+    last_seen_at:
+      options.now,
+
+    resolved_at:
+      null,
+  });
+}
+
+function normalizeValue(
+  value:
+    | string
+    | null
+) {
+  return (
+    value
+      ?.trim()
+      .toLowerCase() ||
+    ""
+  );
 }
 
 function getText(
@@ -639,11 +973,15 @@ function getBoolean(
     return value;
   }
 
-  if (value === 1) {
+  if (
+    value === 1
+  ) {
     return true;
   }
 
-  if (value === 0) {
+  if (
+    value === 0
+  ) {
     return false;
   }
 

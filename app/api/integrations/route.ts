@@ -1,20 +1,32 @@
 import { NextResponse } from "next/server";
+
 import { createClient } from "@/lib/supabase/server";
-import { encryptApiKey } from "@/lib/integrationCrypto";
+
+import {
+  encryptApiKey,
+} from "@/lib/integrationCrypto";
+
+type ValidationResult = {
+  valid: boolean;
+  error?: string;
+  campaignCount?: number;
+  domainCount?: number;
+};
 
 async function validateSmartleadApiKey(
   apiKey: string
-) {
-  const url = new URL(
-    "https://server.smartlead.ai/api/v1/campaigns/"
-  );
-
-  url.searchParams.set(
-    "api_key",
-    apiKey
-  );
-
+): Promise<ValidationResult> {
   try {
+    const url =
+      new URL(
+        "https://server.smartlead.ai/api/v1/campaigns/"
+      );
+
+    url.searchParams.set(
+      "api_key",
+      apiKey
+    );
+
     const response =
       await fetch(
         url.toString(),
@@ -32,31 +44,102 @@ async function validateSmartleadApiKey(
       return {
         valid: false,
         error:
-          "Invalid Smartlead API key or Smartlead rejected the request.",
+          "Invalid Smartlead API key.",
       };
     }
 
-    const data =
+    const json =
       await response.json();
 
-    const campaignCount =
-      Array.isArray(data)
-        ? data.length
+    const data =
+      Array.isArray(json)
+        ? json
         : Array.isArray(
-              data?.data
+              json?.data
             )
-          ? data.data.length
-          : 0;
+          ? json.data
+          : [];
 
     return {
       valid: true,
-      campaignCount,
+      campaignCount:
+        data.length,
     };
   } catch {
     return {
       valid: false,
       error:
-        "Could not reach Smartlead. Please try again.",
+        "Could not reach Smartlead.",
+    };
+  }
+}
+
+async function validateEmailGuardApiKey(
+  apiKey: string
+): Promise<ValidationResult> {
+  try {
+    const response =
+      await fetch(
+        "https://app.emailguard.io/api/v1/domains",
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${apiKey}`,
+
+            Accept:
+              "application/json",
+          },
+
+          cache: "no-store",
+
+          signal:
+            AbortSignal.timeout(
+              15000
+            ),
+        }
+      );
+
+    if (
+      response.status === 401 ||
+      response.status === 403
+    ) {
+      return {
+        valid: false,
+        error:
+          "Invalid EmailGuard API key.",
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        valid: false,
+        error:
+          "EmailGuard API could not validate this key.",
+      };
+    }
+
+    const json =
+      await response.json();
+
+    const domains =
+      Array.isArray(
+        json?.data
+      )
+        ? json.data
+        : [];
+
+    return {
+      valid: true,
+      domainCount:
+        domains.length,
+    };
+  } catch {
+    return {
+      valid: false,
+      error:
+        "Could not reach EmailGuard.",
     };
   }
 }
@@ -138,44 +221,35 @@ export async function POST(
       );
     }
 
-    let status =
-      "connected";
-
-    let campaignCount:
-      | number
-      | null = null;
+    let validation:
+      ValidationResult;
 
     if (
       provider ===
       "smartlead"
     ) {
-      const validation =
+      validation =
         await validateSmartleadApiKey(
           apiKey
         );
-
-      if (!validation.valid) {
-        return NextResponse.json(
-          {
-            error:
-              validation.error,
-          },
-          {
-            status: 400,
-          }
+    } else {
+      validation =
+        await validateEmailGuardApiKey(
+          apiKey
         );
-      }
-
-      campaignCount =
-        validation.campaignCount ??
-        0;
     }
 
-    if (
-      provider ===
-      "emailguard"
-    ) {
-      status = "pending";
+    if (!validation.valid) {
+      return NextResponse.json(
+        {
+          error:
+            validation.error ||
+            "API key validation failed.",
+        },
+        {
+          status: 400,
+        }
+      );
     }
 
     const encryptedApiKey =
@@ -193,14 +267,22 @@ export async function POST(
       await supabase
         .from("integrations")
         .insert({
-          user_id: user.id,
+          user_id:
+            user.id,
+
           provider,
+
           name,
+
           encrypted_api_key:
             encryptedApiKey,
+
           api_key_last4:
             apiKeyLast4,
-          status,
+
+          status:
+            "connected",
+
           last_synced_at:
             null,
         })
@@ -229,18 +311,26 @@ export async function POST(
 
     return NextResponse.json({
       integration: data,
+
       validation: {
-        verified:
-          provider ===
-          "smartlead",
-        campaignCount,
+        verified: true,
+
+        campaignCount:
+          validation.campaignCount ??
+          null,
+
+        domainCount:
+          validation.domainCount ??
+          null,
       },
     });
-  } catch {
+  } catch (error) {
     return NextResponse.json(
       {
         error:
-          "Unable to save connection.",
+          error instanceof Error
+            ? error.message
+            : "Unable to save connection.",
       },
       {
         status: 500,

@@ -228,7 +228,7 @@ export default function ConnectionsPageClient({
     );
   }
 
- async function handleSync(
+async function handleSync(
   integration: Integration
 ) {
   if (
@@ -243,9 +243,15 @@ export default function ConnectionsPageClient({
   );
 
   try {
+    const endpoint =
+      integration.provider ===
+      "emailguard"
+        ? `/api/integrations/${integration.id}/emailguard-sync`
+        : `/api/integrations/${integration.id}/sync`;
+
     const response =
       await fetch(
-        `/api/integrations/${integration.id}/sync`,
+        endpoint,
         {
           method: "POST",
         }
@@ -282,16 +288,29 @@ export default function ConnectionsPageClient({
         )
     );
 
-    alert(
-      `Sync completed
+    if (
+      integration.provider ===
+      "emailguard"
+    ) {
+      alert(
+        `EmailGuard sync completed
 
-Accounts fetched: ${result.summary.accountsFetched}
+Domains: ${result.summary.domainsFetched}
+Healthy: ${result.summary.healthy}
+Need attention: ${result.summary.attention}`
+      );
+    } else {
+      alert(
+        `Smartlead sync completed
+
+Accounts: ${result.summary.accountsFetched}
 Campaigns: ${result.summary.campaigns}
 Active campaigns: ${result.summary.activeCampaigns}`
-    );
+      );
+    }
   } catch {
     alert(
-      "Unable to sync Smartlead."
+      "Unable to sync connection."
     );
   } finally {
     setSyncingId(null);

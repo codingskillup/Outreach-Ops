@@ -1,74 +1,169 @@
-export type CheckStatus =
-  | "Pass"
-  | "Fail"
-  | "Warning";
-
-export type DomainRecord = {
+export type DomainDemoRecord = {
   id: string;
   domain: string;
   client: string;
-  emailguard: string;
-  spf: CheckStatus;
-  dkim: CheckStatus;
-  dmarc: CheckStatus;
-  blacklist: CheckStatus;
-  lastChecked: string;
+
+  spfStatus:
+    | "Valid"
+    | "Invalid";
+
+  dkimStatus:
+    | "Valid"
+    | "Invalid";
+
+  dmarcStatus:
+    | "Valid"
+    | "Invalid";
+
+  dmarcPolicy: string;
+
+  reportingStatus:
+    | "Monitored"
+    | "Not Monitored";
+
+  overallStatus:
+    | "Healthy"
+    | "Attention";
 };
 
-export const domainDemoData: DomainRecord[] = [
+export const domainDemoData: DomainDemoRecord[] = [
   {
-    id: "domain1",
-    domain: "reverba.com",
-    client: "Reverba",
-    emailguard: "EmailGuard Main",
-    spf: "Pass",
-    dkim: "Pass",
-    dmarc: "Pass",
-    blacklist: "Pass",
-    lastChecked: "Today 8:06 AM",
+    id: "domain-1",
+
+    domain:
+      "trialxmail.com",
+
+    client:
+      "TrialX",
+
+    spfStatus:
+      "Valid",
+
+    dkimStatus:
+      "Valid",
+
+    dmarcStatus:
+      "Valid",
+
+    dmarcPolicy:
+      "quarantine",
+
+    reportingStatus:
+      "Monitored",
+
+    overallStatus:
+      "Healthy",
   },
+
   {
-    id: "domain2",
-    domain: "reverbaoutreach.com",
-    client: "Reverba",
-    emailguard: "EmailGuard Main",
-    spf: "Pass",
-    dkim: "Pass",
-    dmarc: "Warning",
-    blacklist: "Pass",
-    lastChecked: "Today 8:06 AM",
+    id: "domain-2",
+
+    domain:
+      "trialxreach.com",
+
+    client:
+      "TrialX",
+
+    spfStatus:
+      "Valid",
+
+    dkimStatus:
+      "Valid",
+
+    dmarcStatus:
+      "Invalid",
+
+    dmarcPolicy:
+      "none",
+
+    reportingStatus:
+      "Not Monitored",
+
+    overallStatus:
+      "Attention",
   },
+
   {
-    id: "domain3",
-    domain: "trialxexample.com",
-    client: "TrialX",
-    emailguard: "EmailGuard 2",
-    spf: "Pass",
-    dkim: "Pass",
-    dmarc: "Fail",
-    blacklist: "Pass",
-    lastChecked: "Today 8:07 AM",
+    id: "domain-3",
+
+    domain:
+      "reverbaoutreach.com",
+
+    client:
+      "Reverba",
+
+    spfStatus:
+      "Valid",
+
+    dkimStatus:
+      "Valid",
+
+    dmarcStatus:
+      "Valid",
+
+    dmarcPolicy:
+      "quarantine",
+
+    reportingStatus:
+      "Monitored",
+
+    overallStatus:
+      "Healthy",
   },
+
   {
-    id: "domain4",
-    domain: "clientthreeexample.com",
-    client: "Client Three",
-    emailguard: "EmailGuard 2",
-    spf: "Pass",
-    dkim: "Pass",
-    dmarc: "Pass",
-    blacklist: "Fail",
-    lastChecked: "Today 8:07 AM",
+    id: "domain-4",
+
+    domain:
+      "reverbamail.com",
+
+    client:
+      "Reverba",
+
+    spfStatus:
+      "Valid",
+
+    dkimStatus:
+      "Invalid",
+
+    dmarcStatus:
+      "Valid",
+
+    dmarcPolicy:
+      "quarantine",
+
+    reportingStatus:
+      "Monitored",
+
+    overallStatus:
+      "Attention",
   },
+
   {
-    id: "domain5",
-    domain: "clientfourmail.com",
-    client: "Client Four",
-    emailguard: "EmailGuard 3",
-    spf: "Warning",
-    dkim: "Pass",
-    dmarc: "Pass",
-    blacklist: "Pass",
-    lastChecked: "Today 8:08 AM",
+    id: "domain-5",
+
+    domain:
+      "clientthree.io",
+
+    client:
+      "Client Three",
+
+    spfStatus:
+      "Valid",
+
+    dkimStatus:
+      "Valid",
+
+    dmarcStatus:
+      "Valid",
+
+    dmarcPolicy:
+      "quarantine",
+
+    reportingStatus:
+      "Monitored",
+
+    overallStatus:
+      "Healthy",
   },
 ];

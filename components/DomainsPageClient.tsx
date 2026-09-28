@@ -1,197 +1,483 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import {
   domainDemoData,
-  type CheckStatus,
 } from "@/lib/domainDemoData";
 
-export default function DomainsPageClient() {
-  const [search, setSearch] = useState("");
-  const [client, setClient] = useState("all");
-  const [emailguard, setEmailguard] = useState("all");
-  const [status, setStatus] = useState("all");
+import {
+  CheckCircle2,
+  TriangleAlert,
+  Globe2,
+  ShieldCheck,
+} from "lucide-react";
 
-  const domains = domainDemoData;
+type RealDomain = {
+  id: string;
 
-  const clients = Array.from(
-    new Set(domains.map((item) => item.client))
-  );
+  domain: string;
 
-  const emailguards = Array.from(
-    new Set(domains.map((item) => item.emailguard))
-  );
+  client:
+    | string
+    | null;
 
-  function isHealthy(domain: (typeof domains)[number]) {
-    return (
-      domain.spf === "Pass" &&
-      domain.dkim === "Pass" &&
-      domain.dmarc === "Pass" &&
-      domain.blacklist === "Pass"
-    );
-  }
+  spf_status:
+    | string
+    | null;
 
-  const healthyCount =
-    domains.filter((domain) => isHealthy(domain)).length;
+  dkim_status:
+    | string
+    | null;
 
-  const issueCount =
-    domains.length - healthyCount;
+  dmarc_status:
+    | string
+    | null;
 
-  const dmarcIssues =
-    domains.filter((domain) => domain.dmarc !== "Pass").length;
+  dmarc_policy:
+    | string
+    | null;
 
-  const blacklistIssues =
-    domains.filter((domain) => domain.blacklist !== "Pass").length;
+  reporting_status:
+    | string
+    | null;
 
-  const filteredDomains = useMemo(() => {
-    const searchValue =
-      search.trim().toLowerCase();
+  overall_status:
+    | string
+    | null;
 
-    return domains.filter((domain) => {
-      const matchesSearch =
-        !searchValue ||
-        domain.domain
-          .toLowerCase()
-          .includes(searchValue) ||
-        domain.client
-          .toLowerCase()
-          .includes(searchValue);
+  synced_at: string;
+};
 
-      const matchesClient =
-        client === "all" ||
-        domain.client === client;
+type DisplayDomain = {
+  id: string;
 
-      const matchesEmailguard =
-        emailguard === "all" ||
-        domain.emailguard === emailguard;
+  domain: string;
 
-      const healthy =
-        isHealthy(domain);
+  client: string;
 
-      const matchesStatus =
-        status === "all" ||
-        (status === "healthy" && healthy) ||
-        (status === "attention" && !healthy);
+  spfStatus: string;
 
-      return (
-        matchesSearch &&
-        matchesClient &&
-        matchesEmailguard &&
-        matchesStatus
+  dkimStatus: string;
+
+  dmarcStatus: string;
+
+  dmarcPolicy: string;
+
+  reportingStatus: string;
+
+  overallStatus: string;
+
+  syncedAt:
+    | string
+    | null;
+
+  live: boolean;
+};
+
+export default function DomainsPageClient({
+  realDomains = [],
+}: {
+  realDomains?: RealDomain[];
+}) {
+  const [search, setSearch] =
+    useState("");
+
+  const [
+    clientFilter,
+    setClientFilter,
+  ] =
+    useState("all");
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] =
+    useState("all");
+
+  const [
+    dmarcFilter,
+    setDmarcFilter,
+  ] =
+    useState("all");
+
+  const hasRealData =
+    realDomains.length > 0;
+
+  const domains:
+    DisplayDomain[] =
+    useMemo(() => {
+      if (hasRealData) {
+        return realDomains.map(
+          (domain) => ({
+            id:
+              domain.id,
+
+            domain:
+              domain.domain,
+
+            client:
+              domain.client ||
+              "Unassigned",
+
+            spfStatus:
+              domain.spf_status ||
+              "Unknown",
+
+            dkimStatus:
+              domain.dkim_status ||
+              "Unknown",
+
+            dmarcStatus:
+              domain.dmarc_status ||
+              "Unknown",
+
+            dmarcPolicy:
+              domain.dmarc_policy ||
+              "Unknown",
+
+            reportingStatus:
+              domain.reporting_status ||
+              "Unknown",
+
+            overallStatus:
+              domain.overall_status ||
+              "Unknown",
+
+            syncedAt:
+              domain.synced_at,
+
+            live: true,
+          })
+        );
+      }
+
+      return domainDemoData.map(
+        (domain) => ({
+          id:
+            domain.id,
+
+          domain:
+            domain.domain,
+
+          client:
+            domain.client,
+
+          spfStatus:
+            domain.spfStatus,
+
+          dkimStatus:
+            domain.dkimStatus,
+
+          dmarcStatus:
+            domain.dmarcStatus,
+
+          dmarcPolicy:
+            domain.dmarcPolicy,
+
+          reportingStatus:
+            domain.reportingStatus,
+
+          overallStatus:
+            domain.overallStatus,
+
+          syncedAt:
+            null,
+
+          live: false,
+        })
       );
-    });
-  }, [
-    domains,
-    search,
-    client,
-    emailguard,
-    status,
-  ]);
+    }, [
+      hasRealData,
+      realDomains,
+    ]);
+
+  const clients =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            domains.map(
+              (domain) =>
+                domain.client
+            )
+          )
+        ).sort(),
+      [domains]
+    );
+
+  const filteredDomains =
+    useMemo(() => {
+      const value =
+        search
+          .trim()
+          .toLowerCase();
+
+      return domains.filter(
+        (domain) => {
+          const matchesSearch =
+            !value ||
+            domain.domain
+              .toLowerCase()
+              .includes(value) ||
+            domain.client
+              .toLowerCase()
+              .includes(value);
+
+          const matchesClient =
+            clientFilter ===
+              "all" ||
+            domain.client ===
+              clientFilter;
+
+          const matchesStatus =
+            statusFilter ===
+              "all" ||
+            domain.overallStatus ===
+              statusFilter;
+
+          const matchesDmarc =
+            dmarcFilter ===
+              "all" ||
+            domain.dmarcStatus ===
+              dmarcFilter;
+
+          return (
+            matchesSearch &&
+            matchesClient &&
+            matchesStatus &&
+            matchesDmarc
+          );
+        }
+      );
+    }, [
+      domains,
+      search,
+      clientFilter,
+      statusFilter,
+      dmarcFilter,
+    ]);
+
+  const healthy =
+    domains.filter(
+      (domain) =>
+        domain.overallStatus ===
+        "Healthy"
+    ).length;
+
+  const attention =
+    domains.filter(
+      (domain) =>
+        domain.overallStatus !==
+        "Healthy"
+    ).length;
+
+  const validSpf =
+    domains.filter(
+      (domain) =>
+        domain.spfStatus ===
+        "Valid"
+    ).length;
+
+  const validDkim =
+    domains.filter(
+      (domain) =>
+        domain.dkimStatus ===
+        "Valid"
+    ).length;
+
+  const validDmarc =
+    domains.filter(
+      (domain) =>
+        domain.dmarcStatus ===
+        "Valid"
+    ).length;
 
   return (
     <div
       style={{
         width: "100%",
+        minWidth: 0,
         color: "#111827",
       }}
     >
       <div
         style={{
+          display: "flex",
+          alignItems:
+            "flex-start",
           marginBottom: 26,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          Domains
-        </h1>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 750,
+            }}
+          >
+            Domains
+          </h1>
 
-        <p
+          <p
+            style={{
+              marginTop: 7,
+              marginBottom: 0,
+              color: "#64748B",
+              fontSize: 14,
+            }}
+          >
+            Monitor SPF, DKIM,
+            DMARC and reporting
+            health.
+          </p>
+        </div>
+
+        <div
           style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
+            marginLeft: "auto",
+
+            background:
+              hasRealData
+                ? "#ECFDF5"
+                : "#EFF6FF",
+
+            color:
+              hasRealData
+                ? "#047857"
+                : "#2563EB",
+
+            padding:
+              "7px 10px",
+
+            borderRadius: 8,
+
+            fontSize: 11,
+
+            fontWeight: 700,
           }}
         >
-          Review SPF, DKIM, DMARC and blacklist health from EmailGuard.
-        </p>
+          {hasRealData
+            ? "Live Data"
+            : "Demo Mode"}
+        </div>
       </div>
 
       <div
         style={{
           display: "grid",
+
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
+
           gap: 14,
+
           marginBottom: 22,
         }}
       >
         <SummaryCard
           title="Total Domains"
-          value={domains.length.toString()}
+          value={
+            domains.length
+          }
+          icon={
+            <Globe2
+              size={17}
+            />
+          }
         />
 
         <SummaryCard
           title="Healthy"
-          value={healthyCount.toString()}
+          value={healthy}
+          icon={
+            <CheckCircle2
+              size={17}
+            />
+          }
           success
         />
 
         <SummaryCard
           title="Need Attention"
-          value={issueCount.toString()}
+          value={attention}
+          icon={
+            <TriangleAlert
+              size={17}
+            />
+          }
           warning
         />
 
         <SummaryCard
-          title="DMARC Issues"
-          value={dmarcIssues.toString()}
-          warning
+          title="Valid SPF"
+          value={validSpf}
+          icon={
+            <ShieldCheck
+              size={17}
+            />
+          }
+          success
         />
 
         <SummaryCard
-          title="Blacklist Issues"
-          value={blacklistIssues.toString()}
-          danger
+          title="Valid DMARC"
+          value={validDmarc}
+          icon={
+            <ShieldCheck
+              size={17}
+            />
+          }
+          success
         />
       </div>
 
       <div
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          background:
+            "#FFFFFF",
+
+          border:
+            "1px solid #E5E7EB",
+
           borderRadius: 14,
+
           padding: 18,
+
           marginBottom: 20,
         }}
       >
         <div
           style={{
             display: "grid",
+
             gridTemplateColumns:
               "2fr 1fr 1fr 1fr",
+
             gap: 10,
           }}
         >
           <input
             value={search}
             onChange={(event) =>
-              setSearch(event.target.value)
+              setSearch(
+                event.target.value
+              )
             }
             placeholder="Search domain or client"
             style={inputStyle}
           />
 
           <select
-            value={client}
+            value={clientFilter}
             onChange={(event) =>
-              setClient(event.target.value)
+              setClientFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -199,41 +485,24 @@ export default function DomainsPageClient() {
               All Clients
             </option>
 
-            {clients.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
+            {clients.map(
+              (client) => (
+                <option
+                  key={client}
+                  value={client}
+                >
+                  {client}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={emailguard}
+            value={statusFilter}
             onChange={(event) =>
-              setEmailguard(event.target.value)
-            }
-            style={inputStyle}
-          >
-            <option value="all">
-              All EmailGuard
-            </option>
-
-            {emailguards.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
+              setStatusFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -241,12 +510,34 @@ export default function DomainsPageClient() {
               All Status
             </option>
 
-            <option value="healthy">
+            <option value="Healthy">
               Healthy
             </option>
 
-            <option value="attention">
+            <option value="Attention">
               Need Attention
+            </option>
+          </select>
+
+          <select
+            value={dmarcFilter}
+            onChange={(event) =>
+              setDmarcFilter(
+                event.target.value
+              )
+            }
+            style={inputStyle}
+          >
+            <option value="all">
+              All DMARC
+            </option>
+
+            <option value="Valid">
+              Valid
+            </option>
+
+            <option value="Invalid">
+              Invalid
             </option>
           </select>
         </div>
@@ -254,50 +545,96 @@ export default function DomainsPageClient() {
 
       <div
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          background:
+            "#FFFFFF",
+
+          border:
+            "1px solid #E5E7EB",
+
           borderRadius: 14,
+
           overflow: "hidden",
         }}
       >
         <div
           style={{
             padding: 18,
+
             borderBottom:
               "1px solid #E5E7EB",
+
+            display: "flex",
+
+            alignItems:
+              "center",
           }}
         >
-          <div
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-            }}
-          >
-            Domain Health
+          <div>
+            <div
+              style={{
+                fontSize: 17,
+
+                fontWeight: 700,
+              }}
+            >
+              Domain Overview
+            </div>
+
+            <div
+              style={{
+                marginTop: 4,
+
+                color:
+                  "#64748B",
+
+                fontSize: 12,
+              }}
+            >
+              {
+                filteredDomains.length
+              }{" "}
+              domains shown
+            </div>
           </div>
 
           <div
             style={{
-              color: "#6B7280",
-              fontSize: 12,
-              marginTop: 4,
+              marginLeft: "auto",
+
+              color:
+                "#64748B",
+
+              fontSize: 11,
             }}
           >
-            {filteredDomains.length} domains shown
+            Valid DKIM{" "}
+            <strong
+              style={{
+                color:
+                  "#047857",
+              }}
+            >
+              {validDkim}
+            </strong>
           </div>
         </div>
 
         <table
           style={{
             width: "100%",
-            borderCollapse: "collapse",
-            tableLayout: "fixed",
+
+            borderCollapse:
+              "collapse",
+
+            tableLayout:
+              "fixed",
           }}
         >
           <thead>
             <tr
               style={{
-                background: "#F8FAFC",
+                background:
+                  "#F8FAFC",
               }}
             >
               <TableHeader
@@ -311,119 +648,144 @@ export default function DomainsPageClient() {
               />
 
               <TableHeader
-                text="EmailGuard"
-                width="13%"
-              />
-
-              <TableHeader
                 text="SPF"
-                width="8%"
-              />
-
-              <TableHeader
-                text="DKIM"
-                width="8%"
-              />
-
-              <TableHeader
-                text="DMARC"
-                width="8%"
-              />
-
-              <TableHeader
-                text="Blacklist"
                 width="9%"
               />
 
               <TableHeader
-                text="Status"
+                text="DKIM"
+                width="9%"
+              />
+
+              <TableHeader
+                text="DMARC"
+                width="9%"
+              />
+
+              <TableHeader
+                text="Policy"
+                width="12%"
+              />
+
+              <TableHeader
+                text="Reporting"
+                width="14%"
+              />
+
+              <TableHeader
+                text="Health"
                 width="10%"
               />
 
               <TableHeader
-                text="Last Checked"
+                text="Last Sync"
                 width="12%"
               />
             </tr>
           </thead>
 
           <tbody>
-            {filteredDomains.map((domain) => {
-              const healthy =
-                isHealthy(domain);
-
-              return (
+            {filteredDomains.map(
+              (domain) => (
                 <tr
-                  key={domain.id}
+                  key={
+                    domain.id
+                  }
                   style={{
                     borderTop:
                       "1px solid #F1F5F9",
                   }}
                 >
                   <TableCell>
-                    <span
+                    <strong
                       style={{
-                        fontWeight: 700,
-                        color: "#111827",
+                        color:
+                          "#111827",
                       }}
                     >
-                      {domain.domain}
-                    </span>
+                      {
+                        domain.domain
+                      }
+                    </strong>
                   </TableCell>
 
                   <TableCell>
-                    {domain.client}
+                    {
+                      domain.client
+                    }
                   </TableCell>
 
                   <TableCell>
-                    {domain.emailguard}
-                  </TableCell>
-
-                  <TableCell>
-                    <CheckBadge
-                      value={domain.spf}
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <CheckBadge
-                      value={domain.dkim}
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <CheckBadge
-                      value={domain.dmarc}
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <CheckBadge
-                      value={domain.blacklist}
+                    <HealthBadge
+                      value={
+                        domain.spfStatus
+                      }
                     />
                   </TableCell>
 
                   <TableCell>
                     <HealthBadge
-                      healthy={healthy}
+                      value={
+                        domain.dkimStatus
+                      }
                     />
                   </TableCell>
 
                   <TableCell>
-                    {domain.lastChecked}
+                    <HealthBadge
+                      value={
+                        domain.dmarcStatus
+                      }
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {
+                      domain.dmarcPolicy
+                    }
+                  </TableCell>
+
+                  <TableCell>
+                    <ReportingBadge
+                      value={
+                        domain.reportingStatus
+                      }
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    <OverallBadge
+                      value={
+                        domain.overallStatus
+                      }
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {domain.syncedAt
+                      ? formatDateTime(
+                          domain.syncedAt
+                        )
+                      : "Demo"}
                   </TableCell>
                 </tr>
-              );
-            })}
+              )
+            )}
           </tbody>
         </table>
 
-        {filteredDomains.length === 0 && (
+        {filteredDomains.length ===
+          0 && (
           <div
             style={{
-              padding: 32,
-              textAlign: "center",
-              color: "#64748B",
+              padding: 40,
+
+              textAlign:
+                "center",
+
+              color:
+                "#64748B",
+
               fontSize: 13,
             }}
           >
@@ -435,74 +797,237 @@ export default function DomainsPageClient() {
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  height: 42,
-  border: "1px solid #D1D5DB",
-  borderRadius: 9,
-  padding: "0 11px",
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-};
+function HealthBadge({
+  value,
+}: {
+  value: string;
+}) {
+  const valid =
+    value === "Valid";
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+
+        background:
+          valid
+            ? "#ECFDF5"
+            : "#FEF2F2",
+
+        color:
+          valid
+            ? "#047857"
+            : "#B91C1C",
+
+        padding:
+          "5px 7px",
+
+        borderRadius: 7,
+
+        fontSize: 9,
+
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+function ReportingBadge({
+  value,
+}: {
+  value: string;
+}) {
+  const monitored =
+    value ===
+    "Monitored";
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+
+        background:
+          monitored
+            ? "#ECFDF5"
+            : "#FEF3C7",
+
+        color:
+          monitored
+            ? "#047857"
+            : "#B45309",
+
+        padding:
+          "5px 7px",
+
+        borderRadius: 7,
+
+        fontSize: 9,
+
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+function OverallBadge({
+  value,
+}: {
+  value: string;
+}) {
+  const healthy =
+    value ===
+    "Healthy";
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+
+        background:
+          healthy
+            ? "#ECFDF5"
+            : "#FEF3C7",
+
+        color:
+          healthy
+            ? "#047857"
+            : "#B45309",
+
+        padding:
+          "5px 7px",
+
+        borderRadius: 7,
+
+        fontSize: 9,
+
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
 
 function SummaryCard({
   title,
   value,
+  icon,
   success,
   warning,
-  danger,
 }: {
   title: string;
-  value: string;
+
+  value: number;
+
+  icon:
+    React.ReactNode;
+
   success?: boolean;
+
   warning?: boolean;
-  danger?: boolean;
 }) {
-  let color = "#111827";
+  let color =
+    "#111827";
+
+  let background =
+    "#F8FAFC";
 
   if (success) {
-    color = "#047857";
+    color =
+      "#047857";
+
+    background =
+      "#ECFDF5";
   }
 
   if (warning) {
-    color = "#B45309";
-  }
+    color =
+      "#B45309";
 
-  if (danger) {
-    color = "#B91C1C";
+    background =
+      "#FEF3C7";
   }
 
   return (
     <div
       style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
+        background:
+          "#FFFFFF",
+
+        border:
+          "1px solid #E5E7EB",
+
         borderRadius: 13,
+
         padding: 18,
       }}
     >
       <div
         style={{
-          color: "#64748B",
-          fontSize: 12,
+          display: "flex",
+
+          alignItems:
+            "center",
         }}
       >
-        {title}
+        <div
+          style={{
+            width: 32,
+
+            height: 32,
+
+            borderRadius: 8,
+
+            background,
+
+            color,
+
+            display: "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "center",
+          }}
+        >
+          {icon}
+        </div>
+
+        <div
+          style={{
+            marginLeft: 9,
+
+            color:
+              "#64748B",
+
+            fontSize: 11,
+          }}
+        >
+          {title}
+        </div>
       </div>
 
       <div
         style={{
-          marginTop: 8,
+          marginTop: 12,
+
           fontSize: 25,
+
           fontWeight: 750,
+
           color,
         }}
       >
-        {value}
+        {value.toLocaleString()}
       </div>
     </div>
   );
@@ -519,12 +1044,21 @@ function TableHeader({
     <th
       style={{
         width,
-        padding: "11px 9px",
+
+        padding:
+          "11px 9px",
+
         textAlign: "left",
+
+        color:
+          "#64748B",
+
         fontSize: 10,
+
         fontWeight: 650,
-        color: "#64748B",
-        whiteSpace: "nowrap",
+
+        whiteSpace:
+          "nowrap",
       }}
     >
       {text}
@@ -535,18 +1069,31 @@ function TableHeader({
 function TableCell({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <td
       style={{
-        padding: "12px 9px",
+        padding:
+          "12px 9px",
+
+        color:
+          "#475569",
+
         fontSize: 11,
-        color: "#475569",
-        verticalAlign: "middle",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
+
+        verticalAlign:
+          "middle",
+
+        overflow:
+          "hidden",
+
+        textOverflow:
+          "ellipsis",
+
+        whiteSpace:
+          "nowrap",
       }}
     >
       {children}
@@ -554,67 +1101,48 @@ function TableCell({
   );
 }
 
-function CheckBadge({
-  value,
-}: {
-  value: CheckStatus;
-}) {
-  let background = "#ECFDF5";
-  let color = "#047857";
+function formatDateTime(
+  value: string
+) {
+  const date =
+    new Date(value);
 
-  if (value === "Warning") {
-    background = "#FEF3C7";
-    color = "#B45309";
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
   }
 
-  if (value === "Fail") {
-    background = "#FEF2F2";
-    color = "#B91C1C";
-  }
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background,
-        color,
-        padding: "5px 7px",
-        borderRadius: 7,
-        fontSize: 9,
-        fontWeight: 700,
-      }}
-    >
-      {value}
-    </span>
-  );
+  return date.toLocaleString();
 }
 
-function HealthBadge({
-  healthy,
-}: {
-  healthy: boolean;
-}) {
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background:
-          healthy
-            ? "#ECFDF5"
-            : "#FEF3C7",
-        color:
-          healthy
-            ? "#047857"
-            : "#B45309",
-        padding: "5px 7px",
-        borderRadius: 7,
-        fontSize: 9,
-        fontWeight: 700,
-      }}
-    >
-      {healthy
-        ? "Healthy"
-        : "Attention"}
-    </span>
-  );
-}
+const inputStyle = {
+  width: "100%",
+
+  minWidth: 0,
+
+  height: 42,
+
+  border:
+    "1px solid #D1D5DB",
+
+  borderRadius: 9,
+
+  padding:
+    "0 11px",
+
+  background:
+    "#FFFFFF",
+
+  color:
+    "#111827",
+
+  fontSize: 13,
+
+  outline: "none",
+
+  boxSizing:
+    "border-box" as const,
+};

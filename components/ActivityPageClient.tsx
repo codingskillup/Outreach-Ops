@@ -1,53 +1,293 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  RefreshCw,
+  CheckCircle2,
+  TriangleAlert,
+} from "lucide-react";
 
 import {
   activityDemoData,
-  type ActivityStatus,
-//   type ActivityType,
 } from "@/lib/activityDemoData";
 
-type FilterValue = "all" | string;
+type SyncLog = {
+  id: string;
+  provider: string;
+  accounts_fetched: number;
+  campaigns_fetched: number;
+  active_campaigns: number;
+  status: string;
+  message: string | null;
+  created_at: string;
+};
 
-export default function ActivityPageClient() {
-  const [search, setSearch] = useState("");
-  const [type, setType] =
-    useState<FilterValue>("all");
-  const [status, setStatus] =
-    useState<FilterValue>("all");
-  const [date, setDate] =
-    useState<FilterValue>("all");
+type Issue = {
+  id: string;
+  source: string;
+  client: string | null;
+  issue_type: string;
+  item: string;
+  severity: string;
+  status: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  resolved_at: string | null;
+};
 
-  const activities = activityDemoData;
+type ActivityStatus =
+  | "Success"
+  | "Warning"
+  | "Failed";
 
-  const successCount =
-    activities.filter(
-      (item) =>
-        item.status === "Success"
-    ).length;
+type ActivityRecord = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  source: string;
+  status: ActivityStatus;
+  createdAt: string;
+  live: boolean;
+};
 
-  const warningCount =
-    activities.filter(
-      (item) =>
-        item.status === "Warning"
-    ).length;
+export default function ActivityPageClient({
+  syncLogs = [],
+  issues = [],
+}: {
+  syncLogs?: SyncLog[];
+  issues?: Issue[];
+}) {
+  const [search, setSearch] =
+    useState("");
 
-  const failedCount =
-    activities.filter(
-      (item) =>
-        item.status === "Failed"
-    ).length;
+  const [
+    typeFilter,
+    setTypeFilter,
+  ] = useState("all");
 
-  const todayCount =
-    activities.filter(
-      (item) =>
-        item.date === "Today"
-    ).length;
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+
+  const [
+    sourceFilter,
+    setSourceFilter,
+  ] = useState("all");
+
+  const hasLiveData =
+    syncLogs.length > 0 ||
+    issues.length > 0;
+
+  const activities =
+    useMemo<ActivityRecord[]>(
+      () => {
+        if (!hasLiveData) {
+          return activityDemoData.map(
+            (
+              activity,
+              index
+            ) => ({
+              id:
+                activity.id ||
+                `demo-${index}`,
+
+              type:
+                activity.type,
+
+              title:
+                activity.title,
+
+              description:
+                activity.description,
+
+              source:
+                activity.source,
+
+              status:
+                activity.status,
+
+              createdAt:
+                demoDateFromLabel(
+                  activity.date,
+                  activity.time
+                ),
+
+              live: false,
+            })
+          );
+        }
+
+        const rows:
+          ActivityRecord[] =
+          [];
+
+        for (
+          const log of syncLogs
+        ) {
+          const provider =
+            formatProvider(
+              log.provider
+            );
+
+          const success =
+            log.status
+              .toLowerCase() ===
+            "success";
+
+          rows.push({
+            id:
+              `sync-${log.id}`,
+
+            type:
+              "Sync",
+
+            title:
+              success
+                ? `${provider} sync completed`
+                : `${provider} sync failed`,
+
+            description:
+              success
+                ? buildSyncDescription(
+                    log
+                  )
+                : log.message ||
+                  "The sync could not be completed.",
+
+            source:
+              provider,
+
+            status:
+              success
+                ? "Success"
+                : "Failed",
+
+            createdAt:
+              log.created_at,
+
+            live: true,
+          });
+        }
+
+        for (
+          const issue of issues
+        ) {
+          rows.push({
+            id:
+              `issue-open-${issue.id}`,
+
+            type:
+              "Issue Found",
+
+            title:
+              issue.issue_type,
+
+            description:
+              buildIssueDescription(
+                issue
+              ),
+
+            source:
+              issue.source,
+
+            status:
+              issue.severity ===
+              "Critical"
+                ? "Failed"
+                : "Warning",
+
+            createdAt:
+              issue.first_seen_at,
+
+            live: true,
+          });
+
+          if (
+            issue.status ===
+              "Resolved" &&
+            issue.resolved_at
+          ) {
+            rows.push({
+              id:
+                `issue-resolved-${issue.id}`,
+
+              type:
+                "Issue Resolved",
+
+              title:
+                `${issue.issue_type} resolved`,
+
+              description:
+                `${issue.item} is no longer showing this issue.`,
+
+              source:
+                issue.source,
+
+              status:
+                "Success",
+
+              createdAt:
+                issue.resolved_at,
+
+              live: true,
+            });
+          }
+        }
+
+        return rows.sort(
+          (a, b) =>
+            new Date(
+              b.createdAt
+            ).getTime() -
+            new Date(
+              a.createdAt
+            ).getTime()
+        );
+      },
+      [
+        hasLiveData,
+        syncLogs,
+        issues,
+      ]
+    );
+
+  const types =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            activities.map(
+              (item) =>
+                item.type
+            )
+          )
+        ).sort(),
+      [activities]
+    );
+
+  const sources =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            activities.map(
+              (item) =>
+                item.source
+            )
+          )
+        ).sort(),
+      [activities]
+    );
 
   const filteredActivities =
     useMemo(() => {
-      const searchValue =
+      const value =
         search
           .trim()
           .toLowerCase();
@@ -55,132 +295,209 @@ export default function ActivityPageClient() {
       return activities.filter(
         (activity) => {
           const matchesSearch =
-            !searchValue ||
+            !value ||
             activity.title
               .toLowerCase()
-              .includes(searchValue) ||
+              .includes(value) ||
             activity.description
               .toLowerCase()
-              .includes(searchValue) ||
+              .includes(value) ||
             activity.source
               .toLowerCase()
-              .includes(searchValue);
+              .includes(value);
 
           const matchesType =
-            type === "all" ||
-            activity.type === type;
+            typeFilter ===
+              "all" ||
+            activity.type ===
+              typeFilter;
 
           const matchesStatus =
-            status === "all" ||
-            activity.status === status;
+            statusFilter ===
+              "all" ||
+            activity.status ===
+              statusFilter;
 
-          const matchesDate =
-            date === "all" ||
-            activity.date === date;
+          const matchesSource =
+            sourceFilter ===
+              "all" ||
+            activity.source ===
+              sourceFilter;
 
           return (
             matchesSearch &&
             matchesType &&
             matchesStatus &&
-            matchesDate
+            matchesSource
           );
         }
       );
     }, [
       activities,
       search,
-      type,
-      status,
-      date,
+      typeFilter,
+      statusFilter,
+      sourceFilter,
     ]);
+
+  const successful =
+    activities.filter(
+      (activity) =>
+        activity.status ===
+        "Success"
+    ).length;
+
+  const warnings =
+    activities.filter(
+      (activity) =>
+        activity.status ===
+        "Warning"
+    ).length;
+
+  const failed =
+    activities.filter(
+      (activity) =>
+        activity.status ===
+        "Failed"
+    ).length;
+
+  const today =
+    activities.filter(
+      (activity) =>
+        isToday(
+          activity.createdAt
+        )
+    ).length;
 
   return (
     <div
       style={{
         width: "100%",
+        minWidth: 0,
         color: "#111827",
       }}
     >
       <div
         style={{
+          display: "flex",
+          alignItems:
+            "flex-start",
           marginBottom: 26,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          Activity
-        </h1>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 750,
+            }}
+          >
+            Activity
+          </h1>
 
-        <p
+          <p
+            style={{
+              marginTop: 7,
+              marginBottom: 0,
+              color: "#64748B",
+              fontSize: 14,
+            }}
+          >
+            Review sync history,
+            detected issues and
+            resolved items.
+          </p>
+        </div>
+
+        <div
           style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
+            marginLeft: "auto",
+
+            background:
+              hasLiveData
+                ? "#ECFDF5"
+                : "#EFF6FF",
+
+            color:
+              hasLiveData
+                ? "#047857"
+                : "#2563EB",
+
+            padding:
+              "7px 10px",
+
+            borderRadius: 8,
+
+            fontSize: 11,
+
+            fontWeight: 700,
           }}
         >
-          Review daily checks, sync history,
-          detected issues and resolved items.
-        </p>
+          {hasLiveData
+            ? "Live Data"
+            : "Demo Mode"}
+        </div>
       </div>
 
       <div
         style={{
           display: "grid",
+
           gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
+            "repeat(4, minmax(0, 1fr))",
+
           gap: 14,
+
           marginBottom: 22,
         }}
       >
         <SummaryCard
           title="Today's Activity"
-          value={todayCount.toString()}
+          value={today}
         />
 
         <SummaryCard
           title="Successful"
-          value={successCount.toString()}
+          value={successful}
           success
         />
 
         <SummaryCard
           title="Warnings"
-          value={warningCount.toString()}
+          value={warnings}
           warning
         />
 
         <SummaryCard
           title="Failed"
-          value={failedCount.toString()}
+          value={failed}
           danger
-        />
-
-        <SummaryCard
-          title="Daily Check"
-          value="8:00 AM"
         />
       </div>
 
       <div
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          background:
+            "#FFFFFF",
+
+          border:
+            "1px solid #E5E7EB",
+
           borderRadius: 14,
+
           padding: 18,
+
           marginBottom: 20,
         }}
       >
         <div
           style={{
             display: "grid",
+
             gridTemplateColumns:
               "2fr 1fr 1fr 1fr",
+
             gap: 10,
           }}
         >
@@ -196,9 +513,9 @@ export default function ActivityPageClient() {
           />
 
           <select
-            value={type}
+            value={typeFilter}
             onChange={(event) =>
-              setType(
+              setTypeFilter(
                 event.target.value
               )
             }
@@ -208,35 +525,47 @@ export default function ActivityPageClient() {
               All Activity
             </option>
 
-            <option value="Daily Sync">
-              Daily Sync
-            </option>
-
-            <option value="Smartlead Sync">
-              Smartlead Sync
-            </option>
-
-            <option value="EmailGuard Sync">
-              EmailGuard Sync
-            </option>
-
-            <option value="Issue Found">
-              Issue Found
-            </option>
-
-            <option value="Issue Resolved">
-              Issue Resolved
-            </option>
-
-            <option value="Manual Refresh">
-              Manual Refresh
-            </option>
+            {types.map(
+              (type) => (
+                <option
+                  key={type}
+                  value={type}
+                >
+                  {type}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={status}
+            value={sourceFilter}
             onChange={(event) =>
-              setStatus(
+              setSourceFilter(
+                event.target.value
+              )
+            }
+            style={inputStyle}
+          >
+            <option value="all">
+              All Sources
+            </option>
+
+            {sources.map(
+              (source) => (
+                <option
+                  key={source}
+                  value={source}
+                >
+                  {source}
+                </option>
+              )
+            )}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
                 event.target.value
               )
             }
@@ -258,42 +587,26 @@ export default function ActivityPageClient() {
               Failed
             </option>
           </select>
-
-          <select
-            value={date}
-            onChange={(event) =>
-              setDate(
-                event.target.value
-              )
-            }
-            style={inputStyle}
-          >
-            <option value="all">
-              All Dates
-            </option>
-
-            <option value="Today">
-              Today
-            </option>
-
-            <option value="Yesterday">
-              Yesterday
-            </option>
-          </select>
         </div>
       </div>
 
       <div
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          background:
+            "#FFFFFF",
+
+          border:
+            "1px solid #E5E7EB",
+
           borderRadius: 14,
+
           overflow: "hidden",
         }}
       >
         <div
           style={{
             padding: 18,
+
             borderBottom:
               "1px solid #E5E7EB",
           }}
@@ -301,6 +614,7 @@ export default function ActivityPageClient() {
           <div
             style={{
               fontSize: 17,
+
               fontWeight: 700,
             }}
           >
@@ -309,9 +623,12 @@ export default function ActivityPageClient() {
 
           <div
             style={{
-              color: "#6B7280",
-              fontSize: 12,
               marginTop: 4,
+
+              color:
+                "#64748B",
+
+              fontSize: 12,
             }}
           >
             {
@@ -324,9 +641,12 @@ export default function ActivityPageClient() {
         <table
           style={{
             width: "100%",
+
             borderCollapse:
               "collapse",
-            tableLayout: "fixed",
+
+            tableLayout:
+              "fixed",
           }}
         >
           <thead>
@@ -337,18 +657,23 @@ export default function ActivityPageClient() {
               }}
             >
               <TableHeader
+                text="Type"
+                width="13%"
+              />
+
+              <TableHeader
                 text="Activity"
-                width="14%"
+                width="22%"
               />
 
               <TableHeader
                 text="Details"
-                width="35%"
+                width="33%"
               />
 
               <TableHeader
                 text="Source"
-                width="15%"
+                width="12%"
               />
 
               <TableHeader
@@ -360,11 +685,6 @@ export default function ActivityPageClient() {
                 text="Date"
                 width="10%"
               />
-
-              <TableHeader
-                text="Time"
-                width="10%"
-              />
             </tr>
           </thead>
 
@@ -372,43 +692,69 @@ export default function ActivityPageClient() {
             {filteredActivities.map(
               (activity) => (
                 <tr
-                  key={activity.id}
+                  key={
+                    activity.id
+                  }
                   style={{
                     borderTop:
                       "1px solid #F1F5F9",
                   }}
                 >
                   <TableCell>
+                    <TypeDisplay
+                      type={
+                        activity.type
+                      }
+                    />
+                  </TableCell>
+
+                  <TableCell>
                     <div
                       style={{
-                        fontWeight: 700,
                         color:
                           "#111827",
+
+                        fontWeight: 700,
+
+                        overflow:
+                          "hidden",
+
+                        textOverflow:
+                          "ellipsis",
+
+                        whiteSpace:
+                          "nowrap",
                       }}
+                      title={
+                        activity.title
+                      }
                     >
                       {
                         activity.title
                       }
                     </div>
-
-                    <div
-                      style={{
-                        marginTop: 4,
-                        color:
-                          "#94A3B8",
-                        fontSize: 10,
-                      }}
-                    >
-                      {
-                        activity.type
-                      }
-                    </div>
                   </TableCell>
 
                   <TableCell>
-                    {
-                      activity.description
-                    }
+                    <div
+                      style={{
+                        overflow:
+                          "hidden",
+
+                        textOverflow:
+                          "ellipsis",
+
+                        whiteSpace:
+                          "nowrap",
+                      }}
+                      title={
+                        activity.description
+                      }
+                    >
+                      {
+                        activity.description
+                      }
+                    </div>
                   </TableCell>
 
                   <TableCell>
@@ -426,11 +772,9 @@ export default function ActivityPageClient() {
                   </TableCell>
 
                   <TableCell>
-                    {activity.date}
-                  </TableCell>
-
-                  <TableCell>
-                    {activity.time}
+                    {formatDateTime(
+                      activity.createdAt
+                    )}
                   </TableCell>
                 </tr>
               )
@@ -442,9 +786,14 @@ export default function ActivityPageClient() {
           0 && (
           <div
             style={{
-              padding: 32,
-              textAlign: "center",
-              color: "#64748B",
+              padding: 40,
+
+              textAlign:
+                "center",
+
+              color:
+                "#64748B",
+
               fontSize: 13,
             }}
           >
@@ -456,19 +805,184 @@ export default function ActivityPageClient() {
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  height: 42,
-  border: "1px solid #D1D5DB",
-  borderRadius: 9,
-  padding: "0 11px",
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-};
+function buildSyncDescription(
+  log: SyncLog
+) {
+  const parts = [
+    `${safeNumber(
+      log.accounts_fetched
+    ).toLocaleString()} accounts`,
+    `${safeNumber(
+      log.campaigns_fetched
+    ).toLocaleString()} campaigns`,
+    `${safeNumber(
+      log.active_campaigns
+    ).toLocaleString()} active`,
+  ];
+
+  return parts.join(" · ");
+}
+
+function buildIssueDescription(
+  issue: Issue
+) {
+  const client =
+    issue.client ||
+    "Unassigned";
+
+  return `${issue.item} · ${client} · ${issue.severity}`;
+}
+
+function formatProvider(
+  value: string
+) {
+  if (
+    value.toLowerCase() ===
+    "smartlead"
+  ) {
+    return "Smartlead";
+  }
+
+  if (
+    value.toLowerCase() ===
+    "emailguard"
+  ) {
+    return "EmailGuard";
+  }
+
+  return value;
+}
+
+function TypeDisplay({
+  type,
+}: {
+  type: string;
+}) {
+  let icon =
+    <RefreshCw
+      size={14}
+    />;
+
+  let background =
+    "#EFF6FF";
+
+  let color =
+    "#2563EB";
+
+  if (
+    type === "Issue Found"
+  ) {
+    icon =
+      <TriangleAlert
+        size={14}
+      />;
+
+    background =
+      "#FEF3C7";
+
+    color =
+      "#B45309";
+  }
+
+  if (
+    type ===
+    "Issue Resolved"
+  ) {
+    icon =
+      <CheckCircle2
+        size={14}
+      />;
+
+    background =
+      "#ECFDF5";
+
+    color =
+      "#047857";
+  }
+
+  return (
+    <div
+      style={{
+        width: 30,
+
+        height: 30,
+
+        borderRadius: 8,
+
+        background,
+
+        color,
+
+        display: "flex",
+
+        alignItems:
+          "center",
+
+        justifyContent:
+          "center",
+      }}
+      title={type}
+    >
+      {icon}
+    </div>
+  );
+}
+
+function StatusBadge({
+  status,
+}: {
+  status: ActivityStatus;
+}) {
+  let background =
+    "#ECFDF5";
+
+  let color =
+    "#047857";
+
+  if (
+    status === "Warning"
+  ) {
+    background =
+      "#FEF3C7";
+
+    color =
+      "#B45309";
+  }
+
+  if (
+    status === "Failed"
+  ) {
+    background =
+      "#FEF2F2";
+
+    color =
+      "#B91C1C";
+  }
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+
+        background,
+
+        color,
+
+        padding:
+          "5px 7px",
+
+        borderRadius: 7,
+
+        fontSize: 9,
+
+        fontWeight: 700,
+      }}
+    >
+      {status}
+    </span>
+  );
+}
 
 function SummaryCard({
   title,
@@ -478,38 +992,48 @@ function SummaryCard({
   danger,
 }: {
   title: string;
-  value: string;
+  value: number;
   success?: boolean;
   warning?: boolean;
   danger?: boolean;
 }) {
-  let color = "#111827";
+  let color =
+    "#111827";
 
   if (success) {
-    color = "#047857";
+    color =
+      "#047857";
   }
 
   if (warning) {
-    color = "#B45309";
+    color =
+      "#B45309";
   }
 
   if (danger) {
-    color = "#B91C1C";
+    color =
+      "#B91C1C";
   }
 
   return (
     <div
       style={{
-        background: "#FFFFFF",
+        background:
+          "#FFFFFF",
+
         border:
           "1px solid #E5E7EB",
+
         borderRadius: 13,
+
         padding: 18,
       }}
     >
       <div
         style={{
-          color: "#64748B",
+          color:
+            "#64748B",
+
           fontSize: 12,
         }}
       >
@@ -519,12 +1043,17 @@ function SummaryCard({
       <div
         style={{
           marginTop: 8,
+
           fontSize: 25,
+
           fontWeight: 750,
+
           color,
         }}
       >
-        {value}
+        {safeNumber(
+          value
+        ).toLocaleString()}
       </div>
     </div>
   );
@@ -541,11 +1070,21 @@ function TableHeader({
     <th
       style={{
         width,
-        padding: "11px 10px",
+
+        padding:
+          "11px 10px",
+
         textAlign: "left",
+
+        color:
+          "#64748B",
+
         fontSize: 10,
+
         fontWeight: 650,
-        color: "#64748B",
+
+        whiteSpace:
+          "nowrap",
       }}
     >
       {text}
@@ -556,15 +1095,25 @@ function TableHeader({
 function TableCell({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <td
       style={{
-        padding: "13px 10px",
+        padding:
+          "12px 10px",
+
+        color:
+          "#475569",
+
         fontSize: 11,
-        color: "#475569",
-        verticalAlign: "middle",
+
+        verticalAlign:
+          "middle",
+
+        overflow:
+          "hidden",
       }}
     >
       {children}
@@ -572,45 +1121,141 @@ function TableCell({
   );
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: ActivityStatus;
-}) {
-  let background =
-    "#ECFDF5";
+function formatDateTime(
+  value: string
+) {
+  const date =
+    new Date(value);
 
-  let color =
-    "#047857";
-
-  if (status === "Warning") {
-    background =
-      "#FEF3C7";
-    color =
-      "#B45309";
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
   }
 
-  if (status === "Failed") {
-    background =
-      "#FEF2F2";
-    color =
-      "#B91C1C";
-  }
+  return date.toLocaleString();
+}
+
+function isToday(
+  value: string
+) {
+  const date =
+    new Date(value);
+
+  const today =
+    new Date();
 
   return (
-    <span
-      style={{
-        display:
-          "inline-block",
-        background,
-        color,
-        padding: "5px 8px",
-        borderRadius: 7,
-        fontSize: 9,
-        fontWeight: 700,
-      }}
-    >
-      {status}
-    </span>
+    date.getFullYear() ===
+      today.getFullYear() &&
+    date.getMonth() ===
+      today.getMonth() &&
+    date.getDate() ===
+      today.getDate()
   );
 }
+
+function demoDateFromLabel(
+  dateLabel: string,
+  timeLabel: string
+) {
+  const now =
+    new Date();
+
+  const date =
+    new Date(now);
+
+  if (
+    dateLabel ===
+    "Yesterday"
+  ) {
+    date.setDate(
+      date.getDate() - 1
+    );
+  }
+
+  const match =
+    timeLabel.match(
+      /(\d+):(\d+)\s*(AM|PM)/i
+    );
+
+  if (match) {
+    let hour =
+      Number(match[1]);
+
+    const minute =
+      Number(match[2]);
+
+    const period =
+      match[3].toUpperCase();
+
+    if (
+      period === "PM" &&
+      hour !== 12
+    ) {
+      hour += 12;
+    }
+
+    if (
+      period === "AM" &&
+      hour === 12
+    ) {
+      hour = 0;
+    }
+
+    date.setHours(
+      hour,
+      minute,
+      0,
+      0
+    );
+  }
+
+  return date.toISOString();
+}
+
+function safeNumber(
+  value:
+    | number
+    | null
+    | undefined
+) {
+  return (
+    typeof value ===
+      "number" &&
+    Number.isFinite(value)
+  )
+    ? value
+    : 0;
+}
+
+const inputStyle = {
+  width: "100%",
+
+  minWidth: 0,
+
+  height: 42,
+
+  border:
+    "1px solid #D1D5DB",
+
+  borderRadius: 9,
+
+  padding:
+    "0 11px",
+
+  background:
+    "#FFFFFF",
+
+  color:
+    "#111827",
+
+  fontSize: 13,
+
+  outline: "none",
+
+  boxSizing:
+    "border-box" as const,
+};
