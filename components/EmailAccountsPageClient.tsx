@@ -1,191 +1,389 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import {
-  accountRules,
-  type AccountType,
-} from "@/lib/accountRules";
+  useMemo,
+  useState,
+} from "react";
 
 import {
   emailAccountDemoData,
-  type DemoEmailAccount,
 } from "@/lib/emailAccountDemoData";
 
-type StatusFilter =
-  | "all"
-  | "healthy"
-  | "attention";
+import {
+  accountRules,
+  isAccountType,
+  type AccountType,
+} from "@/lib/accountRules";
 
-export default function EmailAccountsPageClient() {
-  const [search, setSearch] = useState("");
-  const [accountType, setAccountType] =
-    useState<"all" | AccountType>("all");
-  const [client, setClient] = useState("all");
-  const [smartlead, setSmartlead] = useState("all");
-  const [status, setStatus] =
-    useState<StatusFilter>("all");
+type RawData =
+  Record<string, unknown>;
 
-  const accounts =
-    emailAccountDemoData;
+type RealAccount = {
+  id: string;
+  external_id: number;
+  email: string | null;
+  from_name: string | null;
+  username: string | null;
+  account_type: string | null;
+  raw_data: RawData | null;
+  synced_at: string;
+  integration_id: string;
 
-  const clients = Array.from(
-    new Set(accounts.map((item) => item.client))
-  );
+  integrations:
+    | {
+        id: string;
+        name: string;
+        provider: string;
+      }
+    | {
+        id: string;
+        name: string;
+        provider: string;
+      }[]
+    | null;
+};
 
-  const smartleads = Array.from(
-    new Set(accounts.map((item) => item.smartlead))
-  );
+type DisplayAccount = {
+  id: string;
+  email: string;
+  client: string;
+  smartlead: string;
+  accountType:
+    | AccountType
+    | "Unclassified";
 
-  function getAccountStatus(
-    account: DemoEmailAccount
-  ) {
-    const rule =
-      accountRules[account.accountType];
+  dailyLimit: number | null;
+  minimumGap: number | null;
 
-    const dailyLimitCorrect =
-      account.dailyLimit === rule.dailyLimit;
+  warmupEnabled:
+    | boolean
+    | null;
 
-    const minimumGapCorrect =
-      account.minimumGap === rule.minimumGap;
+  warmupDaily:
+    | number
+    | null;
 
-    const warmupEnabledCorrect =
-      account.warmupEnabled ===
-      rule.warmupEnabled;
+  reputation:
+    | number
+    | null;
 
-    const warmupDailyCorrect =
-      account.warmupDaily ===
-      rule.warmupDaily;
+  bounceRate:
+    | number
+    | null;
 
-    const healthy =
-      dailyLimitCorrect &&
-      minimumGapCorrect &&
-      warmupEnabledCorrect &&
-      warmupDailyCorrect;
+  replyRate:
+    | number
+    | null;
 
-    return {
-      healthy,
-      dailyLimitCorrect,
-      minimumGapCorrect,
-      warmupEnabledCorrect,
-      warmupDailyCorrect,
-    };
-  }
+  live: boolean;
+};
 
-  const filteredAccounts = useMemo(() => {
-    return accounts.filter((account) => {
-      const accountStatus =
-        getAccountStatus(account);
+export default function EmailAccountsPageClient({
+  realAccounts,
+}: {
+  realAccounts: RealAccount[];
+}) {
+  const [search, setSearch] =
+    useState("");
 
-      const searchValue =
-        search.trim().toLowerCase();
+  const [
+    accountTypeFilter,
+    setAccountTypeFilter,
+  ] = useState("all");
 
-      const matchesSearch =
-        !searchValue ||
-        account.email
-          .toLowerCase()
-          .includes(searchValue) ||
-        account.client
-          .toLowerCase()
-          .includes(searchValue);
+  const [
+    clientFilter,
+    setClientFilter,
+  ] = useState("all");
 
-      const matchesType =
-        accountType === "all" ||
-        account.accountType === accountType;
+  const [
+    smartleadFilter,
+    setSmartleadFilter,
+  ] = useState("all");
 
-      const matchesClient =
-        client === "all" ||
-        account.client === client;
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
 
-      const matchesSmartlead =
-        smartlead === "all" ||
-        account.smartlead === smartlead;
+  const hasRealData =
+    realAccounts.length > 0;
 
-      const matchesStatus =
-        status === "all" ||
-        (status === "healthy" &&
-          accountStatus.healthy) ||
-        (status === "attention" &&
-          !accountStatus.healthy);
+  const accounts:
+    DisplayAccount[] =
+    useMemo(() => {
+      if (hasRealData) {
+        return realAccounts.map(
+          convertRealAccount
+        );
+      }
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesClient &&
-        matchesSmartlead &&
-        matchesStatus
+      return emailAccountDemoData.map(
+        (
+          account,
+          index
+        ) => ({
+          id:
+            String(
+              (
+                account as {
+                  id?: string;
+                }
+              ).id ||
+                `demo-${index}`
+            ),
+
+          email:
+            account.email,
+
+          client:
+            account.client,
+
+          smartlead:
+            account.smartlead,
+
+          accountType:
+            account.accountType,
+
+          dailyLimit:
+            account.dailyLimit,
+
+          minimumGap:
+            account.minimumGap,
+
+          warmupEnabled:
+            account.warmupEnabled,
+
+          warmupDaily:
+            account.warmupDaily,
+
+          reputation:
+            account.warmupReputation,
+
+          bounceRate:
+            account.bounceRate,
+
+          replyRate:
+            account.replyRate,
+
+          live: false,
+        })
       );
-    });
-  }, [
-    accounts,
-    search,
-    accountType,
-    client,
-    smartlead,
-    status,
-  ]);
+    }, [
+      hasRealData,
+      realAccounts,
+    ]);
 
-  const azureCount = accounts.filter(
-    (item) =>
-      item.accountType ===
-      "Hypertide Azure/Entra"
-  ).length;
+  const clients =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            accounts.map(
+              (item) =>
+                item.client
+            )
+          )
+        ).sort(),
+      [accounts]
+    );
 
-  const hypertideGoogleCount =
+  const smartleads =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            accounts.map(
+              (item) =>
+                item.smartlead
+            )
+          )
+        ).sort(),
+      [accounts]
+    );
+
+  const accountStatuses =
+    useMemo(
+      () =>
+        accounts.map(
+          (account) => ({
+            account,
+            healthy:
+              isHealthyAccount(
+                account
+              ),
+          })
+        ),
+      [accounts]
+    );
+
+  const filteredAccounts =
+    useMemo(() => {
+      const searchValue =
+        search
+          .trim()
+          .toLowerCase();
+
+      return accountStatuses.filter(
+        ({
+          account,
+          healthy,
+        }) => {
+          const matchesSearch =
+            !searchValue ||
+            account.email
+              .toLowerCase()
+              .includes(
+                searchValue
+              ) ||
+            account.client
+              .toLowerCase()
+              .includes(
+                searchValue
+              );
+
+          const matchesType =
+            accountTypeFilter ===
+              "all" ||
+            account.accountType ===
+              accountTypeFilter;
+
+          const matchesClient =
+            clientFilter ===
+              "all" ||
+            account.client ===
+              clientFilter;
+
+          const matchesSmartlead =
+            smartleadFilter ===
+              "all" ||
+            account.smartlead ===
+              smartleadFilter;
+
+          const matchesStatus =
+            statusFilter ===
+              "all" ||
+            (statusFilter ===
+              "healthy" &&
+              healthy) ||
+            (statusFilter ===
+              "attention" &&
+              !healthy);
+
+          return (
+            matchesSearch &&
+            matchesType &&
+            matchesClient &&
+            matchesSmartlead &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      accountStatuses,
+      search,
+      accountTypeFilter,
+      clientFilter,
+      smartleadFilter,
+      statusFilter,
+    ]);
+
+  const azureCount =
     accounts.filter(
-      (item) =>
-        item.accountType ===
+      (account) =>
+        account.accountType ===
+        "Hypertide Azure/Entra"
+    ).length;
+
+  const googleCount =
+    accounts.filter(
+      (account) =>
+        account.accountType ===
         "Hypertide Google"
     ).length;
 
   const workspaceCount =
     accounts.filter(
-      (item) =>
-        item.accountType ===
+      (account) =>
+        account.accountType ===
         "Google Workspace"
     ).length;
 
-  const healthyCount =
-    accounts.filter(
+  const attentionCount =
+    accountStatuses.filter(
       (item) =>
-        getAccountStatus(item).healthy
+        !item.healthy
     ).length;
 
-  const attentionCount =
-    accounts.length - healthyCount;
+  const healthyCount =
+    accountStatuses.filter(
+      (item) =>
+        item.healthy
+    ).length;
 
   return (
     <div
       style={{
         width: "100%",
+        minWidth: 0,
         color: "#111827",
       }}
     >
       <div
         style={{
+          display: "flex",
+          alignItems:
+            "flex-start",
           marginBottom: 26,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          Email Accounts
-        </h1>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 750,
+            }}
+          >
+            Email Accounts
+          </h1>
 
-        <p
+          <p
+            style={{
+              marginTop: 7,
+              marginBottom: 0,
+              color: "#6B7280",
+              fontSize: 14,
+            }}
+          >
+            Monitor sending
+            settings and account
+            health.
+          </p>
+        </div>
+
+        <div
           style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
+            marginLeft: "auto",
+            background:
+              hasRealData
+                ? "#ECFDF5"
+                : "#EFF6FF",
+            color:
+              hasRealData
+                ? "#047857"
+                : "#2563EB",
+            borderRadius: 8,
+            padding:
+              "7px 10px",
+            fontSize: 11,
+            fontWeight: 700,
           }}
         >
-          Review account types, sending settings,
-          warmup status and configuration issues.
-        </p>
+          {hasRealData
+            ? "Live Data"
+            : "Demo Mode"}
+        </div>
       </div>
 
       <div
@@ -199,27 +397,37 @@ export default function EmailAccountsPageClient() {
       >
         <SummaryCard
           title="Total Accounts"
-          value={accounts.length.toString()}
+          value={
+            accounts.length
+          }
         />
 
         <SummaryCard
           title="Hypertide Azure/Entra"
-          value={azureCount.toString()}
+          value={
+            azureCount
+          }
         />
 
         <SummaryCard
           title="Hypertide Google"
-          value={hypertideGoogleCount.toString()}
+          value={
+            googleCount
+          }
         />
 
         <SummaryCard
           title="Google Workspace"
-          value={workspaceCount.toString()}
+          value={
+            workspaceCount
+          }
         />
 
         <SummaryCard
           title="Need Attention"
-          value={attentionCount.toString()}
+          value={
+            attentionCount
+          }
           warning
         />
       </div>
@@ -227,7 +435,8 @@ export default function EmailAccountsPageClient() {
       <div
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           padding: 18,
           marginBottom: 20,
@@ -244,19 +453,21 @@ export default function EmailAccountsPageClient() {
           <input
             value={search}
             onChange={(event) =>
-              setSearch(event.target.value)
+              setSearch(
+                event.target.value
+              )
             }
             placeholder="Search email or client"
             style={inputStyle}
           />
 
           <select
-            value={accountType}
+            value={
+              accountTypeFilter
+            }
             onChange={(event) =>
-              setAccountType(
-                event.target.value as
-                  | "all"
-                  | AccountType
+              setAccountTypeFilter(
+                event.target.value
               )
             }
             style={inputStyle}
@@ -276,12 +487,20 @@ export default function EmailAccountsPageClient() {
             <option value="Google Workspace">
               Google Workspace
             </option>
+
+            <option value="Unclassified">
+              Unclassified
+            </option>
           </select>
 
           <select
-            value={client}
+            value={
+              clientFilter
+            }
             onChange={(event) =>
-              setClient(event.target.value)
+              setClientFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -289,20 +508,26 @@ export default function EmailAccountsPageClient() {
               All Clients
             </option>
 
-            {clients.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
+            {clients.map(
+              (client) => (
+                <option
+                  key={client}
+                  value={client}
+                >
+                  {client}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={smartlead}
+            value={
+              smartleadFilter
+            }
             onChange={(event) =>
-              setSmartlead(event.target.value)
+              setSmartleadFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -310,22 +535,29 @@ export default function EmailAccountsPageClient() {
               All Smartlead
             </option>
 
-            {smartleads.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
+            {smartleads.map(
+              (smartlead) => (
+                <option
+                  key={
+                    smartlead
+                  }
+                  value={
+                    smartlead
+                  }
+                >
+                  {smartlead}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={status}
+            value={
+              statusFilter
+            }
             onChange={(event) =>
-              setStatus(
-                event.target.value as
-                  StatusFilter
+              setStatusFilter(
+                event.target.value
               )
             }
             style={inputStyle}
@@ -348,7 +580,8 @@ export default function EmailAccountsPageClient() {
       <div
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           overflow: "hidden",
         }}
@@ -379,19 +612,25 @@ export default function EmailAccountsPageClient() {
                 marginTop: 4,
               }}
             >
-              {filteredAccounts.length} shown
+              {
+                filteredAccounts.length
+              }{" "}
+              shown
             </div>
           </div>
 
           <div
             style={{
               marginLeft: "auto",
-              color: "#047857",
-              background: "#ECFDF5",
+              background:
+                "#ECFDF5",
+              color:
+                "#047857",
               borderRadius: 8,
-              padding: "7px 10px",
-              fontSize: 12,
-              fontWeight: 600,
+              padding:
+                "7px 10px",
+              fontSize: 11,
+              fontWeight: 700,
             }}
           >
             {healthyCount} healthy
@@ -400,183 +639,482 @@ export default function EmailAccountsPageClient() {
 
         <div
           style={{
-            overflowX: "auto",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
           <table
             style={{
               width: "100%",
-              borderCollapse: "collapse",
-              minWidth: 1400,
+              borderCollapse:
+                "collapse",
+              tableLayout:
+                "fixed",
             }}
           >
             <thead>
               <tr
                 style={{
-                  background: "#F8FAFC",
+                  background:
+                    "#F8FAFC",
                 }}
               >
-                <TableHeader text="Email" />
-                <TableHeader text="Client" />
-                <TableHeader text="Account Type" />
-                <TableHeader text="Smartlead" />
-                <TableHeader text="Daily Limit" />
-                <TableHeader text="Minimum Gap" />
-                <TableHeader text="Warmup" />
-                <TableHeader text="Warmup Daily" />
-                <TableHeader text="Reputation" />
-                <TableHeader text="Bounce" />
-                <TableHeader text="Reply" />
-                <TableHeader text="Status" />
+                <TableHeader
+                  text="Email"
+                  width="18%"
+                />
+
+                <TableHeader
+                  text="Client"
+                  width="11%"
+                />
+
+                <TableHeader
+                  text="Account Type"
+                  width="14%"
+                />
+
+                <TableHeader
+                  text="Smartlead"
+                  width="10%"
+                />
+
+                <TableHeader
+                  text="Daily Limit"
+                  width="7%"
+                />
+
+                <TableHeader
+                  text="Minimum Gap"
+                  width="8%"
+                />
+
+                <TableHeader
+                  text="Warmup"
+                  width="7%"
+                />
+
+                <TableHeader
+                  text="Warmup Daily"
+                  width="8%"
+                />
+
+                <TableHeader
+                  text="Reputation"
+                  width="8%"
+                />
+
+                <TableHeader
+                  text="Bounce"
+                  width="7%"
+                />
               </tr>
             </thead>
 
             <tbody>
               {filteredAccounts.map(
-                (account) => {
-                  const rule =
-                    accountRules[
-                      account.accountType
-                    ];
-
-                  const accountStatus =
-                    getAccountStatus(
+                ({
+                  account,
+                }) => (
+                  <AccountRow
+                    key={
+                      account.id
+                    }
+                    account={
                       account
-                    );
-
-                  return (
-                    <tr
-                      key={account.id}
-                      style={{
-                        borderTop:
-                          "1px solid #F1F5F9",
-                      }}
-                    >
-                      <TableCell>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            color:
-                              "#111827",
-                          }}
-                        >
-                          {account.email}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        {account.client}
-                      </TableCell>
-
-                      <TableCell>
-                        <TypeBadge
-                          type={
-                            account.accountType
-                          }
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        {account.smartlead}
-                      </TableCell>
-
-                      <TableCell>
-                        <SettingValue
-                          current={
-                            account.dailyLimit
-                          }
-                          expected={
-                            rule.dailyLimit
-                          }
-                          correct={
-                            accountStatus.dailyLimitCorrect
-                          }
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <SettingValue
-                          current={
-                            account.minimumGap
-                          }
-                          expected={
-                            rule.minimumGap
-                          }
-                          correct={
-                            accountStatus.minimumGapCorrect
-                          }
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <BooleanValue
-                          current={
-                            account.warmupEnabled
-                          }
-                          expected={
-                            rule.warmupEnabled
-                          }
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <SettingValue
-                          current={
-                            account.warmupDaily
-                          }
-                          expected={
-                            rule.warmupDaily
-                          }
-                          correct={
-                            accountStatus.warmupDailyCorrect
-                          }
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        {account.warmupReputation}%
-                      </TableCell>
-
-                      <TableCell>
-                        {account.bounceRate}%
-                      </TableCell>
-
-                      <TableCell>
-                        {account.replyRate}%
-                      </TableCell>
-
-                      <TableCell>
-                        <StatusBadge
-                          healthy={
-                            accountStatus.healthy
-                          }
-                        />
-                      </TableCell>
-                    </tr>
-                  );
-                }
+                    }
+                  />
+                )
               )}
             </tbody>
           </table>
         </div>
+
+        {filteredAccounts.length ===
+          0 && (
+          <div
+            style={{
+              padding: 35,
+              textAlign: "center",
+              color: "#64748B",
+              fontSize: 13,
+            }}
+          >
+            No email accounts
+            found.
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  height: 42,
-  border: "1px solid #D1D5DB",
-  borderRadius: 9,
-  padding: "0 11px",
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-};
+function AccountRow({
+  account,
+}: {
+  account: DisplayAccount;
+}) {
+  const rules =
+    isAccountType(
+      account.accountType
+    )
+      ? accountRules[
+          account.accountType
+        ]
+      : null;
+
+  const dailyLimitWrong =
+    rules !== null &&
+    account.dailyLimit !==
+      null &&
+    account.dailyLimit !==
+      rules.dailyLimit;
+
+  const gapWrong =
+    rules !== null &&
+    account.minimumGap !==
+      null &&
+    account.minimumGap !==
+      rules.minimumGap;
+
+  const warmupWrong =
+    rules !== null &&
+    account.warmupEnabled !==
+      null &&
+    account.warmupEnabled !==
+      rules.warmupEnabled;
+
+  const warmupDailyWrong =
+    rules !== null &&
+    account.warmupDaily !==
+      null &&
+    account.warmupDaily !==
+      rules.warmupDaily;
+
+  return (
+    <tr
+      style={{
+        borderTop:
+          "1px solid #F1F5F9",
+      }}
+    >
+      <TableCell>
+        <div
+          style={{
+            fontWeight: 700,
+            color: "#111827",
+            overflow: "hidden",
+            textOverflow:
+              "ellipsis",
+          }}
+          title={account.email}
+        >
+          {account.email}
+        </div>
+      </TableCell>
+
+      <TableCell>
+        {account.client}
+      </TableCell>
+
+      <TableCell>
+        <TypeBadge
+          value={
+            account.accountType
+          }
+        />
+      </TableCell>
+
+      <TableCell>
+        {account.smartlead}
+      </TableCell>
+
+      <TableCell>
+        <ValueCheck
+          value={
+            account.dailyLimit
+          }
+          wrong={
+            dailyLimitWrong
+          }
+          expected={
+            rules?.dailyLimit
+          }
+        />
+      </TableCell>
+
+      <TableCell>
+        <ValueCheck
+          value={
+            account.minimumGap
+          }
+          wrong={
+            gapWrong
+          }
+          expected={
+            rules?.minimumGap
+          }
+        />
+      </TableCell>
+
+      <TableCell>
+        {account.warmupEnabled ===
+        null ? (
+          <EmptyValue />
+        ) : (
+          <WarmupBadge
+            enabled={
+              account.warmupEnabled
+            }
+            wrong={
+              warmupWrong
+            }
+          />
+        )}
+      </TableCell>
+
+      <TableCell>
+        <ValueCheck
+          value={
+            account.warmupDaily
+          }
+          wrong={
+            warmupDailyWrong
+          }
+          expected={
+            rules?.warmupDaily
+          }
+        />
+      </TableCell>
+
+      <TableCell>
+        {account.reputation !==
+        null
+          ? `${account.reputation}%`
+          : "—"}
+      </TableCell>
+
+      <TableCell>
+        {account.bounceRate !==
+        null
+          ? `${account.bounceRate}%`
+          : "—"}
+      </TableCell>
+    </tr>
+  );
+}
+
+function convertRealAccount(
+  account: RealAccount
+): DisplayAccount {
+  const raw =
+    account.raw_data || {};
+
+  const integration =
+    Array.isArray(
+      account.integrations
+    )
+      ? account.integrations[0]
+      : account.integrations;
+
+  const accountType =
+    isAccountType(
+      account.account_type
+    )
+      ? account.account_type
+      : "Unclassified";
+
+  return {
+    id: account.id,
+
+    email:
+      account.email ||
+      account.username ||
+      "Unknown",
+
+    client:
+      getText(
+        raw.client_name
+      ) ||
+      "Unassigned",
+
+    smartlead:
+      integration?.name ||
+      "Smartlead",
+
+    accountType,
+
+    dailyLimit:
+      getNumber(
+        raw.max_email_per_day
+      ),
+
+    minimumGap:
+      null,
+
+    warmupEnabled:
+      getBoolean(
+        raw.warmup_enabled
+      ),
+
+    warmupDaily:
+      getNumber(
+        raw.total_warmup_per_day
+      ),
+
+    reputation:
+      getNumber(
+        raw.warmup_reputation
+      ),
+
+    bounceRate:
+      getNumber(
+        raw.bounce_rate
+      ),
+
+    replyRate:
+      getNumber(
+        raw.reply_rate_percentage
+      ),
+
+    live: true,
+  };
+}
+
+function getText(
+  value: unknown
+) {
+  if (
+    typeof value !==
+    "string"
+  ) {
+    return null;
+  }
+
+  const result =
+    value.trim();
+
+  return result || null;
+}
+
+function getNumber(
+  value: unknown
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : null;
+}
+
+function getBoolean(
+  value: unknown
+) {
+  if (
+    typeof value ===
+    "boolean"
+  ) {
+    return value;
+  }
+
+  if (value === 1) {
+    return true;
+  }
+
+  if (value === 0) {
+    return false;
+  }
+
+  if (
+    typeof value ===
+    "string"
+  ) {
+    const text =
+      value.toLowerCase();
+
+    if (
+      text === "true" ||
+      text === "1"
+    ) {
+      return true;
+    }
+
+    if (
+      text === "false" ||
+      text === "0"
+    ) {
+      return false;
+    }
+  }
+
+  return null;
+}
+
+function isHealthyAccount(
+  account: DisplayAccount
+) {
+  if (
+    !isAccountType(
+      account.accountType
+    )
+  ) {
+    return false;
+  }
+
+  const rules =
+    accountRules[
+      account.accountType
+    ];
+
+  if (
+    account.dailyLimit !==
+      null &&
+    account.dailyLimit !==
+      rules.dailyLimit
+  ) {
+    return false;
+  }
+
+  if (
+    account.minimumGap !==
+      null &&
+    account.minimumGap !==
+      rules.minimumGap
+  ) {
+    return false;
+  }
+
+  if (
+    account.warmupEnabled !==
+      null &&
+    account.warmupEnabled !==
+      rules.warmupEnabled
+  ) {
+    return false;
+  }
+
+  if (
+    account.warmupDaily !==
+      null &&
+    account.warmupDaily !==
+      rules.warmupDaily
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 function SummaryCard({
   title,
@@ -584,14 +1122,15 @@ function SummaryCard({
   warning,
 }: {
   title: string;
-  value: string;
+  value: number;
   warning?: boolean;
 }) {
   return (
     <div
       style={{
         background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
+        border:
+          "1px solid #E5E7EB",
         borderRadius: 13,
         padding: 18,
       }}
@@ -623,18 +1162,23 @@ function SummaryCard({
 
 function TableHeader({
   text,
+  width,
 }: {
   text: string;
+  width?: string;
 }) {
   return (
     <th
       style={{
-        padding: "13px 14px",
+        width,
+        padding:
+          "11px 10px",
         textAlign: "left",
-        fontSize: 12,
-        fontWeight: 600,
+        fontSize: 10,
+        fontWeight: 650,
         color: "#64748B",
-        whiteSpace: "nowrap",
+        whiteSpace:
+          "nowrap",
       }}
     >
       {text}
@@ -645,16 +1189,23 @@ function TableHeader({
 function TableCell({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <td
       style={{
-        padding: "14px",
-        fontSize: 13,
+        padding:
+          "12px 10px",
+        fontSize: 11,
         color: "#475569",
-        verticalAlign: "middle",
-        whiteSpace: "nowrap",
+        verticalAlign:
+          "middle",
+        overflow: "hidden",
+        textOverflow:
+          "ellipsis",
+        whiteSpace:
+          "nowrap",
       }}
     >
       {children}
@@ -663,133 +1214,146 @@ function TableCell({
 }
 
 function TypeBadge({
-  type,
+  value,
 }: {
-  type: AccountType;
+  value:
+    DisplayAccount["accountType"];
 }) {
   return (
     <span
       style={{
-        display: "inline-block",
-        background: "#F1F5F9",
-        color: "#334155",
-        borderRadius: 8,
-        padding: "6px 9px",
-        fontSize: 11,
-        fontWeight: 600,
+        display:
+          "inline-block",
+        maxWidth: "100%",
+        padding:
+          "5px 7px",
+        borderRadius: 7,
+        background:
+          value ===
+          "Unclassified"
+            ? "#F1F5F9"
+            : "#EFF6FF",
+        color:
+          value ===
+          "Unclassified"
+            ? "#64748B"
+            : "#334155",
+        fontSize: 9,
+        fontWeight: 700,
+        overflow: "hidden",
+        textOverflow:
+          "ellipsis",
       }}
     >
-      {type}
+      {value}
     </span>
   );
 }
 
-function SettingValue({
-  current,
+function ValueCheck({
+  value,
+  wrong,
   expected,
-  correct,
 }: {
-  current: number;
-  expected: number;
-  correct: boolean;
+  value: number | null;
+  wrong: boolean;
+  expected?: number;
 }) {
+  if (value === null) {
+    return <EmptyValue />;
+  }
+
   return (
     <div>
       <div
         style={{
+          color: wrong
+            ? "#B45309"
+            : "#047857",
           fontWeight: 700,
-          color: correct
-            ? "#047857"
-            : "#B45309",
         }}
       >
-        {current}
+        {value}
       </div>
 
-      {!correct && (
-        <div
-          style={{
-            color: "#94A3B8",
-            fontSize: 10,
-            marginTop: 3,
-          }}
-        >
-          Expected {expected}
-        </div>
-      )}
+      {wrong &&
+        expected !==
+          undefined && (
+          <div
+            style={{
+              color:
+                "#94A3B8",
+              fontSize: 9,
+              marginTop: 3,
+            }}
+          >
+            Expected{" "}
+            {expected}
+          </div>
+        )}
     </div>
   );
 }
 
-function BooleanValue({
-  current,
-  expected,
+function WarmupBadge({
+  enabled,
+  wrong,
 }: {
-  current: boolean;
-  expected: boolean;
-}) {
-  const correct =
-    current === expected;
-
-  return (
-    <div>
-      <span
-        style={{
-          background: correct
-            ? "#ECFDF5"
-            : "#FEF3C7",
-          color: correct
-            ? "#047857"
-            : "#B45309",
-          padding: "5px 8px",
-          borderRadius: 7,
-          fontSize: 11,
-          fontWeight: 600,
-        }}
-      >
-        {current ? "ON" : "OFF"}
-      </span>
-
-      {!correct && (
-        <div
-          style={{
-            marginTop: 4,
-            color: "#94A3B8",
-            fontSize: 10,
-          }}
-        >
-          Expected{" "}
-          {expected ? "ON" : "OFF"}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatusBadge({
-  healthy,
-}: {
-  healthy: boolean;
+  enabled: boolean;
+  wrong: boolean;
 }) {
   return (
     <span
       style={{
-        display: "inline-block",
-        background: healthy
-          ? "#ECFDF5"
-          : "#FEF3C7",
-        color: healthy
-          ? "#047857"
-          : "#B45309",
-        padding: "6px 9px",
-        borderRadius: 8,
-        fontSize: 11,
+        display:
+          "inline-block",
+        background:
+          wrong
+            ? "#FEF3C7"
+            : "#ECFDF5",
+        color:
+          wrong
+            ? "#B45309"
+            : "#047857",
+        padding:
+          "5px 7px",
+        borderRadius: 7,
+        fontSize: 9,
         fontWeight: 700,
       }}
     >
-      {healthy
-        ? "Healthy"
-        : "Needs Attention"}
+      {enabled
+        ? "ON"
+        : "OFF"}
     </span>
   );
 }
+
+function EmptyValue() {
+  return (
+    <span
+      style={{
+        color: "#94A3B8",
+      }}
+    >
+      —
+    </span>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  minWidth: 0,
+  height: 42,
+  border:
+    "1px solid #D1D5DB",
+  borderRadius: 9,
+  padding:
+    "0 11px",
+  background: "#FFFFFF",
+  color: "#111827",
+  fontSize: 13,
+  outline: "none",
+  boxSizing:
+    "border-box" as const,
+};

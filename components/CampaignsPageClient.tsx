@@ -1,137 +1,316 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import {
   campaignDemoData,
-  type CampaignStatus,
 } from "@/lib/campaignDemoData";
 
-type StatusFilter =
-  | "all"
-  | CampaignStatus;
+type RawData =
+  Record<string, unknown>;
 
-export default function CampaignsPageClient() {
-  const [search, setSearch] = useState("");
-  const [client, setClient] = useState("all");
-  const [smartlead, setSmartlead] = useState("all");
-  const [status, setStatus] =
-    useState<StatusFilter>("all");
+type IntegrationRelation =
+  | {
+      id: string;
+      name: string;
+      provider: string;
+    }
+  | {
+      id: string;
+      name: string;
+      provider: string;
+    }[]
+  | null;
 
-  const campaigns = campaignDemoData;
+type RealCampaign = {
+  id: string;
+  external_id: number;
+  name: string | null;
+  status: string | null;
+  first_seen_active_at:
+    | string
+    | null;
+  raw_data:
+    | RawData
+    | null;
+  synced_at: string;
+  integration_id: string;
+  integrations:
+    IntegrationRelation;
+};
 
-  const clients = Array.from(
-    new Set(
-      campaigns.map(
-        (campaign) => campaign.client
-      )
-    )
-  );
+type DisplayCampaign = {
+  id: string;
+  name: string;
+  client: string;
+  smartlead: string;
+  status: string;
+  accounts: number | null;
+  activeSince:
+    | string
+    | null;
+  lastSynced:
+    | string
+    | null;
+  live: boolean;
+};
 
-  const smartleads = Array.from(
-    new Set(
-      campaigns.map(
-        (campaign) => campaign.smartlead
-      )
-    )
-  );
+export default function CampaignsPageClient({
+  realCampaigns,
+}: {
+  realCampaigns: RealCampaign[];
+}) {
+  const [search, setSearch] =
+    useState("");
 
-  const activeCount = campaigns.filter(
-    (campaign) =>
-      campaign.status === "ACTIVE"
-  ).length;
+  const [
+    clientFilter,
+    setClientFilter,
+  ] = useState("all");
 
-  const pausedCount = campaigns.filter(
-    (campaign) =>
-      campaign.status === "PAUSED"
-  ).length;
+  const [
+    smartleadFilter,
+    setSmartleadFilter,
+  ] = useState("all");
 
-  const stoppedCount = campaigns.filter(
-    (campaign) =>
-      campaign.status === "STOPPED"
-  ).length;
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
 
-  const draftCount = campaigns.filter(
-    (campaign) =>
-      campaign.status === "DRAFT"
-  ).length;
+  const hasRealData =
+    realCampaigns.length > 0;
 
-  const filteredCampaigns = useMemo(() => {
-    const searchValue =
-      search.trim().toLowerCase();
-
-    return campaigns.filter(
-      (campaign) => {
-        const matchesSearch =
-          !searchValue ||
-          campaign.name
-            .toLowerCase()
-            .includes(searchValue) ||
-          campaign.client
-            .toLowerCase()
-            .includes(searchValue);
-
-        const matchesClient =
-          client === "all" ||
-          campaign.client === client;
-
-        const matchesSmartlead =
-          smartlead === "all" ||
-          campaign.smartlead === smartlead;
-
-        const matchesStatus =
-          status === "all" ||
-          campaign.status === status;
-
-        return (
-          matchesSearch &&
-          matchesClient &&
-          matchesSmartlead &&
-          matchesStatus
+  const campaigns:
+    DisplayCampaign[] =
+    useMemo(() => {
+      if (hasRealData) {
+        return realCampaigns.map(
+          convertRealCampaign
         );
       }
+
+      return campaignDemoData.map(
+        (campaign) => ({
+          id:
+            campaign.id,
+
+          name:
+            campaign.name,
+
+          client:
+            campaign.client,
+
+          smartlead:
+            campaign.smartlead,
+
+          status:
+            campaign.status,
+
+          accounts:
+            campaign.accounts,
+
+          activeSince:
+            campaign.activeSince,
+
+          lastSynced:
+            null,
+
+          live: false,
+        })
+      );
+    }, [
+      hasRealData,
+      realCampaigns,
+    ]);
+
+  const clients =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            campaigns.map(
+              (item) =>
+                item.client
+            )
+          )
+        ).sort(),
+      [campaigns]
     );
-  }, [
-    campaigns,
-    search,
-    client,
-    smartlead,
-    status,
-  ]);
+
+  const smartleads =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            campaigns.map(
+              (item) =>
+                item.smartlead
+            )
+          )
+        ).sort(),
+      [campaigns]
+    );
+
+  const statuses =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            campaigns.map(
+              (item) =>
+                item.status
+            )
+          )
+        ).sort(),
+      [campaigns]
+    );
+
+  const filteredCampaigns =
+    useMemo(() => {
+      const value =
+        search
+          .trim()
+          .toLowerCase();
+
+      return campaigns.filter(
+        (campaign) => {
+          const matchesSearch =
+            !value ||
+            campaign.name
+              .toLowerCase()
+              .includes(value) ||
+            campaign.client
+              .toLowerCase()
+              .includes(value);
+
+          const matchesClient =
+            clientFilter ===
+              "all" ||
+            campaign.client ===
+              clientFilter;
+
+          const matchesSmartlead =
+            smartleadFilter ===
+              "all" ||
+            campaign.smartlead ===
+              smartleadFilter;
+
+          const matchesStatus =
+            statusFilter ===
+              "all" ||
+            campaign.status ===
+              statusFilter;
+
+          return (
+            matchesSearch &&
+            matchesClient &&
+            matchesSmartlead &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      campaigns,
+      search,
+      clientFilter,
+      smartleadFilter,
+      statusFilter,
+    ]);
+
+  const activeCount =
+    campaigns.filter(
+      (campaign) =>
+        campaign.status ===
+        "ACTIVE"
+    ).length;
+
+  const pausedCount =
+    campaigns.filter(
+      (campaign) =>
+        campaign.status ===
+        "PAUSED"
+    ).length;
+
+  const stoppedCount =
+    campaigns.filter(
+      (campaign) =>
+        campaign.status ===
+        "STOPPED"
+    ).length;
+
+  const otherCount =
+    campaigns.length -
+    activeCount -
+    pausedCount -
+    stoppedCount;
 
   return (
     <div
       style={{
         width: "100%",
+        minWidth: 0,
         color: "#111827",
       }}
     >
       <div
         style={{
+          display: "flex",
+          alignItems:
+            "flex-start",
           marginBottom: 26,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          Campaigns
-        </h1>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 750,
+            }}
+          >
+            Campaigns
+          </h1>
 
-        <p
+          <p
+            style={{
+              marginTop: 7,
+              marginBottom: 0,
+              color: "#6B7280",
+              fontSize: 14,
+            }}
+          >
+            Monitor Smartlead
+            campaigns, clients and
+            campaign status.
+          </p>
+        </div>
+
+        <div
           style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
+            marginLeft: "auto",
+            background:
+              hasRealData
+                ? "#ECFDF5"
+                : "#EFF6FF",
+            color:
+              hasRealData
+                ? "#047857"
+                : "#2563EB",
+            borderRadius: 8,
+            padding:
+              "7px 10px",
+            fontSize: 11,
+            fontWeight: 700,
           }}
         >
-          Monitor campaign status,
-          client activity and sending accounts.
-        </p>
+          {hasRealData
+            ? "Live Data"
+            : "Demo Mode"}
+        </div>
       </div>
 
       <div
@@ -145,37 +324,48 @@ export default function CampaignsPageClient() {
       >
         <SummaryCard
           title="Total Campaigns"
-          value={campaigns.length.toString()}
+          value={
+            campaigns.length
+          }
         />
 
         <SummaryCard
           title="Active"
-          value={activeCount.toString()}
+          value={
+            activeCount
+          }
           success
         />
 
         <SummaryCard
           title="Paused"
-          value={pausedCount.toString()}
+          value={
+            pausedCount
+          }
           warning
         />
 
         <SummaryCard
           title="Stopped"
-          value={stoppedCount.toString()}
+          value={
+            stoppedCount
+          }
           danger
         />
 
         <SummaryCard
-          title="Draft"
-          value={draftCount.toString()}
+          title="Other"
+          value={
+            otherCount
+          }
         />
       </div>
 
       <div
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           padding: 18,
           marginBottom: 20,
@@ -192,16 +382,22 @@ export default function CampaignsPageClient() {
           <input
             value={search}
             onChange={(event) =>
-              setSearch(event.target.value)
+              setSearch(
+                event.target.value
+              )
             }
             placeholder="Search campaign or client"
             style={inputStyle}
           />
 
           <select
-            value={client}
+            value={
+              clientFilter
+            }
             onChange={(event) =>
-              setClient(event.target.value)
+              setClientFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -209,20 +405,26 @@ export default function CampaignsPageClient() {
               All Clients
             </option>
 
-            {clients.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
+            {clients.map(
+              (client) => (
+                <option
+                  key={client}
+                  value={client}
+                >
+                  {client}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={smartlead}
+            value={
+              smartleadFilter
+            }
             onChange={(event) =>
-              setSmartlead(event.target.value)
+              setSmartleadFilter(
+                event.target.value
+              )
             }
             style={inputStyle}
           >
@@ -230,22 +432,29 @@ export default function CampaignsPageClient() {
               All Smartlead
             </option>
 
-            {smartleads.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            ))}
+            {smartleads.map(
+              (smartlead) => (
+                <option
+                  key={
+                    smartlead
+                  }
+                  value={
+                    smartlead
+                  }
+                >
+                  {smartlead}
+                </option>
+              )
+            )}
           </select>
 
           <select
-            value={status}
+            value={
+              statusFilter
+            }
             onChange={(event) =>
-              setStatus(
-                event.target.value as
-                  StatusFilter
+              setStatusFilter(
+                event.target.value
               )
             }
             style={inputStyle}
@@ -254,21 +463,16 @@ export default function CampaignsPageClient() {
               All Status
             </option>
 
-            <option value="ACTIVE">
-              Active
-            </option>
-
-            <option value="PAUSED">
-              Paused
-            </option>
-
-            <option value="STOPPED">
-              Stopped
-            </option>
-
-            <option value="DRAFT">
-              Draft
-            </option>
+            {statuses.map(
+              (status) => (
+                <option
+                  key={status}
+                  value={status}
+                >
+                  {status}
+                </option>
+              )
+            )}
           </select>
         </div>
       </div>
@@ -276,7 +480,8 @@ export default function CampaignsPageClient() {
       <div
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           overflow: "hidden",
         }}
@@ -304,71 +509,62 @@ export default function CampaignsPageClient() {
               marginTop: 4,
             }}
           >
-            {filteredCampaigns.length} campaigns shown
+            {
+              filteredCampaigns.length
+            }{" "}
+            campaigns shown
           </div>
         </div>
 
         <table
           style={{
             width: "100%",
-            borderCollapse: "collapse",
-            tableLayout: "fixed",
+            borderCollapse:
+              "collapse",
+            tableLayout:
+              "fixed",
           }}
         >
           <thead>
             <tr
               style={{
-                background: "#F8FAFC",
+                background:
+                  "#F8FAFC",
               }}
             >
               <TableHeader
                 text="Campaign"
-                width="18%"
+                width="24%"
               />
 
               <TableHeader
                 text="Client"
-                width="10%"
+                width="14%"
               />
 
               <TableHeader
                 text="Smartlead"
-                width="10%"
+                width="15%"
               />
 
               <TableHeader
                 text="Status"
-                width="8%"
+                width="10%"
               />
 
               <TableHeader
                 text="Accounts"
-                width="7%"
+                width="10%"
               />
 
               <TableHeader
                 text="Active Since"
-                width="11%"
+                width="14%"
               />
 
               <TableHeader
-                text="Sent Today"
-                width="9%"
-              />
-
-              <TableHeader
-                text="Replies"
-                width="7%"
-              />
-
-              <TableHeader
-                text="Bounces"
-                width="7%"
-              />
-
-              <TableHeader
-                text="Issues"
-                width="6%"
+                text="Last Synced"
+                width="13%"
               />
             </tr>
           </thead>
@@ -377,7 +573,9 @@ export default function CampaignsPageClient() {
             {filteredCampaigns.map(
               (campaign) => (
                 <tr
-                  key={campaign.id}
+                  key={
+                    campaign.id
+                  }
                   style={{
                     borderTop:
                       "1px solid #F1F5F9",
@@ -386,57 +584,61 @@ export default function CampaignsPageClient() {
                   <TableCell>
                     <span
                       style={{
-                        fontWeight: 700,
-                        color: "#111827",
+                        color:
+                          "#111827",
+                        fontWeight:
+                          700,
                       }}
                     >
-                      {campaign.name}
+                      {
+                        campaign.name
+                      }
                     </span>
                   </TableCell>
 
                   <TableCell>
-                    {campaign.client}
+                    {
+                      campaign.client
+                    }
                   </TableCell>
 
                   <TableCell>
-                    {campaign.smartlead}
+                    {
+                      campaign.smartlead
+                    }
                   </TableCell>
 
                   <TableCell>
                     <StatusBadge
-                      status={
+                      value={
                         campaign.status
                       }
                     />
                   </TableCell>
 
                   <TableCell>
-                    {campaign.accounts}
+                    {campaign.accounts !==
+                    null
+                      ? campaign.accounts
+                      : "—"}
                   </TableCell>
 
                   <TableCell>
-                    {campaign.activeSince ||
-                      "Not active"}
+                    {campaign.activeSince
+                      ? formatDate(
+                          campaign.activeSince
+                        )
+                      : "—"}
                   </TableCell>
 
                   <TableCell>
-                    {campaign.sentToday.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell>
-                    {campaign.replies.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell>
-                    {campaign.bounces.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell>
-                    <IssueBadge
-                      value={
-                        campaign.issues
-                      }
-                    />
+                    {campaign.lastSynced
+                      ? formatDateTime(
+                          campaign.lastSynced
+                        )
+                      : campaign.live
+                        ? "—"
+                        : "Demo"}
                   </TableCell>
                 </tr>
               )
@@ -444,12 +646,15 @@ export default function CampaignsPageClient() {
           </tbody>
         </table>
 
-        {filteredCampaigns.length === 0 && (
+        {filteredCampaigns.length ===
+          0 && (
           <div
             style={{
-              padding: 32,
-              textAlign: "center",
-              color: "#64748B",
+              padding: 34,
+              textAlign:
+                "center",
+              color:
+                "#64748B",
               fontSize: 13,
             }}
           >
@@ -461,19 +666,257 @@ export default function CampaignsPageClient() {
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  height: 42,
-  border: "1px solid #D1D5DB",
-  borderRadius: 9,
-  padding: "0 11px",
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-};
+function convertRealCampaign(
+  campaign: RealCampaign
+): DisplayCampaign {
+  const raw =
+    campaign.raw_data || {};
+
+  const integration =
+    Array.isArray(
+      campaign.integrations
+    )
+      ? campaign
+          .integrations[0]
+      : campaign.integrations;
+
+  return {
+    id:
+      campaign.id,
+
+    name:
+      campaign.name ||
+      `Campaign ${campaign.external_id}`,
+
+    client:
+      getText(
+        raw.client_name
+      ) ||
+      getText(
+        raw.client
+      ) ||
+      "Unassigned",
+
+    smartlead:
+      integration?.name ||
+      "Smartlead",
+
+    status:
+      normalizeStatus(
+        campaign.status
+      ),
+
+    accounts:
+      getCampaignAccountCount(
+        raw
+      ),
+
+    activeSince:
+      campaign.first_seen_active_at,
+
+    lastSynced:
+      campaign.synced_at,
+
+    live: true,
+  };
+}
+
+function getCampaignAccountCount(
+  raw: RawData
+) {
+  const possibleArrays = [
+    raw.email_account_ids,
+    raw.email_accounts,
+    raw.sender_account_ids,
+    raw.senders,
+  ];
+
+  for (
+    const value of
+    possibleArrays
+  ) {
+    if (
+      Array.isArray(value)
+    ) {
+      return value.length;
+    }
+  }
+
+  const directValues = [
+    raw.account_count,
+    raw.accounts_count,
+    raw.sender_count,
+  ];
+
+  for (
+    const value of
+    directValues
+  ) {
+    const number =
+      getNumber(value);
+
+    if (
+      number !== null
+    ) {
+      return number;
+    }
+  }
+
+  return null;
+}
+
+function normalizeStatus(
+  value: string | null
+) {
+  if (!value) {
+    return "UNKNOWN";
+  }
+
+  return value
+    .trim()
+    .toUpperCase();
+}
+
+function getText(
+  value: unknown
+) {
+  if (
+    typeof value !==
+    "string"
+  ) {
+    return null;
+  }
+
+  const result =
+    value.trim();
+
+  return result || null;
+}
+
+function getNumber(
+  value: unknown
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : null;
+}
+
+function formatDate(
+  value: string
+) {
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
+}
+
+function formatDateTime(
+  value: string
+) {
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleString();
+}
+
+function StatusBadge({
+  value,
+}: {
+  value: string;
+}) {
+  let background =
+    "#F1F5F9";
+
+  let color =
+    "#475569";
+
+  if (
+    value === "ACTIVE"
+  ) {
+    background =
+      "#ECFDF5";
+
+    color =
+      "#047857";
+  }
+
+  if (
+    value === "PAUSED"
+  ) {
+    background =
+      "#FEF3C7";
+
+    color =
+      "#B45309";
+  }
+
+  if (
+    value === "STOPPED"
+  ) {
+    background =
+      "#FEF2F2";
+
+    color =
+      "#B91C1C";
+  }
+
+  if (
+    value === "DRAFT"
+  ) {
+    background =
+      "#EFF6FF";
+
+    color =
+      "#2563EB";
+  }
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+        background,
+        color,
+        padding:
+          "5px 8px",
+        borderRadius: 7,
+        fontSize: 9,
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
 
 function SummaryCard({
   title,
@@ -483,37 +926,44 @@ function SummaryCard({
   danger,
 }: {
   title: string;
-  value: string;
+  value: number;
   success?: boolean;
   warning?: boolean;
   danger?: boolean;
 }) {
-  let color = "#111827";
+  let color =
+    "#111827";
 
   if (success) {
-    color = "#047857";
+    color =
+      "#047857";
   }
 
   if (warning) {
-    color = "#B45309";
+    color =
+      "#B45309";
   }
 
   if (danger) {
-    color = "#B91C1C";
+    color =
+      "#B91C1C";
   }
 
   return (
     <div
       style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
+        background:
+          "#FFFFFF",
+        border:
+          "1px solid #E5E7EB",
         borderRadius: 13,
         padding: 18,
       }}
     >
       <div
         style={{
-          color: "#64748B",
+          color:
+            "#64748B",
           fontSize: 12,
         }}
       >
@@ -545,12 +995,15 @@ function TableHeader({
     <th
       style={{
         width,
-        padding: "11px 9px",
+        padding:
+          "11px 10px",
         textAlign: "left",
-        color: "#64748B",
+        color:
+          "#64748B",
         fontSize: 10,
         fontWeight: 650,
-        whiteSpace: "nowrap",
+        whiteSpace:
+          "nowrap",
       }}
     >
       {text}
@@ -561,18 +1014,24 @@ function TableHeader({
 function TableCell({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <td
       style={{
-        padding: "12px 9px",
-        color: "#475569",
+        padding:
+          "13px 10px",
+        color:
+          "#475569",
         fontSize: 11,
-        verticalAlign: "middle",
+        verticalAlign:
+          "middle",
         overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
+        textOverflow:
+          "ellipsis",
+        whiteSpace:
+          "nowrap",
       }}
     >
       {children}
@@ -580,72 +1039,21 @@ function TableCell({
   );
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: CampaignStatus;
-}) {
-  let background = "#F1F5F9";
-  let color = "#475569";
-
-  if (status === "ACTIVE") {
-    background = "#ECFDF5";
-    color = "#047857";
-  }
-
-  if (status === "PAUSED") {
-    background = "#FEF3C7";
-    color = "#B45309";
-  }
-
-  if (status === "STOPPED") {
-    background = "#FEF2F2";
-    color = "#B91C1C";
-  }
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background,
-        color,
-        padding: "5px 7px",
-        borderRadius: 7,
-        fontSize: 9,
-        fontWeight: 700,
-      }}
-    >
-      {status}
-    </span>
-  );
-}
-
-function IssueBadge({
-  value,
-}: {
-  value: number;
-}) {
-  const hasIssues = value > 0;
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background:
-          hasIssues
-            ? "#FEF3C7"
-            : "#ECFDF5",
-        color:
-          hasIssues
-            ? "#B45309"
-            : "#047857",
-        padding: "5px 7px",
-        borderRadius: 7,
-        fontSize: 10,
-        fontWeight: 700,
-      }}
-    >
-      {value}
-    </span>
-  );
-}
+const inputStyle = {
+  width: "100%",
+  minWidth: 0,
+  height: 42,
+  border:
+    "1px solid #D1D5DB",
+  borderRadius: 9,
+  padding:
+    "0 11px",
+  background:
+    "#FFFFFF",
+  color:
+    "#111827",
+  fontSize: 13,
+  outline: "none",
+  boxSizing:
+    "border-box" as const,
+};

@@ -228,43 +228,38 @@ export default function ConnectionsPageClient({
     );
   }
 
-  async function handleSync(
-    integration: Integration
+ async function handleSync(
+  integration: Integration
+) {
+  if (
+    syncingId ===
+    integration.id
   ) {
-    setSyncingId(
-      integration.id
-    );
+    return;
+  }
 
-    await new Promise(
-      (resolve) =>
-        setTimeout(
-          resolve,
-          800
-        )
-    );
+  setSyncingId(
+    integration.id
+  );
 
-    const now =
-      new Date().toISOString();
-
-    const {
-      error: updateError,
-    } = await supabase
-      .from("integrations")
-      .update({
-        last_synced_at:
-          now,
-      })
-      .eq(
-        "id",
-        integration.id
+  try {
+    const response =
+      await fetch(
+        `/api/integrations/${integration.id}/sync`,
+        {
+          method: "POST",
+        }
       );
 
-    if (updateError) {
+    const result =
+      await response.json();
+
+    if (!response.ok) {
       alert(
-        updateError.message
+        result.error ||
+          "Sync failed."
       );
 
-      setSyncingId(null);
       return;
     }
 
@@ -276,15 +271,32 @@ export default function ConnectionsPageClient({
             integration.id
               ? {
                   ...item,
+
+                  status:
+                    "connected",
+
                   last_synced_at:
-                    now,
+                    result.lastSyncedAt,
                 }
               : item
         )
     );
 
+    alert(
+      `Sync completed
+
+Accounts fetched: ${result.summary.accountsFetched}
+Campaigns: ${result.summary.campaigns}
+Active campaigns: ${result.summary.activeCampaigns}`
+    );
+  } catch {
+    alert(
+      "Unable to sync Smartlead."
+    );
+  } finally {
     setSyncingId(null);
   }
+}
 
   return (
     <div
