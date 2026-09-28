@@ -54,11 +54,25 @@ type SyncLog = {
   created_at: string;
 };
 
+type Issue = {
+  id: string;
+  source: string;
+  client: string | null;
+  issue_type: string;
+  item: string;
+  severity: string;
+  status: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  resolved_at: string | null;
+};
+
 type DashboardLiveData = {
   integrations: Integration[];
   emailAccounts: EmailAccount[];
   campaigns: Campaign[];
   syncLogs: SyncLog[];
+  issues: Issue[];
 };
 
 type ConnectionDisplay = {
@@ -102,6 +116,7 @@ const demoDashboard = {
   smartleadConnections: [
     {
       id: "demo-smartlead-main",
+
       name: "Smartlead Main",
 
       clients: [
@@ -128,11 +143,10 @@ const demoDashboard = {
 
     {
       id: "demo-smartlead-two",
+
       name: "Smartlead 2",
 
-      clients: [
-        "Reverba",
-      ],
+      clients: ["Reverba"],
 
       accounts: 550,
 
@@ -152,19 +166,25 @@ const demoDashboard = {
 
   recentIssues: [
     {
-      title: "Daily limit needs attention",
+      title:
+        "Daily limit needs attention",
+
       description:
         "Some sending accounts are using a daily limit different from the required account type setting.",
     },
 
     {
-      title: "Warmup settings issue",
+      title:
+        "Warmup settings issue",
+
       description:
         "Some accounts have incorrect warmup settings and need review.",
     },
 
     {
-      title: "EmailGuard domain issue",
+      title:
+        "EmailGuard domain issue",
+
       description:
         "A domain health check requires attention.",
     },
@@ -179,7 +199,8 @@ export default function DashboardShell({
   const smartleadConnections =
     liveData.integrations.filter(
       (integration) =>
-        integration.provider === "smartlead"
+        integration.provider ===
+        "smartlead"
     );
 
   const hasLiveSmartlead =
@@ -202,12 +223,14 @@ export default function DashboardShell({
   const totalAccounts =
     hasLiveSmartlead
       ? liveData.emailAccounts.length
-      : demoDashboard.summary.emailAccounts;
+      : demoDashboard.summary
+          .emailAccounts;
 
   const healthy =
     hasLiveSmartlead
       ? healthyAccounts
-      : demoDashboard.summary.healthyAccounts;
+      : demoDashboard.summary
+          .healthyAccounts;
 
   const needAttention =
     hasLiveSmartlead
@@ -216,21 +239,51 @@ export default function DashboardShell({
             healthyAccounts,
           0
         )
-      : demoDashboard.summary.needAttention;
+      : demoDashboard.summary
+          .needAttention;
 
   const activeCampaignCount =
     hasLiveSmartlead
       ? activeCampaigns.length
-      : demoDashboard.summary.activeCampaigns;
+      : demoDashboard.summary
+          .activeCampaigns;
 
   const smartleadSyncLogs =
     liveData.syncLogs.filter(
       (log) =>
-        log.provider === "smartlead"
+        log.provider ===
+        "smartlead"
     );
 
   const latestSync =
     smartleadSyncLogs[0] || null;
+
+  const openIssues =
+    liveData.issues.filter(
+      (issue) =>
+        issue.status === "Open"
+    );
+
+  const resolvedIssues =
+    liveData.issues.filter(
+      (issue) =>
+        issue.status ===
+        "Resolved"
+    );
+
+  const recentOpenIssues =
+    openIssues
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(
+            b.last_seen_at
+          ).getTime() -
+          new Date(
+            a.last_seen_at
+          ).getTime()
+      )
+      .slice(0, 5);
 
   const displayConnections:
     ConnectionDisplay[] =
@@ -243,20 +296,23 @@ export default function DashboardShell({
               liveData.campaigns
             )
         )
-      : demoDashboard.smartleadConnections;
+      : demoDashboard
+          .smartleadConnections;
 
   const todayCheckedAccounts =
     hasLiveSmartlead
       ? latestSync?.accounts_fetched ??
         totalAccounts
-      : demoDashboard.todaysUpdate
+      : demoDashboard
+          .todaysUpdate
           .checkedAccounts;
 
   const todayActiveCampaigns =
     hasLiveSmartlead
       ? latestSync?.active_campaigns ??
         activeCampaignCount
-      : demoDashboard.todaysUpdate
+      : demoDashboard
+          .todaysUpdate
           .activeCampaigns;
 
   const checkedAt =
@@ -265,8 +321,23 @@ export default function DashboardShell({
       ? formatTime(
           latestSync.created_at
         )
-      : demoDashboard.todaysUpdate
+      : demoDashboard
+          .todaysUpdate
           .checkedAt;
+
+  const displayedNewIssues =
+    hasLiveSmartlead
+      ? openIssues.length
+      : demoDashboard
+          .todaysUpdate
+          .newIssues;
+
+  const displayedResolved =
+    hasLiveSmartlead
+      ? resolvedIssues.length
+      : demoDashboard
+          .todaysUpdate
+          .resolved;
 
   return (
     <div
@@ -279,7 +350,8 @@ export default function DashboardShell({
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems:
+            "flex-start",
           marginBottom: 25,
         }}
       >
@@ -302,24 +374,32 @@ export default function DashboardShell({
               fontSize: 14,
             }}
           >
-            Here is your email infrastructure overview.
+            Here is your email
+            infrastructure overview.
           </p>
         </div>
 
         <div
           style={{
             marginLeft: "auto",
+
             background:
               hasLiveSmartlead
                 ? "#ECFDF5"
                 : "#EFF6FF",
+
             color:
               hasLiveSmartlead
                 ? "#047857"
                 : "#2563EB",
+
             borderRadius: 8,
-            padding: "7px 10px",
+
+            padding:
+              "7px 10px",
+
             fontSize: 11,
+
             fontWeight: 700,
           }}
         >
@@ -332,9 +412,12 @@ export default function DashboardShell({
       <div
         style={{
           display: "grid",
+
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
+
           gap: 14,
+
           marginBottom: 20,
         }}
       >
@@ -342,7 +425,9 @@ export default function DashboardShell({
           title="Email Accounts"
           value={totalAccounts}
           icon={
-            <Mail size={18} />
+            <Mail
+              size={18}
+            />
           }
         />
 
@@ -370,7 +455,9 @@ export default function DashboardShell({
 
         <StatCard
           title="Active Campaigns"
-          value={activeCampaignCount}
+          value={
+            activeCampaignCount
+          }
           icon={
             <Megaphone
               size={18}
@@ -381,7 +468,8 @@ export default function DashboardShell({
         <StatCard
           title="Domains"
           value={
-            demoDashboard.summary
+            demoDashboard
+              .summary
               .domains
           }
           icon={
@@ -395,14 +483,19 @@ export default function DashboardShell({
       <div
         style={{
           display: "grid",
+
           gridTemplateColumns:
             "1.35fr 0.65fr",
+
           gap: 18,
+
           marginBottom: 20,
         }}
       >
         <div
-          style={sectionStyle}
+          style={
+            sectionStyle
+          }
         >
           <SectionHeader
             title="Smartlead Connections"
@@ -416,7 +509,10 @@ export default function DashboardShell({
           <div
             style={{
               padding: 18,
-              display: "grid",
+
+              display:
+                "grid",
+
               gap: 14,
             }}
           >
@@ -427,7 +523,9 @@ export default function DashboardShell({
               />
             ) : (
               displayConnections.map(
-                (connection) => (
+                (
+                  connection
+                ) => (
                   <SmartleadConnectionCard
                     key={
                       connection.id
@@ -443,7 +541,9 @@ export default function DashboardShell({
         </div>
 
         <div
-          style={sectionStyle}
+          style={
+            sectionStyle
+          }
         >
           <SectionHeader
             title="Today's Update"
@@ -479,11 +579,9 @@ export default function DashboardShell({
             />
 
             <UpdateRow
-              label="New issues"
+              label="Open issues"
               value={
-                demoDashboard
-                  .todaysUpdate
-                  .newIssues
+                displayedNewIssues
               }
               warning
             />
@@ -491,9 +589,7 @@ export default function DashboardShell({
             <UpdateRow
               label="Resolved"
               value={
-                demoDashboard
-                  .todaysUpdate
-                  .resolved
+                displayedResolved
               }
               success
               last
@@ -505,13 +601,17 @@ export default function DashboardShell({
       <div
         style={{
           display: "grid",
+
           gridTemplateColumns:
             "1fr 1fr",
+
           gap: 18,
         }}
       >
         <div
-          style={sectionStyle}
+          style={
+            sectionStyle
+          }
         >
           <SectionHeader
             title="Account Health"
@@ -535,7 +635,9 @@ export default function DashboardShell({
 
             <HealthRow
               label="Needs Review"
-              value={needAttention}
+              value={
+                needAttention
+              }
               warning
             />
 
@@ -577,13 +679,15 @@ export default function DashboardShell({
         </div>
 
         <div
-          style={sectionStyle}
+          style={
+            sectionStyle
+          }
         >
           <SectionHeader
             title="Recent Issues"
             subtitle={
               hasLiveSmartlead
-                ? "Issue engine will be connected next"
+                ? "Latest open issues detected by Outreach Ops"
                 : "Demo issue overview"
             }
           />
@@ -593,95 +697,376 @@ export default function DashboardShell({
               padding: 18,
             }}
           >
-            {demoDashboard.recentIssues.map(
-              (
-                issue,
-                index
-              ) => {
-                const last =
-                  index ===
-                  demoDashboard
-                    .recentIssues
-                    .length -
-                    1;
+            {hasLiveSmartlead ? (
+              recentOpenIssues.length >
+              0 ? (
+                recentOpenIssues.map(
+                  (
+                    issue,
+                    index
+                  ) => {
+                    const last =
+                      index ===
+                      recentOpenIssues.length -
+                        1;
 
-                return (
+                    const critical =
+                      issue.severity ===
+                      "Critical";
+
+                    return (
+                      <div
+                        key={
+                          issue.id
+                        }
+                        style={{
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "flex-start",
+
+                          gap: 10,
+
+                          paddingBottom:
+                            last
+                              ? 0
+                              : 14,
+
+                          marginBottom:
+                            last
+                              ? 0
+                              : 14,
+
+                          borderBottom:
+                            last
+                              ? "none"
+                              : "1px solid #F1F5F9",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 31,
+
+                            height: 31,
+
+                            flexShrink: 0,
+
+                            borderRadius: 8,
+
+                            background:
+                              critical
+                                ? "#FEF2F2"
+                                : "#FEF3C7",
+
+                            color:
+                              critical
+                                ? "#B91C1C"
+                                : "#B45309",
+
+                            display:
+                              "flex",
+
+                            alignItems:
+                              "center",
+
+                            justifyContent:
+                              "center",
+                          }}
+                        >
+                          <CircleAlert
+                            size={
+                              15
+                            }
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            minWidth: 0,
+
+                            flex: 1,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 12,
+
+                              color:
+                                "#111827",
+
+                              fontWeight: 700,
+                            }}
+                          >
+                            {
+                              issue.issue_type
+                            }
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 4,
+
+                              color:
+                                "#475569",
+
+                              fontSize: 11,
+
+                              fontWeight: 600,
+
+                              overflowWrap:
+                                "anywhere",
+                            }}
+                          >
+                            {
+                              issue.item
+                            }
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 5,
+
+                              display:
+                                "flex",
+
+                              alignItems:
+                                "center",
+
+                              flexWrap:
+                                "wrap",
+
+                              gap: 6,
+                            }}
+                          >
+                            <span
+                              style={{
+                                color:
+                                  "#64748B",
+
+                                fontSize: 10,
+                              }}
+                            >
+                              {issue.client ||
+                                "Unassigned"}
+                            </span>
+
+                            <span
+                              style={{
+                                color:
+                                  "#CBD5E1",
+
+                                fontSize: 10,
+                              }}
+                            >
+                              ·
+                            </span>
+
+                            <span
+                              style={{
+                                color:
+                                  critical
+                                    ? "#B91C1C"
+                                    : "#B45309",
+
+                                fontSize: 10,
+
+                                fontWeight: 700,
+                              }}
+                            >
+                              {
+                                issue.severity
+                              }
+                            </span>
+
+                            <span
+                              style={{
+                                color:
+                                  "#CBD5E1",
+
+                                fontSize: 10,
+                              }}
+                            >
+                              ·
+                            </span>
+
+                            <span
+                              style={{
+                                color:
+                                  "#94A3B8",
+
+                                fontSize: 10,
+                              }}
+                            >
+                              {formatDateTime(
+                                issue.last_seen_at
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                )
+              ) : (
+                <div
+                  style={{
+                    padding:
+                      "20px 10px",
+
+                    textAlign:
+                      "center",
+                  }}
+                >
+                  <CheckCircle2
+                    size={28}
+                    color="#10B981"
+                  />
+
                   <div
-                    key={`${issue.title}-${index}`}
                     style={{
-                      display: "flex",
-                      alignItems:
-                        "flex-start",
-                      gap: 10,
-                      paddingBottom:
-                        last
-                          ? 0
-                          : 14,
-                      marginBottom:
-                        last
-                          ? 0
-                          : 14,
-                      borderBottom:
-                        last
-                          ? "none"
-                          : "1px solid #F1F5F9",
+                      marginTop: 10,
+
+                      color:
+                        "#047857",
+
+                      fontSize: 12,
+
+                      fontWeight: 700,
                     }}
                   >
-                    <div
-                      style={{
-                        width: 31,
-                        height: 31,
-                        flexShrink: 0,
-                        borderRadius: 8,
-                        background:
-                          "#FEF3C7",
-                        color:
-                          "#B45309",
-                        display: "flex",
-                        alignItems:
-                          "center",
-                        justifyContent:
-                          "center",
-                      }}
-                    >
-                      <CircleAlert
-                        size={15}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        minWidth: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color:
-                            "#111827",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {issue.title}
-                      </div>
-
-                      <div
-                        style={{
-                          color:
-                            "#64748B",
-                          fontSize: 11,
-                          marginTop: 4,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {
-                          issue.description
-                        }
-                      </div>
-                    </div>
+                    No open issues
                   </div>
-                );
-              }
+
+                  <div
+                    style={{
+                      marginTop: 4,
+
+                      color:
+                        "#94A3B8",
+
+                      fontSize: 11,
+                    }}
+                  >
+                    Synced accounts
+                    currently look
+                    healthy.
+                  </div>
+                </div>
+              )
+            ) : (
+              demoDashboard.recentIssues.map(
+                (
+                  issue,
+                  index
+                ) => {
+                  const last =
+                    index ===
+                    demoDashboard
+                      .recentIssues
+                      .length -
+                      1;
+
+                  return (
+                    <div
+                      key={`${issue.title}-${index}`}
+                      style={{
+                        display:
+                          "flex",
+
+                        alignItems:
+                          "flex-start",
+
+                        gap: 10,
+
+                        paddingBottom:
+                          last
+                            ? 0
+                            : 14,
+
+                        marginBottom:
+                          last
+                            ? 0
+                            : 14,
+
+                        borderBottom:
+                          last
+                            ? "none"
+                            : "1px solid #F1F5F9",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 31,
+
+                          height: 31,
+
+                          flexShrink: 0,
+
+                          borderRadius: 8,
+
+                          background:
+                            "#FEF3C7",
+
+                          color:
+                            "#B45309",
+
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "center",
+
+                          justifyContent:
+                            "center",
+                        }}
+                      >
+                        <CircleAlert
+                          size={15}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+
+                            color:
+                              "#111827",
+
+                            fontWeight: 700,
+                          }}
+                        >
+                          {
+                            issue.title
+                          }
+                        </div>
+
+                        <div
+                          style={{
+                            color:
+                              "#64748B",
+
+                            fontSize: 11,
+
+                            marginTop: 4,
+
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {
+                            issue.description
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              )
             )}
           </div>
         </div>
@@ -704,28 +1089,45 @@ function SmartleadConnectionCard({
       style={{
         border:
           "1px solid #E5E7EB",
+
         borderRadius: 12,
-        overflow: "hidden",
+
+        overflow:
+          "hidden",
       }}
     >
       <div
         style={{
           padding: 15,
+
           display: "flex",
-          alignItems: "center",
-          background: "#FFFFFF",
+
+          alignItems:
+            "center",
+
+          background:
+            "#FFFFFF",
         }}
       >
         <div
           style={{
             width: 42,
+
             height: 42,
+
             borderRadius: 10,
-            background: "#F1F5F9",
+
+            background:
+              "#F1F5F9",
+
             display: "flex",
-            alignItems: "center",
+
+            alignItems:
+              "center",
+
             justifyContent:
               "center",
+
             marginRight: 12,
           }}
         >
@@ -743,24 +1145,38 @@ function SmartleadConnectionCard({
           <div
             style={{
               fontSize: 14,
+
               fontWeight: 750,
-              color: "#111827",
+
+              color:
+                "#111827",
             }}
           >
-            {connection.name}
+            {
+              connection.name
+            }
           </div>
 
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+
+              alignItems:
+                "center",
+
               gap: 5,
+
               marginTop: 5,
-              color: "#64748B",
+
+              color:
+                "#64748B",
+
               fontSize: 11,
             }}
           >
-            <Users size={12} />
+            <Users
+              size={12}
+            />
 
             <span>
               {formatClients(
@@ -772,25 +1188,39 @@ function SmartleadConnectionCard({
 
         <div
           style={{
-            marginLeft: "auto",
+            marginLeft:
+              "auto",
+
             display: "flex",
-            alignItems: "center",
+
+            alignItems:
+              "center",
+
             gap: 6,
+
             background:
               connected
                 ? "#ECFDF5"
                 : "#FEF3C7",
+
             color:
               connected
                 ? "#047857"
                 : "#B45309",
+
             borderRadius: 7,
-            padding: "6px 8px",
+
+            padding:
+              "6px 8px",
+
             fontSize: 10,
+
             fontWeight: 700,
           }}
         >
-          <Wifi size={12} />
+          <Wifi
+            size={12}
+          />
 
           {connected
             ? "Connected"
@@ -802,8 +1232,12 @@ function SmartleadConnectionCard({
         style={{
           borderTop:
             "1px solid #F1F5F9",
-          background: "#F8FAFC",
+
+          background:
+            "#F8FAFC",
+
           display: "grid",
+
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
         }}
@@ -850,10 +1284,13 @@ function SmartleadConnectionCard({
           style={{
             padding:
               "8px 15px",
+
             borderTop:
               "1px solid #F1F5F9",
+
             color:
               "#94A3B8",
+
             fontSize: 10,
           }}
         >
@@ -881,6 +1318,7 @@ function ConnectionMetric({
       style={{
         padding:
           "12px 10px",
+
         borderRight:
           "1px solid #E5E7EB",
       }}
@@ -888,9 +1326,14 @@ function ConnectionMetric({
       <div
         style={{
           fontSize: 9,
-          color: "#64748B",
+
+          color:
+            "#64748B",
+
           marginBottom: 5,
-          whiteSpace: "nowrap",
+
+          whiteSpace:
+            "nowrap",
         }}
       >
         {label}
@@ -899,10 +1342,13 @@ function ConnectionMetric({
       <div
         style={{
           fontSize: 15,
+
           fontWeight: 750,
-          color: success
-            ? "#047857"
-            : "#111827",
+
+          color:
+            success
+              ? "#047857"
+              : "#111827",
         }}
       >
         {safeNumber(
@@ -968,7 +1414,8 @@ function buildLiveConnection(
     );
 
   return {
-    id: connection.id,
+    id:
+      connection.id,
 
     name:
       connection.name,
@@ -1071,7 +1518,9 @@ function formatClients(
   if (
     clients.length <= 3
   ) {
-    return clients.join(", ");
+    return clients.join(
+      ", "
+    );
   }
 
   const first =
@@ -1203,11 +1652,15 @@ function getBoolean(
     return value;
   }
 
-  if (value === 1) {
+  if (
+    value === 1
+  ) {
     return true;
   }
 
-  if (value === 0) {
+  if (
+    value === 0
+  ) {
     return false;
   }
 
@@ -1221,14 +1674,16 @@ function getBoolean(
         .toLowerCase();
 
     if (
-      text === "true" ||
+      text ===
+        "true" ||
       text === "1"
     ) {
       return true;
     }
 
     if (
-      text === "false" ||
+      text ===
+        "false" ||
       text === "0"
     ) {
       return false;
@@ -1244,9 +1699,13 @@ function safeNumber(
     | null
     | undefined
 ) {
-  return typeof value ===
-    "number" &&
-    Number.isFinite(value)
+  return (
+    typeof value ===
+      "number" &&
+    Number.isFinite(
+      value
+    )
+  )
     ? value
     : 0;
 }
@@ -1259,12 +1718,16 @@ function StatCard({
   warning,
 }: {
   title: string;
+
   value:
     | number
     | null
     | undefined;
+
   icon: ReactNode;
+
   success?: boolean;
+
   warning?: boolean;
 }) {
   let color =
@@ -1294,28 +1757,40 @@ function StatCard({
       style={{
         background:
           "#FFFFFF",
+
         border:
           "1px solid #E5E7EB",
+
         borderRadius: 13,
+
         padding: 18,
       }}
     >
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+
+          alignItems:
+            "center",
         }}
       >
         <div
           style={{
             width: 34,
+
             height: 34,
+
             borderRadius: 8,
+
             background,
+
             color,
+
             display: "flex",
+
             alignItems:
               "center",
+
             justifyContent:
               "center",
           }}
@@ -1327,7 +1802,9 @@ function StatCard({
           style={{
             color:
               "#64748B",
+
             fontSize: 11,
+
             marginLeft: 10,
           }}
         >
@@ -1338,8 +1815,11 @@ function StatCard({
       <div
         style={{
           marginTop: 14,
+
           fontSize: 25,
+
           fontWeight: 750,
+
           color,
         }}
       >
@@ -1362,6 +1842,7 @@ function SectionHeader({
     <div
       style={{
         padding: 18,
+
         borderBottom:
           "1px solid #E5E7EB",
       }}
@@ -1369,6 +1850,7 @@ function SectionHeader({
       <div
         style={{
           fontSize: 16,
+
           fontWeight: 700,
         }}
       >
@@ -1378,8 +1860,10 @@ function SectionHeader({
       <div
         style={{
           marginTop: 4,
+
           color:
             "#64748B",
+
           fontSize: 11,
         }}
       >
@@ -1397,11 +1881,15 @@ function UpdateRow({
   last,
 }: {
   label: string;
+
   value?:
     | number
     | null;
+
   success?: boolean;
+
   warning?: boolean;
+
   last?: boolean;
 }) {
   let color =
@@ -1424,8 +1912,12 @@ function UpdateRow({
     <div
       style={{
         minHeight: 39,
+
         display: "flex",
-        alignItems: "center",
+
+        alignItems:
+          "center",
+
         borderBottom:
           last
             ? "none"
@@ -1436,6 +1928,7 @@ function UpdateRow({
         style={{
           color:
             "#64748B",
+
           fontSize: 12,
         }}
       >
@@ -1446,8 +1939,11 @@ function UpdateRow({
         style={{
           marginLeft:
             "auto",
+
           color,
+
           fontSize: 12,
+
           fontWeight: 700,
         }}
       >
@@ -1466,12 +1962,17 @@ function HealthRow({
   last,
 }: {
   label: string;
+
   value?:
     | number
     | null;
+
   success?: boolean;
+
   warning?: boolean;
+
   danger?: boolean;
+
   last?: boolean;
 }) {
   let color =
@@ -1508,15 +2009,20 @@ function HealthRow({
     <div
       style={{
         display: "flex",
-        alignItems: "center",
+
+        alignItems:
+          "center",
+
         paddingBottom:
           last
             ? 0
             : 13,
+
         marginBottom:
           last
             ? 0
             : 13,
+
         borderBottom:
           last
             ? "none"
@@ -1526,14 +2032,21 @@ function HealthRow({
       <div
         style={{
           width: 30,
+
           height: 30,
+
           borderRadius: 8,
+
           background:
             iconBackground,
+
           color,
+
           display: "flex",
+
           alignItems:
             "center",
+
           justifyContent:
             "center",
         }}
@@ -1552,8 +2065,10 @@ function HealthRow({
       <div
         style={{
           marginLeft: 10,
+
           color:
             "#475569",
+
           fontSize: 12,
         }}
       >
@@ -1564,8 +2079,11 @@ function HealthRow({
         style={{
           marginLeft:
             "auto",
+
           fontSize: 12,
+
           fontWeight: 700,
+
           color,
         }}
       >
@@ -1586,10 +2104,13 @@ function EmptyState({
     <div
       style={{
         padding: 22,
+
         color:
           "#64748B",
+
         textAlign:
           "center",
+
         fontSize: 12,
       }}
     >
@@ -1617,6 +2138,7 @@ function formatTime(
     {
       hour:
         "2-digit",
+
       minute:
         "2-digit",
     }
@@ -1643,8 +2165,11 @@ function formatDateTime(
 const sectionStyle = {
   background:
     "#FFFFFF",
+
   border:
     "1px solid #E5E7EB",
+
   borderRadius: 14,
+
   overflow: "hidden",
 };

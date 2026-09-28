@@ -79,9 +79,9 @@ type DisplayAccount = {
 };
 
 export default function EmailAccountsPageClient({
-  realAccounts,
+  realAccounts = [],
 }: {
-  realAccounts: RealAccount[];
+  realAccounts?: RealAccount[];
 }) {
   const [search, setSearch] =
     useState("");

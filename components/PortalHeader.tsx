@@ -1,40 +1,140 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { CheckCircle2, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation";
+
+import {
+  CheckCircle2,
+  RefreshCw,
+  TriangleAlert,
+  CircleAlert,
+  FlaskConical,
+} from "lucide-react";
+
+type SystemStatus =
+  | "loading"
+  | "demo"
+  | "operational"
+  | "warning"
+  | "critical";
 
 export default function PortalHeader() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname =
+    usePathname();
 
-  const [refreshing, setRefreshing] =
-    useState(false);
+  const router =
+    useRouter();
 
-  const [lastRefresh, setLastRefresh] =
-    useState<string | null>(null);
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
 
-  const titles: Record<string, string> = {
-    "/dashboard": "Dashboard",
-    "/clients": "Clients",
-    "/emailaccounts": "Email Accounts",
-    "/campaigns": "Campaigns",
-    "/domains": "Domains",
-    "/issues": "Issues",
-    "/activity": "Activity",
-    "/notes": "Notes",
-    "/connections": "Connections",
+  const [
+    lastRefresh,
+    setLastRefresh,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    systemStatus,
+    setSystemStatus,
+  ] =
+    useState<SystemStatus>(
+      "loading"
+    );
+
+  const [
+    openIssues,
+    setOpenIssues,
+  ] = useState(0);
+
+  const titles: Record<
+    string,
+    string
+  > = {
+    "/dashboard":
+      "Dashboard",
+
+    "/clients":
+      "Clients",
+
+    "/emailaccounts":
+      "Email Accounts",
+
+    "/campaigns":
+      "Campaigns",
+
+    "/domains":
+      "Domains",
+
+    "/issues":
+      "Issues",
+
+    "/activity":
+      "Activity",
+
+    "/notes":
+      "Notes",
+
+    "/connections":
+      "Connections",
   };
 
   let title =
-    titles[pathname] || "Outreach Ops";
+    titles[pathname] ||
+    "Outreach Ops";
 
   if (
     pathname.startsWith(
       "/clients/"
     )
   ) {
-    title = "Client Details";
+    title =
+      "Client Details";
+  }
+
+  useEffect(() => {
+    loadSystemStatus();
+  }, []);
+
+  async function loadSystemStatus() {
+    try {
+      const response =
+        await fetch(
+          "/api/system-status",
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        return;
+      }
+
+      setSystemStatus(
+        result.status
+      );
+
+      setOpenIssues(
+        result.openIssues || 0
+      );
+    } catch {
+      //
+    }
   }
 
   async function handleRefresh() {
@@ -46,16 +146,18 @@ export default function PortalHeader() {
 
     router.refresh();
 
+    await loadSystemStatus();
+
     await new Promise(
       (resolve) =>
-        setTimeout(resolve, 700)
+        setTimeout(
+          resolve,
+          600
+        )
     );
 
-    const now =
-      new Date();
-
     setLastRefresh(
-      now.toLocaleTimeString(
+      new Date().toLocaleTimeString(
         [],
         {
           hour: "2-digit",
@@ -67,6 +169,12 @@ export default function PortalHeader() {
     setRefreshing(false);
   }
 
+  const statusUI =
+    getStatusUI(
+      systemStatus,
+      openIssues
+    );
+
   return (
     <header
       style={{
@@ -75,7 +183,8 @@ export default function PortalHeader() {
         left: 250,
         right: 0,
         height: 100,
-        background: "#FFFFFF",
+        background:
+          "#FFFFFF",
         borderBottom:
           "1px solid #E5E7EB",
         display: "flex",
@@ -121,7 +230,8 @@ export default function PortalHeader() {
             style={{
               color: "#94A3B8",
               fontSize: 11,
-              whiteSpace: "nowrap",
+              whiteSpace:
+                "nowrap",
             }}
           >
             Last refresh{" "}
@@ -137,19 +247,20 @@ export default function PortalHeader() {
             gap: 9,
             paddingLeft: 15,
             paddingRight: 15,
-            background: "#ECFDF5",
-            color: "#047857",
+            background:
+              statusUI.background,
+            color:
+              statusUI.color,
             borderRadius: 11,
             fontSize: 13,
             fontWeight: 700,
-            whiteSpace: "nowrap",
+            whiteSpace:
+              "nowrap",
           }}
         >
-          <CheckCircle2
-            size={17}
-          />
+          {statusUI.icon}
 
-          All systems operational
+          {statusUI.label}
         </div>
 
         <button
@@ -166,8 +277,10 @@ export default function PortalHeader() {
             border:
               "1px solid #D1D5DB",
             borderRadius: 11,
-            background: "#FFFFFF",
-            color: "#111827",
+            background:
+              "#FFFFFF",
+            color:
+              "#111827",
             display: "flex",
             alignItems: "center",
             justifyContent:
@@ -175,14 +288,16 @@ export default function PortalHeader() {
             gap: 9,
             paddingLeft: 15,
             paddingRight: 15,
-            cursor: refreshing
-              ? "not-allowed"
-              : "pointer",
+            cursor:
+              refreshing
+                ? "not-allowed"
+                : "pointer",
             fontSize: 13,
             fontWeight: 700,
-            opacity: refreshing
-              ? 0.7
-              : 1,
+            opacity:
+              refreshing
+                ? 0.7
+                : 1,
           }}
         >
           <RefreshCw
@@ -214,4 +329,109 @@ export default function PortalHeader() {
       `}</style>
     </header>
   );
+}
+
+function getStatusUI(
+  status: SystemStatus,
+  openIssues: number
+) {
+  if (
+    status === "critical"
+  ) {
+    return {
+      label: `${openIssues} critical attention`,
+
+      background:
+        "#FEF2F2",
+
+      color:
+        "#B91C1C",
+
+      icon: (
+        <CircleAlert
+          size={17}
+        />
+      ),
+    };
+  }
+
+  if (
+    status === "warning"
+  ) {
+    return {
+      label: `${openIssues} issues need attention`,
+
+      background:
+        "#FEF3C7",
+
+      color:
+        "#B45309",
+
+      icon: (
+        <TriangleAlert
+          size={17}
+        />
+      ),
+    };
+  }
+
+  if (
+    status === "demo"
+  ) {
+    return {
+      label:
+        "Demo mode",
+
+      background:
+        "#EFF6FF",
+
+      color:
+        "#2563EB",
+
+      icon: (
+        <FlaskConical
+          size={17}
+        />
+      ),
+    };
+  }
+
+  if (
+    status ===
+    "operational"
+  ) {
+    return {
+      label:
+        "All systems operational",
+
+      background:
+        "#ECFDF5",
+
+      color:
+        "#047857",
+
+      icon: (
+        <CheckCircle2
+          size={17}
+        />
+      ),
+    };
+  }
+
+  return {
+    label:
+      "Checking status",
+
+    background:
+      "#F8FAFC",
+
+    color:
+      "#64748B",
+
+    icon: (
+      <RefreshCw
+        size={17}
+      />
+    ),
+  };
 }
