@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
 import {
   LayoutDashboard,
+  Users,
   Mail,
   Megaphone,
   Globe,
@@ -13,6 +15,7 @@ import {
   Plug,
   LogOut,
 } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/client";
 
 const menuItems = [
@@ -20,6 +23,11 @@ const menuItems = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    name: "Clients",
+    href: "/clients",
+    icon: Users,
   },
   {
     name: "Email Accounts",
@@ -94,44 +102,55 @@ export default function PortalSidebar() {
           marginBottom: 34,
         }}
       >
-        <div
+        <Link
+          href="/dashboard"
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 11,
-            background: "#FFFFFF",
-            color: "#0F172A",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            fontSize: 19,
-            fontWeight: 800,
+            gap: 12,
+            textDecoration: "none",
           }}
         >
-          O
-        </div>
-
-        <div>
           <div
             style={{
-              color: "#FFFFFF",
-              fontSize: 17,
-              fontWeight: 700,
+              width: 42,
+              height: 42,
+              borderRadius: 11,
+              background: "#FFFFFF",
+              color: "#0F172A",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 19,
+              fontWeight: 800,
+              flexShrink: 0,
             }}
           >
-            Outreach Ops
+            O
           </div>
 
-          <div
-            style={{
-              color: "#94A3B8",
-              fontSize: 12,
-              marginTop: 3,
-            }}
-          >
-            Infrastructure Monitor
+          <div>
+            <div
+              style={{
+                color: "#FFFFFF",
+                fontSize: 17,
+                fontWeight: 700,
+              }}
+            >
+              Outreach Ops
+            </div>
+
+            <div
+              style={{
+                color: "#94A3B8",
+                fontSize: 12,
+                marginTop: 3,
+              }}
+            >
+              Infrastructure Monitor
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav
@@ -187,6 +206,7 @@ export default function PortalSidebar() {
           padding: "12px 13px",
           cursor: "pointer",
           fontSize: 14,
+          borderRadius: 10,
         }}
       >
         <LogOut size={18} />

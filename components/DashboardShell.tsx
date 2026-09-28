@@ -1,7 +1,19 @@
 import Link from "next/link";
 import { CircleAlert } from "lucide-react";
+import { demoDashboardData } from "@/lib/demoData";
 
 export default function DashboardShell() {
+  const data = demoDashboardData;
+
+  const healthPercentage =
+    data.summary.emailAccounts > 0
+      ? (
+          (data.summary.healthyAccounts /
+            data.summary.emailAccounts) *
+          100
+        ).toFixed(1)
+      : "0";
+
   return (
     <div
       style={{
@@ -61,7 +73,7 @@ export default function DashboardShell() {
               marginTop: 4,
             }}
           >
-            Today at 8:04 AM
+            Today at {data.todaysUpdate.checkedAt}
           </div>
         </div>
       </div>
@@ -76,33 +88,33 @@ export default function DashboardShell() {
       >
         <StatCard
           title="Email Accounts"
-          value="3,648"
-          text="Across 2 Smartlead accounts"
+          value={data.summary.emailAccounts.toLocaleString()}
+          text={`${data.smartleadConnections.length} Smartlead connections`}
         />
 
         <StatCard
           title="Healthy"
-          value="3,520"
-          text="96.5% accounts healthy"
+          value={data.summary.healthyAccounts.toLocaleString()}
+          text={`${healthPercentage}% accounts healthy`}
         />
 
         <StatCard
           title="Need Attention"
-          value="128"
+          value={data.summary.needAttention.toLocaleString()}
           text="Settings or connection issues"
           warning
         />
 
         <StatCard
           title="Active Campaigns"
-          value="24"
-          text="Across all connections"
+          value={data.summary.activeCampaigns.toLocaleString()}
+          text="Across all Smartlead connections"
         />
 
         <StatCard
           title="Domains"
-          value="158"
-          text="Across 3 EmailGuard accounts"
+          value={data.summary.domains.toLocaleString()}
+          text="Across EmailGuard connections"
         />
       </div>
 
@@ -133,6 +145,7 @@ export default function DashboardShell() {
                 style={{
                   margin: 0,
                   fontSize: 17,
+                  fontWeight: 700,
                 }}
               >
                 Smartlead Connections
@@ -152,28 +165,25 @@ export default function DashboardShell() {
             <Link
               href="/connections"
               style={{
+                marginLeft: "auto",
                 color: "#2563EB",
                 fontSize: 13,
                 fontWeight: 600,
                 textDecoration: "none",
-                marginLeft: "auto",
               }}
             >
               Manage
             </Link>
           </div>
 
-          <ConnectionRow
-            name="Smartlead Main"
-            accounts="3,098 accounts"
-            campaigns="10 active campaigns"
-          />
-
-          <ConnectionRow
-            name="Smartlead 2"
-            accounts="550 accounts"
-            campaigns="14 active campaigns"
-          />
+          {data.smartleadConnections.map((connection) => (
+            <ConnectionRow
+              key={connection.id}
+              name={connection.name}
+              accounts={`${connection.accounts.toLocaleString()} accounts`}
+              campaigns={`${connection.activeCampaigns} active campaigns`}
+            />
+          ))}
         </section>
 
         <section
@@ -199,7 +209,8 @@ export default function DashboardShell() {
                   fontWeight: 700,
                 }}
               >
-                Today&apos;s Updat
+                Today&apos;s Update
+
               </h2>
 
               <p
@@ -255,7 +266,7 @@ export default function DashboardShell() {
                 color: "#0F172A",
               }}
             >
-              Today at 8:04 AM
+              Today at {data.todaysUpdate.checkedAt}
             </div>
           </div>
 
@@ -268,28 +279,28 @@ export default function DashboardShell() {
           >
             <UpdateRow
               label="Email accounts checked"
-              value="3,648"
+              value={data.todaysUpdate.emailAccountsChecked.toLocaleString()}
             />
 
             <UpdateRow
               label="Active campaigns checked"
-              value="24"
+              value={data.todaysUpdate.activeCampaignsChecked.toLocaleString()}
             />
 
             <UpdateRow
               label="Domains checked"
-              value="158"
+              value={data.todaysUpdate.domainsChecked.toLocaleString()}
             />
 
             <UpdateRow
               label="New issues found"
-              value="12"
+              value={data.todaysUpdate.newIssues.toLocaleString()}
               warning
             />
 
             <UpdateRow
               label="Issues resolved"
-              value="7"
+              value={data.todaysUpdate.resolvedIssues.toLocaleString()}
               success
             />
           </div>
@@ -304,12 +315,10 @@ export default function DashboardShell() {
             <Link
               href="/activity"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                fontSize: 13,
-                fontWeight: 600,
                 color: "#2563EB",
                 textDecoration: "none",
+                fontSize: 13,
+                fontWeight: 600,
               }}
             >
               View daily activity
@@ -338,10 +347,22 @@ export default function DashboardShell() {
             style={{
               margin: 0,
               fontSize: 17,
+              fontWeight: 700,
             }}
           >
             Account Health
           </h2>
+
+          <p
+            style={{
+              marginTop: 5,
+              marginBottom: 0,
+              color: "#6B7280",
+              fontSize: 13,
+            }}
+          >
+            Smartlead account configuration status
+          </p>
 
           <div
             style={{
@@ -353,24 +374,25 @@ export default function DashboardShell() {
           >
             <HealthBox
               title="Correct Settings"
-              value="3,520"
+              value={data.accountHealth.correctSettings.toLocaleString()}
+              success
             />
 
             <HealthBox
               title="Wrong Daily Limit"
-              value="42"
+              value={data.accountHealth.wrongDailyLimit.toLocaleString()}
               warning
             />
 
             <HealthBox
               title="Warmup Issues"
-              value="31"
+              value={data.accountHealth.warmupIssues.toLocaleString()}
               warning
             />
 
             <HealthBox
               title="Connection Issues"
-              value="8"
+              value={data.accountHealth.connectionIssues.toLocaleString()}
               warning
             />
           </div>
@@ -395,6 +417,7 @@ export default function DashboardShell() {
                 style={{
                   margin: 0,
                   fontSize: 17,
+                  fontWeight: 700,
                 }}
               >
                 Recent Issues
@@ -405,6 +428,7 @@ export default function DashboardShell() {
                   color: "#6B7280",
                   fontSize: 13,
                   marginTop: 5,
+                  marginBottom: 0,
                 }}
               >
                 Items that need attention
@@ -414,11 +438,11 @@ export default function DashboardShell() {
             <Link
               href="/issues"
               style={{
+                marginLeft: "auto",
                 color: "#2563EB",
                 textDecoration: "none",
                 fontWeight: 600,
                 fontSize: 13,
-                marginLeft: "auto",
               }}
             >
               View all
@@ -433,20 +457,13 @@ export default function DashboardShell() {
               gap: 10,
             }}
           >
-            <IssueRow
-              title="Daily limit incorrect"
-              detail="john@example.com"
-            />
-
-            <IssueRow
-              title="Warmup disabled"
-              detail="sales@example.com"
-            />
-
-            <IssueRow
-              title="DMARC issue detected"
-              detail="example.com"
-            />
+            {data.recentIssues.map((issue) => (
+              <IssueRow
+                key={issue.id}
+                title={issue.title}
+                detail={issue.detail}
+              />
+            ))}
           </div>
         </section>
       </div>
@@ -550,13 +567,13 @@ function ConnectionRow({
 
       <div
         style={{
+          marginLeft: "auto",
           color: "#047857",
           background: "#ECFDF5",
           padding: "6px 9px",
           borderRadius: 8,
           fontSize: 12,
           fontWeight: 600,
-          marginLeft: "auto",
         }}
       >
         Connected
@@ -621,11 +638,23 @@ function HealthBox({
   title,
   value,
   warning,
+  success,
 }: {
   title: string;
   value: string;
   warning?: boolean;
+  success?: boolean;
 }) {
+  let valueColor = "#111827";
+
+  if (warning) {
+    valueColor = "#B45309";
+  }
+
+  if (success) {
+    valueColor = "#047857";
+  }
+
   return (
     <div
       style={{
@@ -648,7 +677,7 @@ function HealthBox({
           marginTop: 6,
           fontWeight: 750,
           fontSize: 20,
-          color: warning ? "#B45309" : "#111827",
+          color: valueColor,
         }}
       >
         {value}
@@ -675,7 +704,10 @@ function IssueRow({
         borderRadius: 10,
       }}
     >
-      <CircleAlert size={17} color="#B45309" />
+      <CircleAlert
+        size={17}
+        color="#B45309"
+      />
 
       <div>
         <div
