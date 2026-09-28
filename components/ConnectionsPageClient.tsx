@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+
 import {
   Plus,
   Trash2,
@@ -9,6 +10,7 @@ import {
   CheckCircle2,
   Plug,
   X,
+  Loader2,
 } from "lucide-react";
 
 type Integration = {
@@ -22,6 +24,13 @@ type Integration = {
   created_at: string;
 };
 
+type SmartleadTestResult = {
+  success: boolean;
+  message?: string;
+  campaignCount?: number;
+  activeCampaignCount?: number;
+};
+
 export default function ConnectionsPageClient({
   userId,
   initialIntegrations,
@@ -32,60 +41,154 @@ export default function ConnectionsPageClient({
   const supabase = createClient();
 
   const [integrations, setIntegrations] =
-    useState<Integration[]>(initialIntegrations);
+    useState<Integration[]>(
+      initialIntegrations
+    );
 
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] =
+    useState(false);
 
   const [provider, setProvider] =
-    useState<"smartlead" | "emailguard">("smartlead");
+    useState<
+      "smartlead" | "emailguard"
+    >("smartlead");
 
-  const [name, setName] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [name, setName] =
+    useState("");
 
-  const smartleadConnections = integrations.filter(
-    (item) => item.provider === "smartlead"
-  );
+  const [apiKey, setApiKey] =
+    useState("");
 
-  const emailguardConnections = integrations.filter(
-    (item) => item.provider === "emailguard"
-  );
+  const [saving, setSaving] =
+    useState(false);
 
-  function openModal(type: "smartlead" | "emailguard") {
+  const [testing, setTesting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const smartleadConnections =
+    integrations.filter(
+      (item) =>
+        item.provider === "smartlead"
+    );
+
+  const emailguardConnections =
+    integrations.filter(
+      (item) =>
+        item.provider === "emailguard"
+    );
+
+  function openModal(
+    type:
+      | "smartlead"
+      | "emailguard"
+  ) {
     setProvider(type);
+
     setName("");
     setApiKey("");
     setError("");
+
     setShowModal(true);
   }
 
   function closeModal() {
-    if (saving) {
+    if (saving || testing) {
       return;
     }
 
     setShowModal(false);
+
     setName("");
     setApiKey("");
     setError("");
   }
 
+  async function testSmartleadConnection() {
+    const response =
+      await fetch(
+        "/api/smartlead/test",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            apiKey: apiKey.trim(),
+          }),
+        }
+      );
+
+    const result:
+      SmartleadTestResult =
+        await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Smartlead connection could not be verified."
+      );
+    }
+
+    return result;
+  }
+
   async function handleConnect() {
     if (!name.trim()) {
-      setError("Connection name is required.");
+      setError(
+        "Connection name is required."
+      );
+
       return;
     }
 
     if (!apiKey.trim()) {
-      setError("API key is required.");
+      setError(
+        "API key is required."
+      );
+
       return;
     }
 
-    setSaving(true);
     setError("");
 
-    const { data, error: insertError } = await supabase
+    if (
+      provider === "smartlead"
+    ) {
+      setTesting(true);
+
+      try {
+        await testSmartleadConnection();
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Could not connect to Smartlead.";
+
+        setError(message);
+
+        setTesting(false);
+
+        return;
+      }
+
+      setTesting(false);
+    }
+
+    setSaving(true);
+
+    const {
+      data,
+      error: insertError,
+    } = await supabase
       .from("integrations")
       .insert({
         user_id: userId,
@@ -98,46 +201,65 @@ export default function ConnectionsPageClient({
       .single();
 
     if (insertError) {
-      setError(insertError.message);
+      setError(
+        insertError.message
+      );
+
       setSaving(false);
+
       return;
     }
 
-    setIntegrations((current) => [
-      ...current,
-      data,
-    ]);
+    setIntegrations(
+      (current) => [
+        ...current,
+        data,
+      ]
+    );
 
     setSaving(false);
+
     setShowModal(false);
+
     setName("");
     setApiKey("");
+    setError("");
   }
 
   async function handleRemove(
     id: string,
     connectionName: string
   ) {
-    const confirmed = window.confirm(
-      `Are you sure you want to remove ${connectionName}?`
-    );
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to remove ${connectionName}?`
+      );
 
     if (!confirmed) {
       return;
     }
 
-    const { error: deleteError } = await supabase
+    const {
+      error: deleteError,
+    } = await supabase
       .from("integrations")
       .delete()
       .eq("id", id);
 
     if (deleteError) {
-      alert(deleteError.message);
+      alert(
+        deleteError.message
+      );
+
       return;
     }
 
-    setIntegrations((current) =>
-      current.filter((item) => item.id !== id)
+    setIntegrations(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !== id
+        )
     );
   }
 
@@ -172,14 +294,17 @@ export default function ConnectionsPageClient({
             fontSize: 14,
           }}
         >
-          Connect and manage your Smartlead and EmailGuard accounts.
+          Connect and manage
+          your Smartlead and
+          EmailGuard accounts.
         </p>
       </div>
 
       <section
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           padding: 22,
           marginBottom: 22,
@@ -211,22 +336,32 @@ export default function ConnectionsPageClient({
                 marginBottom: 0,
               }}
             >
-              {smartleadConnections.length} connected
+              {
+                smartleadConnections.length
+              }{" "}
+              connected
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => openModal("smartlead")}
+            onClick={() =>
+              openModal(
+                "smartlead"
+              )
+            }
             style={{
               marginLeft: "auto",
               border: 0,
               borderRadius: 9,
-              padding: "10px 14px",
-              background: "#111827",
+              padding:
+                "10px 14px",
+              background:
+                "#111827",
               color: "#FFFFFF",
               display: "flex",
-              alignItems: "center",
+              alignItems:
+                "center",
               gap: 7,
               cursor: "pointer",
               fontWeight: 600,
@@ -239,17 +374,26 @@ export default function ConnectionsPageClient({
           </button>
         </div>
 
-        {smartleadConnections.length === 0 ? (
-          <EmptyConnection text="No Smartlead accounts connected yet." />
+        {smartleadConnections.length ===
+        0 ? (
+          <EmptyConnection
+            text="No Smartlead accounts connected yet."
+          />
         ) : (
           <div>
-            {smartleadConnections.map((item) => (
-              <ConnectionCard
-                key={item.id}
-                integration={item}
-                onRemove={handleRemove}
-              />
-            ))}
+            {smartleadConnections.map(
+              (item) => (
+                <ConnectionCard
+                  key={item.id}
+                  integration={
+                    item
+                  }
+                  onRemove={
+                    handleRemove
+                  }
+                />
+              )
+            )}
           </div>
         )}
       </section>
@@ -257,7 +401,8 @@ export default function ConnectionsPageClient({
       <section
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          border:
+            "1px solid #E5E7EB",
           borderRadius: 14,
           padding: 22,
         }}
@@ -288,22 +433,32 @@ export default function ConnectionsPageClient({
                 marginBottom: 0,
               }}
             >
-              {emailguardConnections.length} connected
+              {
+                emailguardConnections.length
+              }{" "}
+              connected
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => openModal("emailguard")}
+            onClick={() =>
+              openModal(
+                "emailguard"
+              )
+            }
             style={{
               marginLeft: "auto",
               border: 0,
               borderRadius: 9,
-              padding: "10px 14px",
-              background: "#111827",
+              padding:
+                "10px 14px",
+              background:
+                "#111827",
               color: "#FFFFFF",
               display: "flex",
-              alignItems: "center",
+              alignItems:
+                "center",
               gap: 7,
               cursor: "pointer",
               fontWeight: 600,
@@ -316,17 +471,26 @@ export default function ConnectionsPageClient({
           </button>
         </div>
 
-        {emailguardConnections.length === 0 ? (
-          <EmptyConnection text="No EmailGuard accounts connected yet." />
+        {emailguardConnections.length ===
+        0 ? (
+          <EmptyConnection
+            text="No EmailGuard accounts connected yet."
+          />
         ) : (
           <div>
-            {emailguardConnections.map((item) => (
-              <ConnectionCard
-                key={item.id}
-                integration={item}
-                onRemove={handleRemove}
-              />
-            ))}
+            {emailguardConnections.map(
+              (item) => (
+                <ConnectionCard
+                  key={item.id}
+                  integration={
+                    item
+                  }
+                  onRemove={
+                    handleRemove
+                  }
+                />
+              )
+            )}
           </div>
         )}
       </section>
@@ -337,30 +501,37 @@ export default function ConnectionsPageClient({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
+            background:
+              "rgba(15, 23, 42, 0.45)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems:
+              "center",
+            justifyContent:
+              "center",
             padding: 20,
             zIndex: 100,
           }}
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             style={{
               width: "100%",
               maxWidth: 460,
-              background: "#FFFFFF",
+              background:
+                "#FFFFFF",
               borderRadius: 16,
               padding: 24,
               boxShadow:
-                "0 20px 60px rgba(0, 0, 0, 0.18)",
+                "0 20px 60px rgba(0,0,0,0.18)",
             }}
           >
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                alignItems:
+                  "center",
                 marginBottom: 22,
               }}
             >
@@ -369,11 +540,13 @@ export default function ConnectionsPageClient({
                   style={{
                     margin: 0,
                     fontSize: 20,
-                    color: "#111827",
+                    color:
+                      "#111827",
                   }}
                 >
                   Connect{" "}
-                  {provider === "smartlead"
+                  {provider ===
+                  "smartlead"
                     ? "Smartlead"
                     : "EmailGuard"}
                 </h2>
@@ -382,26 +555,44 @@ export default function ConnectionsPageClient({
                   style={{
                     marginTop: 5,
                     marginBottom: 0,
-                    color: "#6B7280",
+                    color:
+                      "#6B7280",
                     fontSize: 13,
                   }}
                 >
-                  Add the account details below.
+                  Add the account
+                  details below.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={closeModal}
+                onClick={
+                  closeModal
+                }
+                disabled={
+                  saving ||
+                  testing
+                }
                 style={{
-                  marginLeft: "auto",
+                  marginLeft:
+                    "auto",
                   border: 0,
-                  background: "transparent",
-                  cursor: "pointer",
-                  color: "#64748B",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  background:
+                    "transparent",
+                  cursor:
+                    saving ||
+                    testing
+                      ? "not-allowed"
+                      : "pointer",
+                  color:
+                    "#64748B",
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  justifyContent:
+                    "center",
                 }}
               >
                 <X size={20} />
@@ -422,26 +613,39 @@ export default function ConnectionsPageClient({
 
             <input
               value={name}
+              disabled={
+                saving ||
+                testing
+              }
               onChange={(event) =>
-                setName(event.target.value)
+                setName(
+                  event.target
+                    .value
+                )
               }
               placeholder={
-                provider === "smartlead"
+                provider ===
+                "smartlead"
                   ? "Smartlead Main"
                   : "EmailGuard Main"
               }
               style={{
                 width: "100%",
                 height: 46,
-                border: "1px solid #D1D5DB",
+                border:
+                  "1px solid #D1D5DB",
                 borderRadius: 9,
-                padding: "0 12px",
-                boxSizing: "border-box",
+                padding:
+                  "0 12px",
+                boxSizing:
+                  "border-box",
                 marginBottom: 16,
                 outline: "none",
                 fontSize: 14,
-                color: "#111827",
-                background: "#FFFFFF",
+                color:
+                  "#111827",
+                background:
+                  "#FFFFFF",
               }}
             />
 
@@ -460,21 +664,33 @@ export default function ConnectionsPageClient({
             <input
               type="password"
               value={apiKey}
+              disabled={
+                saving ||
+                testing
+              }
               onChange={(event) =>
-                setApiKey(event.target.value)
+                setApiKey(
+                  event.target
+                    .value
+                )
               }
               placeholder="Enter API key"
               style={{
                 width: "100%",
                 height: 46,
-                border: "1px solid #D1D5DB",
+                border:
+                  "1px solid #D1D5DB",
                 borderRadius: 9,
-                padding: "0 12px",
-                boxSizing: "border-box",
+                padding:
+                  "0 12px",
+                boxSizing:
+                  "border-box",
                 outline: "none",
                 fontSize: 14,
-                color: "#111827",
-                background: "#FFFFFF",
+                color:
+                  "#111827",
+                background:
+                  "#FFFFFF",
               }}
             />
 
@@ -486,7 +702,10 @@ export default function ConnectionsPageClient({
                 fontSize: 12,
               }}
             >
-              Your API key will be used to access this connection.
+              {provider ===
+              "smartlead"
+                ? "The Smartlead API key will be tested before saving."
+                : "Your API key will be used for this connection."}
             </p>
 
             {error && (
@@ -495,9 +714,12 @@ export default function ConnectionsPageClient({
                   marginTop: 14,
                   padding: 11,
                   borderRadius: 8,
-                  background: "#FEF2F2",
-                  border: "1px solid #FECACA",
-                  color: "#B91C1C",
+                  background:
+                    "#FEF2F2",
+                  border:
+                    "1px solid #FECACA",
+                  color:
+                    "#B91C1C",
                   fontSize: 13,
                 }}
               >
@@ -514,19 +736,29 @@ export default function ConnectionsPageClient({
             >
               <button
                 type="button"
-                onClick={closeModal}
-                disabled={saving}
+                onClick={
+                  closeModal
+                }
+                disabled={
+                  saving ||
+                  testing
+                }
                 style={{
                   flex: 1,
                   height: 46,
-                  border: "1px solid #D1D5DB",
+                  border:
+                    "1px solid #D1D5DB",
                   borderRadius: 9,
-                  background: "#FFFFFF",
-                  color: "#374151",
+                  background:
+                    "#FFFFFF",
+                  color:
+                    "#374151",
                   fontWeight: 600,
-                  cursor: saving
-                    ? "not-allowed"
-                    : "pointer",
+                  cursor:
+                    saving ||
+                    testing
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 Cancel
@@ -534,30 +766,77 @@ export default function ConnectionsPageClient({
 
               <button
                 type="button"
-                onClick={handleConnect}
-                disabled={saving}
+                onClick={
+                  handleConnect
+                }
+                disabled={
+                  saving ||
+                  testing
+                }
                 style={{
                   flex: 1,
                   height: 46,
                   border: 0,
                   borderRadius: 9,
-                  background: "#111827",
-                  color: "#FFFFFF",
+                  background:
+                    "#111827",
+                  color:
+                    "#FFFFFF",
                   fontWeight: 650,
-                  cursor: saving
-                    ? "not-allowed"
-                    : "pointer",
-                  opacity: saving ? 0.7 : 1,
+                  cursor:
+                    saving ||
+                    testing
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity:
+                    saving ||
+                    testing
+                      ? 0.7
+                      : 1,
+                  display: "flex",
+                  alignItems:
+                    "center",
+                  justifyContent:
+                    "center",
+                  gap: 8,
                 }}
               >
-                {saving
-                  ? "Connecting..."
-                  : "Connect"}
+                {testing && (
+                  <Loader2
+                    size={16}
+                    style={{
+                      animation:
+                        "spin 1s linear infinite",
+                    }}
+                  />
+                )}
+
+                {testing
+                  ? "Testing..."
+                  : saving
+                    ? "Saving..."
+                    : "Connect"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(
+              0deg
+            );
+          }
+
+          to {
+            transform: rotate(
+              360deg
+            );
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -571,15 +850,18 @@ function EmptyConnection({
     <div
       style={{
         minHeight: 120,
-        border: "1px dashed #CBD5E1",
+        border:
+          "1px dashed #CBD5E1",
         borderRadius: 11,
         padding: 26,
         color: "#6B7280",
         fontSize: 14,
         display: "flex",
-        flexDirection: "column",
+        flexDirection:
+          "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent:
+          "center",
       }}
     >
       <Plug
@@ -600,21 +882,24 @@ function ConnectionCard({
   onRemove,
 }: {
   integration: Integration;
+
   onRemove: (
     id: string,
     connectionName: string
   ) => void;
 }) {
-  const lastSync = integration.last_synced_at
-    ? new Date(
-        integration.last_synced_at
-      ).toLocaleString()
-    : "Not synced yet";
+  const lastSync =
+    integration.last_synced_at
+      ? new Date(
+          integration.last_synced_at
+        ).toLocaleString()
+      : "Not synced yet";
 
   return (
     <div
       style={{
-        border: "1px solid #E5E7EB",
+        border:
+          "1px solid #E5E7EB",
         borderRadius: 11,
         padding: 16,
         marginBottom: 11,
@@ -631,7 +916,8 @@ function ConnectionCard({
           background: "#F1F5F9",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent:
+            "center",
           color: "#0F172A",
         }}
       >
@@ -663,7 +949,8 @@ function ConnectionCard({
             marginTop: 5,
           }}
         >
-          {integration.provider === "smartlead"
+          {integration.provider ===
+          "smartlead"
             ? "Smartlead"
             : "EmailGuard"}
         </div>
@@ -675,7 +962,8 @@ function ConnectionCard({
             marginTop: 4,
           }}
         >
-          Last sync: {lastSync}
+          Last sync:{" "}
+          {lastSync}
         </div>
       </div>
 
@@ -692,7 +980,8 @@ function ConnectionCard({
             background: "#ECFDF5",
             color: "#047857",
             borderRadius: 8,
-            padding: "7px 10px",
+            padding:
+              "7px 10px",
             fontSize: 12,
             fontWeight: 600,
           }}
@@ -704,20 +993,26 @@ function ConnectionCard({
           type="button"
           style={{
             height: 36,
-            border: "1px solid #D1D5DB",
+            border:
+              "1px solid #D1D5DB",
             borderRadius: 8,
-            padding: "0 11px",
-            background: "#FFFFFF",
+            padding:
+              "0 11px",
+            background:
+              "#FFFFFF",
             cursor: "pointer",
             display: "flex",
-            alignItems: "center",
+            alignItems:
+              "center",
             gap: 6,
             fontSize: 13,
             fontWeight: 600,
             color: "#374151",
           }}
         >
-          <RefreshCw size={14} />
+          <RefreshCw
+            size={14}
+          />
 
           Sync
         </button>
@@ -732,14 +1027,18 @@ function ConnectionCard({
           }
           style={{
             height: 36,
-            border: "1px solid #FECACA",
+            border:
+              "1px solid #FECACA",
             borderRadius: 8,
-            padding: "0 11px",
-            background: "#FFFFFF",
+            padding:
+              "0 11px",
+            background:
+              "#FFFFFF",
             color: "#B91C1C",
             cursor: "pointer",
             display: "flex",
-            alignItems: "center",
+            alignItems:
+              "center",
             gap: 6,
             fontSize: 13,
             fontWeight: 600,
