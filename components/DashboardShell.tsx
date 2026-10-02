@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+"use client";
 
+import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   Mail,
   CircleCheck,
@@ -11,16 +13,20 @@ import {
   CheckCircle2,
   Wifi,
   Users,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  Clock,
+  ExternalLink,
+  Activity,
 } from "lucide-react";
 
-import {
-  accountRules,
-  isAccountType,
-} from "@/lib/accountRules";
+import { accountRules, isAccountType } from "@/lib/accountRules";
 
 type RawData = Record<string, unknown>;
 
-type Integration = {
+export type Integration = {
   id: string;
   name: string;
   provider: string;
@@ -28,14 +34,14 @@ type Integration = {
   last_synced_at: string | null;
 };
 
-type EmailAccount = {
+export type EmailAccount = {
   id: string;
   account_type: string | null;
   raw_data: RawData | null;
   integration_id: string;
 };
 
-type Campaign = {
+export type Campaign = {
   id: string;
   name: string | null;
   status: string | null;
@@ -43,7 +49,7 @@ type Campaign = {
   integration_id: string;
 };
 
-type SyncLog = {
+export type SyncLog = {
   id: string;
   provider: string;
   accounts_fetched: number;
@@ -54,7 +60,7 @@ type SyncLog = {
   created_at: string;
 };
 
-type Issue = {
+export type Issue = {
   id: string;
   source: string;
   client: string | null;
@@ -67,7 +73,7 @@ type Issue = {
   resolved_at: string | null;
 };
 
-type DashboardLiveData = {
+export type DashboardLiveData = {
   integrations: Integration[];
   emailAccounts: EmailAccount[];
   campaigns: Campaign[];
@@ -75,7 +81,7 @@ type DashboardLiveData = {
   issues: Issue[];
 };
 
-type ConnectionDisplay = {
+export type ConnectionDisplay = {
   id: string;
   name: string;
   clients: string[];
@@ -96,7 +102,6 @@ const demoDashboard = {
     activeCampaigns: 24,
     domains: 158,
   },
-
   todaysUpdate: {
     checkedAt: "8:04 AM",
     checkedAccounts: 3648,
@@ -105,88 +110,50 @@ const demoDashboard = {
     newIssues: 12,
     resolved: 7,
   },
-
   accountHealth: {
     correctSettings: 3520,
     wrongDailyLimit: 42,
     warmupIssues: 31,
     connectionIssues: 8,
   },
-
   smartleadConnections: [
     {
       id: "demo-smartlead-main",
-
       name: "Smartlead Main",
-
-      clients: [
-        "TrialX",
-        "Client Three",
-        "Client Four",
-        "Other Clients",
-      ],
-
+      clients: ["TrialX", "Client Three", "Client Four", "Other Clients"],
       accounts: 3098,
-
       azureEntra: 2853,
-
       hypertideGoogle: 222,
-
       googleWorkspace: 23,
-
       activeCampaigns: 10,
-
       status: "connected",
-
       lastSynced: null,
     },
-
     {
       id: "demo-smartlead-two",
-
       name: "Smartlead 2",
-
       clients: ["Reverba"],
-
       accounts: 550,
-
       azureEntra: 520,
-
       hypertideGoogle: 30,
-
       googleWorkspace: 0,
-
       activeCampaigns: 14,
-
       status: "connected",
-
       lastSynced: null,
     },
   ] satisfies ConnectionDisplay[],
-
   recentIssues: [
     {
-      title:
-        "Daily limit needs attention",
-
-      description:
-        "Some sending accounts are using a daily limit different from the required account type setting.",
+      title: "Daily limit needs attention",
+      description: "Some sending accounts are using a daily limit different from the required account type setting.",
     },
-
     {
-      title:
-        "Warmup settings issue",
-
-      description:
-        "Some accounts have incorrect warmup settings and need review.",
+      title: "Warmup settings issue",
+      description: "Some accounts have incorrect warmup settings and need review.",
     },
-
     {
-      title:
-        "EmailGuard domain issue",
-
-      description:
-        "A domain health check requires attention.",
+      title: "EmailGuard domain issue",
+      description: "A domain health check requires attention.",
     },
   ],
 };
@@ -196,1164 +163,698 @@ export default function DashboardShell({
 }: {
   liveData: DashboardLiveData;
 }) {
-  const smartleadConnections =
-    liveData.integrations.filter(
-      (integration) =>
-        integration.provider ===
-        "smartlead"
-    );
+  const smartleadConnections = liveData.integrations.filter(
+    (integration) => integration.provider === "smartlead"
+  );
 
   const hasLiveSmartlead =
-    liveData.emailAccounts.length > 0 ||
-    liveData.campaigns.length > 0;
+    liveData.emailAccounts.length > 0 || liveData.campaigns.length > 0;
 
-  const activeCampaigns =
-    liveData.campaigns.filter(
-      (campaign) =>
-        normalizeStatus(
-          campaign.status
-        ) === "ACTIVE"
-    );
+  const activeCampaigns = liveData.campaigns.filter(
+    (campaign) => normalizeStatus(campaign.status) === "ACTIVE"
+  );
 
-  const healthyAccounts =
-    liveData.emailAccounts.filter(
-      isHealthyAccount
-    ).length;
+  const healthyAccounts = liveData.emailAccounts.filter(isHealthyAccount).length;
 
-  const totalAccounts =
-    hasLiveSmartlead
-      ? liveData.emailAccounts.length
-      : demoDashboard.summary
-          .emailAccounts;
+  const totalAccounts = hasLiveSmartlead
+    ? liveData.emailAccounts.length
+    : demoDashboard.summary.emailAccounts;
 
-  const healthy =
-    hasLiveSmartlead
-      ? healthyAccounts
-      : demoDashboard.summary
-          .healthyAccounts;
+  const healthy = hasLiveSmartlead
+    ? healthyAccounts
+    : demoDashboard.summary.healthyAccounts;
 
-  const needAttention =
-    hasLiveSmartlead
-      ? Math.max(
-          totalAccounts -
-            healthyAccounts,
-          0
+  const needAttention = hasLiveSmartlead
+    ? Math.max(totalAccounts - healthyAccounts, 0)
+    : demoDashboard.summary.needAttention;
+
+  const activeCampaignCount = hasLiveSmartlead
+    ? activeCampaigns.length
+    : demoDashboard.summary.activeCampaigns;
+
+  const openIssues = liveData.issues.filter(
+    (issue) => issue.status === "Open"
+  );
+
+  const resolvedIssues = liveData.issues.filter(
+    (issue) => issue.status === "Resolved"
+  );
+
+  const recentOpenIssues = openIssues.slice(0, 4);
+
+  const latestSync = liveData.syncLogs[0] || null;
+
+  const displayConnections: ConnectionDisplay[] = hasLiveSmartlead
+    ? smartleadConnections.map((connection) =>
+        buildLiveConnection(
+          connection,
+          liveData.emailAccounts,
+          liveData.campaigns
         )
-      : demoDashboard.summary
-          .needAttention;
-
-  const activeCampaignCount =
-    hasLiveSmartlead
-      ? activeCampaigns.length
-      : demoDashboard.summary
-          .activeCampaigns;
-
-  const smartleadSyncLogs =
-    liveData.syncLogs.filter(
-      (log) =>
-        log.provider ===
-        "smartlead"
-    );
-
-  const latestSync =
-    smartleadSyncLogs[0] || null;
-
-  const openIssues =
-    liveData.issues.filter(
-      (issue) =>
-        issue.status === "Open"
-    );
-
-  const resolvedIssues =
-    liveData.issues.filter(
-      (issue) =>
-        issue.status ===
-        "Resolved"
-    );
-
-  const recentOpenIssues =
-    openIssues
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(
-            b.last_seen_at
-          ).getTime() -
-          new Date(
-            a.last_seen_at
-          ).getTime()
       )
-      .slice(0, 5);
+    : demoDashboard.smartleadConnections;
 
-  const displayConnections:
-    ConnectionDisplay[] =
-    hasLiveSmartlead
-      ? smartleadConnections.map(
-          (connection) =>
-            buildLiveConnection(
-              connection,
-              liveData.emailAccounts,
-              liveData.campaigns
-            )
-        )
-      : demoDashboard
-          .smartleadConnections;
+  const todayCheckedAccounts = hasLiveSmartlead
+    ? latestSync?.accounts_fetched ?? totalAccounts
+    : demoDashboard.todaysUpdate.checkedAccounts;
 
-  const todayCheckedAccounts =
-    hasLiveSmartlead
-      ? latestSync?.accounts_fetched ??
-        totalAccounts
-      : demoDashboard
-          .todaysUpdate
-          .checkedAccounts;
-
-  const todayActiveCampaigns =
-    hasLiveSmartlead
-      ? latestSync?.active_campaigns ??
-        activeCampaignCount
-      : demoDashboard
-          .todaysUpdate
-          .activeCampaigns;
+  const todayActiveCampaigns = hasLiveSmartlead
+    ? latestSync?.active_campaigns ?? activeCampaignCount
+    : demoDashboard.todaysUpdate.activeCampaigns;
 
   const checkedAt =
-    hasLiveSmartlead &&
-    latestSync
-      ? formatTime(
-          latestSync.created_at
-        )
-      : demoDashboard
-          .todaysUpdate
-          .checkedAt;
+    hasLiveSmartlead && latestSync
+      ? formatTime(latestSync.created_at)
+      : demoDashboard.todaysUpdate.checkedAt;
 
-  const displayedNewIssues =
-    hasLiveSmartlead
-      ? openIssues.length
-      : demoDashboard
-          .todaysUpdate
-          .newIssues;
+  const displayedNewIssues = hasLiveSmartlead
+    ? openIssues.length
+    : demoDashboard.todaysUpdate.newIssues;
 
-  const displayedResolved =
-    hasLiveSmartlead
-      ? resolvedIssues.length
-      : demoDashboard
-          .todaysUpdate
-          .resolved;
+  const displayedResolved = hasLiveSmartlead
+    ? resolvedIssues.length
+    : demoDashboard.todaysUpdate.resolved;
+
+  const healthRate =
+    totalAccounts > 0
+      ? Math.round((healthy / totalAccounts) * 100)
+      : 100;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minWidth: 0,
-        color: "#111827",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems:
-            "flex-start",
-          marginBottom: 25,
-        }}
-      >
+    <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
+      {/* Top Welcome & Operational Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
         <div>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 27,
-              fontWeight: 750,
-            }}
-          >
-            Good morning
-          </h2>
-
-          <p
-            style={{
-              marginTop: 7,
-              marginBottom: 0,
-              color: "#64748B",
-              fontSize: 14,
-            }}
-          >
-            Here is your email
-            infrastructure overview.
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+              Operations Center
+            </span>
+            <span
+              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                hasLiveSmartlead
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-blue-50 text-blue-700 border-blue-200"
+              }`}
+            >
+              {hasLiveSmartlead ? "Live Production Sync" : "Simulation Demo Mode"}
+            </span>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            Real-time mailbox configuration, sender volume velocity, and domain infrastructure health.
           </p>
         </div>
 
-        <div
-          style={{
-            marginLeft: "auto",
-
-            background:
-              hasLiveSmartlead
-                ? "#ECFDF5"
-                : "#EFF6FF",
-
-            color:
-              hasLiveSmartlead
-                ? "#047857"
-                : "#2563EB",
-
-            borderRadius: 8,
-
-            padding:
-              "7px 10px",
-
-            fontSize: 11,
-
-            fontWeight: 700,
-          }}
-        >
-          {hasLiveSmartlead
-            ? "Smartlead Live"
-            : "Demo Mode"}
+        {/* Quick Action Shortcuts */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/issues"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 transition-colors"
+          >
+            <TriangleAlert className="w-3.5 h-3.5 text-amber-500" />
+            <span>Audit Issues ({openIssues.length})</span>
+          </Link>
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Manage Integrations</span>
+          </Link>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
+      {/* 5 Elevated Hero Metric KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        {/* Total Email Accounts */}
+        <Link
+          href="/emailaccounts"
+          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Email Accounts
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+              <Mail className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-slate-900">
+              {totalAccounts.toLocaleString()}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Active sending mailboxes
+            </p>
+          </div>
+        </Link>
 
-          gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
+        {/* Healthy Accounts */}
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-emerald-200 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-emerald-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Healthy Mailboxes
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <CircleCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-emerald-700">
+              {healthy.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[11px] font-bold text-emerald-600">
+                {healthRate}%
+              </span>
+              <span className="text-[11px] text-slate-400">optimal settings</span>
+            </div>
+          </div>
+        </div>
 
-          gap: 14,
+        {/* Need Attention */}
+        <Link
+          href="/issues"
+          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-amber-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-amber-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Needs Attention
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <TriangleAlert className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-amber-700">
+              {needAttention.toLocaleString()}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 group-hover:text-amber-700 transition-colors">
+              <span>View flagged accounts</span>
+              <ArrowRight className="w-2.5 h-2.5" />
+            </p>
+          </div>
+        </Link>
 
-          marginBottom: 20,
-        }}
-      >
-        <StatCard
-          title="Email Accounts"
-          value={totalAccounts}
-          icon={
-            <Mail
-              size={18}
-            />
-          }
-        />
+        {/* Active Campaigns */}
+        <Link
+          href="/campaigns"
+          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-indigo-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Active Campaigns
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Megaphone className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-indigo-950">
+              {activeCampaignCount.toLocaleString()}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Live dispatch sequences
+            </p>
+          </div>
+        </Link>
 
-        <StatCard
-          title="Healthy Accounts"
-          value={healthy}
-          icon={
-            <CircleCheck
-              size={18}
-            />
-          }
-          success
-        />
-
-        <StatCard
-          title="Need Attention"
-          value={needAttention}
-          icon={
-            <TriangleAlert
-              size={18}
-            />
-          }
-          warning
-        />
-
-        <StatCard
-          title="Active Campaigns"
-          value={
-            activeCampaignCount
-          }
-          icon={
-            <Megaphone
-              size={18}
-            />
-          }
-        />
-
-        <StatCard
-          title="Domains"
-          value={
-            demoDashboard
-              .summary
-              .domains
-          }
-          icon={
-            <Globe2
-              size={18}
-            />
-          }
-        />
+        {/* Domains */}
+        <Link
+          href="/domains"
+          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between col-span-2 sm:col-span-1"
+        >
+          <div className="flex items-center justify-between text-cyan-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Domains Monitored
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+              <Globe2 className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-slate-900">
+              {demoDashboard.summary.domains}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              DNS & reputation checked
+            </p>
+          </div>
+        </Link>
       </div>
 
-      <div
-        style={{
-          display: "grid",
+      {/* Primary Operations Grid (Workspaces & Today's Pulse) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Connected Smartlead Workspaces (Span 2) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="p-4 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span>Smartlead Connected Workspaces</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {hasLiveSmartlead
+                    ? "Live synchronized sending accounts by provider"
+                    : "Simulated sending account breakdown"}
+                </p>
+              </div>
 
-          gridTemplateColumns:
-            "1.35fr 0.65fr",
+              <Link
+                href="/settings"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <span>Connections</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
 
-          gap: 18,
+            {/* Workspaces List */}
+            <div className="p-5 space-y-4">
+              {displayConnections.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400">
+                  No Smartlead workspaces connected yet.
+                </div>
+              ) : (
+                displayConnections.map((connection) => {
+                  const isConnected = connection.status === "connected";
 
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={
-            sectionStyle
-          }
-        >
-          <SectionHeader
-            title="Smartlead Connections"
-            subtitle={
-              hasLiveSmartlead
-                ? "Live Smartlead account breakdown"
-                : "Demo Smartlead account breakdown"
-            }
-          />
+                  return (
+                    <div
+                      key={connection.id}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 overflow-hidden"
+                    >
+                      <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                            <Server className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-slate-900">
+                              {connection.name}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                              <Users className="w-3 h-3 text-slate-400" />
+                              <span>{formatClients(connection.clients)}</span>
+                            </div>
+                          </div>
+                        </div>
 
-          <div
-            style={{
-              padding: 18,
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              isConnected
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            <Wifi className="w-2.5 h-2.5" />
+                            {isConnected ? "Connected" : connection.status}
+                          </span>
+                        </div>
+                      </div>
 
-              display:
-                "grid",
+                      {/* Mailbox Breakdown Strip */}
+                      <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white text-center py-2.5 px-1 text-xs">
+                        <div className="p-2">
+                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Total Accounts
+                          </span>
+                          <span className="text-sm font-bold text-slate-900 mt-0.5 block">
+                            {connection.accounts.toLocaleString()}
+                          </span>
+                        </div>
 
-              gap: 14,
-            }}
-          >
-            {displayConnections.length ===
-            0 ? (
-              <EmptyState
-                text="No Smartlead connections yet."
-              />
-            ) : (
-              displayConnections.map(
-                (
-                  connection
-                ) => (
-                  <SmartleadConnectionCard
-                    key={
-                      connection.id
-                    }
-                    connection={
-                      connection
-                    }
+                        <div className="p-2">
+                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Azure / Entra
+                          </span>
+                          <span className="text-sm font-bold text-emerald-700 mt-0.5 block">
+                            {connection.azureEntra.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="p-2">
+                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Hypertide Google
+                          </span>
+                          <span className="text-sm font-bold text-slate-800 mt-0.5 block">
+                            {connection.hypertideGoogle.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="p-2">
+                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Workspace
+                          </span>
+                          <span className="text-sm font-bold text-slate-800 mt-0.5 block">
+                            {connection.googleWorkspace.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="p-2">
+                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Campaigns
+                          </span>
+                          <span className="text-sm font-bold text-indigo-700 mt-0.5 block">
+                            {connection.activeCampaigns.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {connection.lastSynced && (
+                        <div className="p-2 px-4 bg-slate-50/70 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                          <span>
+                            Last synchronized: {formatDateTime(connection.lastSynced)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Synchronized with Smartlead API engine</span>
+            <Link
+              href="/emailaccounts"
+              className="text-xs font-semibold text-slate-700 hover:text-indigo-600 flex items-center gap-1"
+            >
+              <span>View all mailboxes</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Today's Pulse / Executive Digest (Span 1) */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="p-4 px-6 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-indigo-600" />
+                  <span>Today&apos;s Update</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Last pipeline check: {checkedAt}
+                </p>
+              </div>
+            </div>
+
+            {/* Health Meter Widget */}
+            <div className="p-5 pb-2">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 mb-4">
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="font-semibold text-slate-700">
+                    Mailbox Health Score
+                  </span>
+                  <span className="font-bold text-emerald-600">
+                    {healthRate}% Optimal
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${healthRate}%` }}
                   />
-                )
-              )
-            )}
+                </div>
+              </div>
+
+              {/* Rows */}
+              <div className="space-y-1 divide-y divide-slate-100 text-xs">
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-slate-500">Accounts audited</span>
+                  <span className="font-bold text-slate-900">
+                    {todayCheckedAccounts.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-slate-500">Active campaigns</span>
+                  <span className="font-bold text-indigo-700">
+                    {todayActiveCampaigns.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-slate-500">Domains checked</span>
+                  <span className="font-bold text-slate-900">
+                    {demoDashboard.todaysUpdate.domains}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-slate-500">Open issues</span>
+                  <span
+                    className={`font-bold ${
+                      displayedNewIssues > 0
+                        ? "text-amber-600"
+                        : "text-slate-900"
+                    }`}
+                  >
+                    {displayedNewIssues.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-slate-500">Issues resolved</span>
+                  <span className="font-bold text-emerald-700">
+                    {displayedResolved.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div
-          style={
-            sectionStyle
-          }
-        >
-          <SectionHeader
-            title="Today's Update"
-            subtitle={`Last check ${checkedAt}`}
-          />
-
-          <div
-            style={{
-              padding: 18,
-            }}
-          >
-            <UpdateRow
-              label="Accounts checked"
-              value={
-                todayCheckedAccounts
-              }
-            />
-
-            <UpdateRow
-              label="Active campaigns"
-              value={
-                todayActiveCampaigns
-              }
-            />
-
-            <UpdateRow
-              label="Domains checked"
-              value={
-                demoDashboard
-                  .todaysUpdate
-                  .domains
-              }
-            />
-
-            <UpdateRow
-              label="Open issues"
-              value={
-                displayedNewIssues
-              }
-              warning
-            />
-
-            <UpdateRow
-              label="Resolved"
-              value={
-                displayedResolved
-              }
-              success
-              last
-            />
+          <div className="p-4 bg-slate-50/50 border-t border-slate-100">
+            <Link
+              href="/activity"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg border border-indigo-200/80 bg-white hover:bg-indigo-50/40 transition-colors shadow-sm"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>View Full Pipeline Activity Log</span>
+            </Link>
           </div>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
+      {/* Secondary Operations Grid (Account Health & Recent Issues) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Account Health Distribution */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Account Health Breakdown</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Distribution of mailbox rules and compliance
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {healthRate}% Compliant
+            </span>
+          </div>
 
-          gridTemplateColumns:
-            "1fr 1fr",
-
-          gap: 18,
-        }}
-      >
-        <div
-          style={
-            sectionStyle
-          }
-        >
-          <SectionHeader
-            title="Account Health"
-            subtitle={
-              hasLiveSmartlead
-                ? "Based on synced Smartlead accounts"
-                : "Demo account health overview"
-            }
-          />
-
-          <div
-            style={{
-              padding: 18,
-            }}
-          >
-            <HealthRow
-              label="Correct Settings"
+          <div className="space-y-3">
+            <HealthProgressBar
+              label="Optimal Settings"
               value={healthy}
-              success
+              total={totalAccounts}
+              color="emerald"
             />
-
-            <HealthRow
+            <HealthProgressBar
               label="Needs Review"
-              value={
-                needAttention
-              }
-              warning
+              value={needAttention}
+              total={totalAccounts}
+              color="amber"
             />
-
             {!hasLiveSmartlead && (
               <>
-                <HealthRow
-                  label="Wrong Daily Limit"
-                  value={
-                    demoDashboard
-                      .accountHealth
-                      .wrongDailyLimit
-                  }
-                  warning
+                <HealthProgressBar
+                  label="Daily Cap Deviations"
+                  value={demoDashboard.accountHealth.wrongDailyLimit}
+                  total={totalAccounts}
+                  color="yellow"
                 />
-
-                <HealthRow
-                  label="Warmup Issues"
-                  value={
-                    demoDashboard
-                      .accountHealth
-                      .warmupIssues
-                  }
-                  warning
+                <HealthProgressBar
+                  label="Warmup Setting Issues"
+                  value={demoDashboard.accountHealth.warmupIssues}
+                  total={totalAccounts}
+                  color="orange"
                 />
-
-                <HealthRow
-                  label="Connection Issues"
-                  value={
-                    demoDashboard
-                      .accountHealth
-                      .connectionIssues
-                  }
-                  danger
-                  last
+                <HealthProgressBar
+                  label="Disconnected Accounts"
+                  value={demoDashboard.accountHealth.connectionIssues}
+                  total={totalAccounts}
+                  color="rose"
                 />
               </>
             )}
           </div>
         </div>
 
-        <div
-          style={
-            sectionStyle
-          }
-        >
-          <SectionHeader
-            title="Recent Issues"
-            subtitle={
-              hasLiveSmartlead
-                ? "Latest open issues detected by Outreach Ops"
-                : "Demo issue overview"
-            }
-          />
+        {/* Recent Detected Issues */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <TriangleAlert className="w-4 h-4 text-amber-500" />
+                  <span>Recent Infrastructure Issues</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Latest flagged anomalies requiring attention
+                </p>
+              </div>
 
-          <div
-            style={{
-              padding: 18,
-            }}
-          >
-            {hasLiveSmartlead ? (
-              recentOpenIssues.length >
-              0 ? (
-                recentOpenIssues.map(
-                  (
-                    issue,
-                    index
-                  ) => {
-                    const last =
-                      index ===
-                      recentOpenIssues.length -
-                        1;
+              <Link
+                href="/issues"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <span>All Issues</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
 
-                    const critical =
-                      issue.severity ===
-                      "Critical";
+            <div className="space-y-3 pt-1">
+              {hasLiveSmartlead ? (
+                recentOpenIssues.length > 0 ? (
+                  recentOpenIssues.map((issue) => {
+                    const isCritical = issue.severity === "Critical";
 
                     return (
-                      <div
-                        key={
-                          issue.id
-                        }
-                        style={{
-                          display:
-                            "flex",
-
-                          alignItems:
-                            "flex-start",
-
-                          gap: 10,
-
-                          paddingBottom:
-                            last
-                              ? 0
-                              : 14,
-
-                          marginBottom:
-                            last
-                              ? 0
-                              : 14,
-
-                          borderBottom:
-                            last
-                              ? "none"
-                              : "1px solid #F1F5F9",
-                        }}
+                      <Link
+                        key={issue.id}
+                        href="/issues"
+                        className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
                       >
                         <div
-                          style={{
-                            width: 31,
-
-                            height: 31,
-
-                            flexShrink: 0,
-
-                            borderRadius: 8,
-
-                            background:
-                              critical
-                                ? "#FEF2F2"
-                                : "#FEF3C7",
-
-                            color:
-                              critical
-                                ? "#B91C1C"
-                                : "#B45309",
-
-                            display:
-                              "flex",
-
-                            alignItems:
-                              "center",
-
-                            justifyContent:
-                              "center",
-                          }}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                            isCritical
+                              ? "bg-rose-100 text-rose-600"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
                         >
-                          <CircleAlert
-                            size={
-                              15
-                            }
-                          />
+                          <CircleAlert className="w-3.5 h-3.5" />
                         </div>
 
-                        <div
-                          style={{
-                            minWidth: 0,
-
-                            flex: 1,
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 12,
-
-                              color:
-                                "#111827",
-
-                              fontWeight: 700,
-                            }}
-                          >
-                            {
-                              issue.issue_type
-                            }
+                        <div className="flex-1 min-w-0 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                              {issue.issue_type}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                                isCritical
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : "bg-amber-50 text-amber-800 border-amber-200"
+                              }`}
+                            >
+                              {issue.severity}
+                            </span>
                           </div>
-
-                          <div
-                            style={{
-                              marginTop: 4,
-
-                              color:
-                                "#475569",
-
-                              fontSize: 11,
-
-                              fontWeight: 600,
-
-                              overflowWrap:
-                                "anywhere",
-                            }}
-                          >
-                            {
-                              issue.item
-                            }
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 5,
-
-                              display:
-                                "flex",
-
-                              alignItems:
-                                "center",
-
-                              flexWrap:
-                                "wrap",
-
-                              gap: 6,
-                            }}
-                          >
-                            <span
-                              style={{
-                                color:
-                                  "#64748B",
-
-                                fontSize: 10,
-                              }}
-                            >
-                              {issue.client ||
-                                "Unassigned"}
-                            </span>
-
-                            <span
-                              style={{
-                                color:
-                                  "#CBD5E1",
-
-                                fontSize: 10,
-                              }}
-                            >
-                              ·
-                            </span>
-
-                            <span
-                              style={{
-                                color:
-                                  critical
-                                    ? "#B91C1C"
-                                    : "#B45309",
-
-                                fontSize: 10,
-
-                                fontWeight: 700,
-                              }}
-                            >
-                              {
-                                issue.severity
-                              }
-                            </span>
-
-                            <span
-                              style={{
-                                color:
-                                  "#CBD5E1",
-
-                                fontSize: 10,
-                              }}
-                            >
-                              ·
-                            </span>
-
-                            <span
-                              style={{
-                                color:
-                                  "#94A3B8",
-
-                                fontSize: 10,
-                              }}
-                            >
-                              {formatDateTime(
-                                issue.last_seen_at
-                              )}
-                            </span>
+                          <p className="text-slate-500 truncate mt-0.5">
+                            {issue.item}
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
+                            <span>Client: {issue.client || "General"}</span>
+                            <span>•</span>
+                            <span>{formatRelative(issue.last_seen_at)}</span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     );
-                  }
+                  })
+                ) : (
+                  <div className="p-8 text-center flex flex-col items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-800">
+                      All systems operating optimally
+                    </span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">
+                      No open issues detected on sending accounts
+                    </span>
+                  </div>
                 )
               ) : (
-                <div
-                  style={{
-                    padding:
-                      "20px 10px",
-
-                    textAlign:
-                      "center",
-                  }}
-                >
-                  <CheckCircle2
-                    size={28}
-                    color="#10B981"
-                  />
-
-                  <div
-                    style={{
-                      marginTop: 10,
-
-                      color:
-                        "#047857",
-
-                      fontSize: 12,
-
-                      fontWeight: 700,
-                    }}
+                demoDashboard.recentIssues.map((issue, idx) => (
+                  <Link
+                    key={idx}
+                    href="/issues"
+                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
                   >
-                    No open issues
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 4,
-
-                      color:
-                        "#94A3B8",
-
-                      fontSize: 11,
-                    }}
-                  >
-                    Synced accounts
-                    currently look
-                    healthy.
-                  </div>
-                </div>
-              )
-            ) : (
-              demoDashboard.recentIssues.map(
-                (
-                  issue,
-                  index
-                ) => {
-                  const last =
-                    index ===
-                    demoDashboard
-                      .recentIssues
-                      .length -
-                      1;
-
-                  return (
-                    <div
-                      key={`${issue.title}-${index}`}
-                      style={{
-                        display:
-                          "flex",
-
-                        alignItems:
-                          "flex-start",
-
-                        gap: 10,
-
-                        paddingBottom:
-                          last
-                            ? 0
-                            : 14,
-
-                        marginBottom:
-                          last
-                            ? 0
-                            : 14,
-
-                        borderBottom:
-                          last
-                            ? "none"
-                            : "1px solid #F1F5F9",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 31,
-
-                          height: 31,
-
-                          flexShrink: 0,
-
-                          borderRadius: 8,
-
-                          background:
-                            "#FEF3C7",
-
-                          color:
-                            "#B45309",
-
-                          display:
-                            "flex",
-
-                          alignItems:
-                            "center",
-
-                          justifyContent:
-                            "center",
-                        }}
-                      >
-                        <CircleAlert
-                          size={15}
-                        />
-                      </div>
-
-                      <div
-                        style={{
-                          minWidth: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 12,
-
-                            color:
-                              "#111827",
-
-                            fontWeight: 700,
-                          }}
-                        >
-                          {
-                            issue.title
-                          }
-                        </div>
-
-                        <div
-                          style={{
-                            color:
-                              "#64748B",
-
-                            fontSize: 11,
-
-                            marginTop: 4,
-
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {
-                            issue.description
-                          }
-                        </div>
-                      </div>
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <CircleAlert className="w-3.5 h-3.5" />
                     </div>
-                  );
-                }
-              )
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SmartleadConnectionCard({
-  connection,
-}: {
-  connection: ConnectionDisplay;
-}) {
-  const connected =
-    connection.status ===
-    "connected";
-
-  return (
-    <div
-      style={{
-        border:
-          "1px solid #E5E7EB",
-
-        borderRadius: 12,
-
-        overflow:
-          "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: 15,
-
-          display: "flex",
-
-          alignItems:
-            "center",
-
-          background:
-            "#FFFFFF",
-        }}
-      >
-        <div
-          style={{
-            width: 42,
-
-            height: 42,
-
-            borderRadius: 10,
-
-            background:
-              "#F1F5F9",
-
-            display: "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "center",
-
-            marginRight: 12,
-          }}
-        >
-          <Server
-            size={19}
-            color="#334155"
-          />
-        </div>
-
-        <div
-          style={{
-            minWidth: 0,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-
-              fontWeight: 750,
-
-              color:
-                "#111827",
-            }}
-          >
-            {
-              connection.name
-            }
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-
-              alignItems:
-                "center",
-
-              gap: 5,
-
-              marginTop: 5,
-
-              color:
-                "#64748B",
-
-              fontSize: 11,
-            }}
-          >
-            <Users
-              size={12}
-            />
-
-            <span>
-              {formatClients(
-                connection.clients
+                    <div className="flex-1 min-w-0 text-xs">
+                      <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                        {issue.title}
+                      </span>
+                      <p className="text-slate-500 line-clamp-1 mt-0.5">
+                        {issue.description}
+                      </p>
+                    </div>
+                  </Link>
+                ))
               )}
-            </span>
+            </div>
           </div>
-        </div>
 
-        <div
-          style={{
-            marginLeft:
-              "auto",
-
-            display: "flex",
-
-            alignItems:
-              "center",
-
-            gap: 6,
-
-            background:
-              connected
-                ? "#ECFDF5"
-                : "#FEF3C7",
-
-            color:
-              connected
-                ? "#047857"
-                : "#B45309",
-
-            borderRadius: 7,
-
-            padding:
-              "6px 8px",
-
-            fontSize: 10,
-
-            fontWeight: 700,
-          }}
-        >
-          <Wifi
-            size={12}
-          />
-
-          {connected
-            ? "Connected"
-            : connection.status}
+          <Link
+            href="/issues"
+            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <span>Run Deep Diagnostic Scan</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
       </div>
-
-      <div
-        style={{
-          borderTop:
-            "1px solid #F1F5F9",
-
-          background:
-            "#F8FAFC",
-
-          display: "grid",
-
-          gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
-        }}
-      >
-        <ConnectionMetric
-          label="Total Accounts"
-          value={
-            connection.accounts
-          }
-        />
-
-        <ConnectionMetric
-          label="Azure / Entra"
-          value={
-            connection.azureEntra
-          }
-          success
-        />
-
-        <ConnectionMetric
-          label="Hypertide Google"
-          value={
-            connection.hypertideGoogle
-          }
-        />
-
-        <ConnectionMetric
-          label="Google Workspace"
-          value={
-            connection.googleWorkspace
-          }
-        />
-
-        <ConnectionMetric
-          label="Active Campaigns"
-          value={
-            connection.activeCampaigns
-          }
-        />
-      </div>
-
-      {connection.lastSynced && (
-        <div
-          style={{
-            padding:
-              "8px 15px",
-
-            borderTop:
-              "1px solid #F1F5F9",
-
-            color:
-              "#94A3B8",
-
-            fontSize: 10,
-          }}
-        >
-          Last synced{" "}
-          {formatDateTime(
-            connection.lastSynced
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-function ConnectionMetric({
+function HealthProgressBar({
   label,
   value,
-  success,
+  total,
+  color,
 }: {
   label: string;
   value: number;
-  success?: boolean;
+  total: number;
+  color: "emerald" | "amber" | "yellow" | "orange" | "rose";
 }) {
+  const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+
+  const bgBar =
+    color === "emerald"
+      ? "bg-emerald-500"
+      : color === "amber"
+      ? "bg-amber-500"
+      : color === "yellow"
+      ? "bg-yellow-500"
+      : color === "orange"
+      ? "bg-orange-500"
+      : "bg-rose-500";
+
   return (
-    <div
-      style={{
-        padding:
-          "12px 10px",
-
-        borderRight:
-          "1px solid #E5E7EB",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 9,
-
-          color:
-            "#64748B",
-
-          marginBottom: 5,
-
-          whiteSpace:
-            "nowrap",
-        }}
-      >
-        {label}
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-slate-600 font-medium">{label}</span>
+        <div className="flex items-center gap-1.5 font-bold">
+          <span className="text-slate-900">{value.toLocaleString()}</span>
+          <span className="text-slate-400 text-[10px]">({percent}%)</span>
+        </div>
       </div>
-
-      <div
-        style={{
-          fontSize: 15,
-
-          fontWeight: 750,
-
-          color:
-            success
-              ? "#047857"
-              : "#111827",
-        }}
-      >
-        {safeNumber(
-          value
-        ).toLocaleString()}
+      <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+        <div
+          className={`h-full ${bgBar} rounded-full transition-all duration-300`}
+          style={{ width: `${percent}%` }}
+        />
       </div>
     </div>
   );
@@ -1364,81 +865,43 @@ function buildLiveConnection(
   allAccounts: EmailAccount[],
   allCampaigns: Campaign[]
 ): ConnectionDisplay {
-  const accounts =
-    allAccounts.filter(
-      (account) =>
-        account.integration_id ===
-        connection.id
-    );
+  const accounts = allAccounts.filter(
+    (account) => account.integration_id === connection.id
+  );
 
-  const campaigns =
-    allCampaigns.filter(
-      (campaign) =>
-        campaign.integration_id ===
-        connection.id
-    );
+  const campaigns = allCampaigns.filter(
+    (campaign) => campaign.integration_id === connection.id
+  );
 
-  const azureEntra =
-    accounts.filter(
-      (account) =>
-        account.account_type ===
-        "Hypertide Azure/Entra"
-    ).length;
+  const azureEntra = accounts.filter(
+    (account) => account.account_type === "Hypertide Azure/Entra"
+  ).length;
 
-  const hypertideGoogle =
-    accounts.filter(
-      (account) =>
-        account.account_type ===
-        "Hypertide Google"
-    ).length;
+  const hypertideGoogle = accounts.filter(
+    (account) => account.account_type === "Hypertide Google"
+  ).length;
 
-  const googleWorkspace =
-    accounts.filter(
-      (account) =>
-        account.account_type ===
-        "Google Workspace"
-    ).length;
+  const googleWorkspace = accounts.filter(
+    (account) => account.account_type === "Google Workspace"
+  ).length;
 
-  const activeCampaigns =
-    campaigns.filter(
-      (campaign) =>
-        normalizeStatus(
-          campaign.status
-        ) === "ACTIVE"
-    ).length;
+  const activeCampaigns = campaigns.filter(
+    (campaign) => normalizeStatus(campaign.status) === "ACTIVE"
+  ).length;
 
-  const clients =
-    getConnectionClients(
-      accounts,
-      campaigns
-    );
+  const clients = getConnectionClients(accounts, campaigns);
 
   return {
-    id:
-      connection.id,
-
-    name:
-      connection.name,
-
+    id: connection.id,
+    name: connection.name,
     clients,
-
-    accounts:
-      accounts.length,
-
+    accounts: accounts.length,
     azureEntra,
-
     hypertideGoogle,
-
     googleWorkspace,
-
     activeCampaigns,
-
-    status:
-      connection.status ||
-      "connected",
-
-    lastSynced:
-      connection.last_synced_at,
+    status: connection.status || "connected",
+    lastSynced: connection.last_synced_at,
   };
 }
 
@@ -1446,730 +909,158 @@ function getConnectionClients(
   accounts: EmailAccount[],
   campaigns: Campaign[]
 ) {
-  const names =
-    new Set<string>();
+  const names = new Set<string>();
 
-  for (
-    const account of accounts
-  ) {
-    const raw =
-      account.raw_data || {};
-
+  for (const account of accounts) {
+    const raw = account.raw_data || {};
     const name =
-      getText(
-        raw.client_name
-      ) ||
-      getText(
-        raw.clientName
-      ) ||
-      getText(
-        raw.client
-      );
+      getText(raw.client_name) ||
+      getText(raw.clientName) ||
+      getText(raw.client);
 
     if (name) {
       names.add(name);
     }
   }
 
-  for (
-    const campaign of campaigns
-  ) {
-    const raw =
-      campaign.raw_data || {};
-
+  for (const campaign of campaigns) {
+    const raw = campaign.raw_data || {};
     const name =
-      getText(
-        raw.client_name
-      ) ||
-      getText(
-        raw.clientName
-      ) ||
-      getText(
-        raw.client
-      );
+      getText(raw.client_name) ||
+      getText(raw.clientName) ||
+      getText(raw.client);
 
     if (name) {
       names.add(name);
     }
   }
 
-  if (
-    names.size === 0
-  ) {
-    return [
-      "Unassigned",
-    ];
+  if (names.size === 0) {
+    return ["Unassigned"];
   }
 
-  return Array.from(
-    names
-  ).sort();
+  return Array.from(names).sort();
 }
 
-function formatClients(
-  clients: string[]
-) {
-  if (
-    clients.length === 0
-  ) {
-    return "No client";
+function formatClients(clients: string[]) {
+  if (clients.length === 0) {
+    return "No clients assigned";
   }
 
-  if (
-    clients.length <= 3
-  ) {
-    return clients.join(
-      ", "
-    );
+  if (clients.length <= 2) {
+    return clients.join(", ");
   }
 
-  const first =
-    clients.slice(0, 3);
-
-  return `${first.join(
-    ", "
-  )} +${
-    clients.length - 3
-  } more`;
+  const first = clients.slice(0, 2);
+  return `${first.join(", ")} +${clients.length - 2} more`;
 }
 
-function isHealthyAccount(
-  account: EmailAccount
-) {
-  if (
-    !isAccountType(
-      account.account_type
-    )
-  ) {
+function isHealthyAccount(account: EmailAccount) {
+  if (!isAccountType(account.account_type)) {
     return false;
   }
 
-  const rule =
-    accountRules[
-      account.account_type
-    ];
+  const rule = accountRules[account.account_type];
+  const raw = account.raw_data || {};
 
-  const raw =
-    account.raw_data || {};
+  const dailyLimit = getNumber(raw.max_email_per_day);
+  const warmupEnabled = getBoolean(raw.warmup_enabled);
+  const warmupDaily = getNumber(raw.total_warmup_per_day);
 
-  const dailyLimit =
-    getNumber(
-      raw.max_email_per_day
-    );
-
-  const warmupEnabled =
-    getBoolean(
-      raw.warmup_enabled
-    );
-
-  const warmupDaily =
-    getNumber(
-      raw.total_warmup_per_day
-    );
-
-  if (
-    dailyLimit !== null &&
-    dailyLimit !==
-      rule.dailyLimit
-  ) {
+  if (dailyLimit !== null && dailyLimit !== rule.dailyLimit) {
     return false;
   }
 
-  if (
-    warmupEnabled !== null &&
-    warmupEnabled !==
-      rule.warmupEnabled
-  ) {
+  if (warmupEnabled !== null && warmupEnabled !== rule.warmupEnabled) {
     return false;
   }
 
-  if (
-    warmupDaily !== null &&
-    warmupDaily !==
-      rule.warmupDaily
-  ) {
+  if (warmupDaily !== null && warmupDaily !== rule.warmupDaily) {
     return false;
   }
 
   return true;
 }
 
-function normalizeStatus(
-  value: string | null
-) {
-  return (
-    value
-      ?.trim()
-      .toUpperCase() ||
-    "UNKNOWN"
-  );
+function normalizeStatus(value: string | null) {
+  return value?.trim().toUpperCase() || "UNKNOWN";
 }
 
-function getText(
-  value: unknown
-) {
-  if (
-    typeof value !==
-    "string"
-  ) {
+function getText(value: unknown) {
+  if (typeof value !== "string") {
     return null;
   }
-
-  const result =
-    value.trim();
-
+  const result = value.trim();
   return result || null;
 }
 
-function getNumber(
-  value: unknown
-) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
+function getNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
-
-  const number =
-    Number(value);
-
-  return Number.isFinite(
-    number
-  )
-    ? number
-    : null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
-function getBoolean(
-  value: unknown
-) {
-  if (
-    typeof value ===
-    "boolean"
-  ) {
+function getBoolean(value: unknown) {
+  if (typeof value === "boolean") {
     return value;
   }
-
-  if (
-    value === 1
-  ) {
+  if (value === 1) {
     return true;
   }
-
-  if (
-    value === 0
-  ) {
+  if (value === 0) {
     return false;
   }
-
-  if (
-    typeof value ===
-    "string"
-  ) {
-    const text =
-      value
-        .trim()
-        .toLowerCase();
-
-    if (
-      text ===
-        "true" ||
-      text === "1"
-    ) {
+  if (typeof value === "string") {
+    const text = value.trim().toLowerCase();
+    if (text === "true" || text === "1") {
       return true;
     }
-
-    if (
-      text ===
-        "false" ||
-      text === "0"
-    ) {
+    if (text === "false" || text === "0") {
       return false;
     }
   }
-
   return null;
 }
 
-function safeNumber(
-  value:
-    | number
-    | null
-    | undefined
-) {
-  return (
-    typeof value ===
-      "number" &&
-    Number.isFinite(
-      value
-    )
-  )
-    ? value
-    : 0;
+function formatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-  success,
-  warning,
-}: {
-  title: string;
-
-  value:
-    | number
-    | null
-    | undefined;
-
-  icon: ReactNode;
-
-  success?: boolean;
-
-  warning?: boolean;
-}) {
-  let color =
-    "#111827";
-
-  let background =
-    "#F8FAFC";
-
-  if (success) {
-    color =
-      "#047857";
-
-    background =
-      "#ECFDF5";
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
   }
-
-  if (warning) {
-    color =
-      "#B45309";
-
-    background =
-      "#FEF3C7";
-  }
-
-  return (
-    <div
-      style={{
-        background:
-          "#FFFFFF",
-
-        border:
-          "1px solid #E5E7EB",
-
-        borderRadius: 13,
-
-        padding: 18,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-
-          alignItems:
-            "center",
-        }}
-      >
-        <div
-          style={{
-            width: 34,
-
-            height: 34,
-
-            borderRadius: 8,
-
-            background,
-
-            color,
-
-            display: "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "center",
-          }}
-        >
-          {icon}
-        </div>
-
-        <div
-          style={{
-            color:
-              "#64748B",
-
-            fontSize: 11,
-
-            marginLeft: 10,
-          }}
-        >
-          {title}
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 14,
-
-          fontSize: 25,
-
-          fontWeight: 750,
-
-          color,
-        }}
-      >
-        {safeNumber(
-          value
-        ).toLocaleString()}
-      </div>
-    </div>
-  );
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function SectionHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: 18,
+function formatRelative(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
 
-        borderBottom:
-          "1px solid #E5E7EB",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 16,
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMinutes / 60);
 
-          fontWeight: 700,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          marginTop: 4,
-
-          color:
-            "#64748B",
-
-          fontSize: 11,
-        }}
-      >
-        {subtitle}
-      </div>
-    </div>
-  );
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
-
-function UpdateRow({
-  label,
-  value,
-  success,
-  warning,
-  last,
-}: {
-  label: string;
-
-  value?:
-    | number
-    | null;
-
-  success?: boolean;
-
-  warning?: boolean;
-
-  last?: boolean;
-}) {
-  let color =
-    "#111827";
-
-  if (success) {
-    color =
-      "#047857";
-  }
-
-  if (warning) {
-    color =
-      "#B45309";
-  }
-
-  const safeValue =
-    safeNumber(value);
-
-  return (
-    <div
-      style={{
-        minHeight: 39,
-
-        display: "flex",
-
-        alignItems:
-          "center",
-
-        borderBottom:
-          last
-            ? "none"
-            : "1px solid #F1F5F9",
-      }}
-    >
-      <span
-        style={{
-          color:
-            "#64748B",
-
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </span>
-
-      <span
-        style={{
-          marginLeft:
-            "auto",
-
-          color,
-
-          fontSize: 12,
-
-          fontWeight: 700,
-        }}
-      >
-        {safeValue.toLocaleString()}
-      </span>
-    </div>
-  );
-}
-
-function HealthRow({
-  label,
-  value,
-  success,
-  warning,
-  danger,
-  last,
-}: {
-  label: string;
-
-  value?:
-    | number
-    | null;
-
-  success?: boolean;
-
-  warning?: boolean;
-
-  danger?: boolean;
-
-  last?: boolean;
-}) {
-  let color =
-    "#475569";
-
-  let iconBackground =
-    "#F1F5F9";
-
-  if (success) {
-    color =
-      "#047857";
-
-    iconBackground =
-      "#ECFDF5";
-  }
-
-  if (warning) {
-    color =
-      "#B45309";
-
-    iconBackground =
-      "#FEF3C7";
-  }
-
-  if (danger) {
-    color =
-      "#B91C1C";
-
-    iconBackground =
-      "#FEF2F2";
-  }
-
-  return (
-    <div
-      style={{
-        display: "flex",
-
-        alignItems:
-          "center",
-
-        paddingBottom:
-          last
-            ? 0
-            : 13,
-
-        marginBottom:
-          last
-            ? 0
-            : 13,
-
-        borderBottom:
-          last
-            ? "none"
-            : "1px solid #F1F5F9",
-      }}
-    >
-      <div
-        style={{
-          width: 30,
-
-          height: 30,
-
-          borderRadius: 8,
-
-          background:
-            iconBackground,
-
-          color,
-
-          display: "flex",
-
-          alignItems:
-            "center",
-
-          justifyContent:
-            "center",
-        }}
-      >
-        {success ? (
-          <CheckCircle2
-            size={14}
-          />
-        ) : (
-          <TriangleAlert
-            size={14}
-          />
-        )}
-      </div>
-
-      <div
-        style={{
-          marginLeft: 10,
-
-          color:
-            "#475569",
-
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginLeft:
-            "auto",
-
-          fontSize: 12,
-
-          fontWeight: 700,
-
-          color,
-        }}
-      >
-        {safeNumber(
-          value
-        ).toLocaleString()}
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({
-  text,
-}: {
-  text: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: 22,
-
-        color:
-          "#64748B",
-
-        textAlign:
-          "center",
-
-        fontSize: 12,
-      }}
-    >
-      {text}
-    </div>
-  );
-}
-
-function formatTime(
-  value: string
-) {
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "Unknown";
-  }
-
-  return date.toLocaleTimeString(
-    [],
-    {
-      hour:
-        "2-digit",
-
-      minute:
-        "2-digit",
-    }
-  );
-}
-
-function formatDateTime(
-  value: string
-) {
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "Unknown";
-  }
-
-  return date.toLocaleString();
-}
-
-const sectionStyle = {
-  background:
-    "#FFFFFF",
-
-  border:
-    "1px solid #E5E7EB",
-
-  borderRadius: 14,
-
-  overflow: "hidden",
-};
