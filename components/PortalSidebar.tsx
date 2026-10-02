@@ -12,7 +12,7 @@ import {
   TriangleAlert,
   Activity,
   StickyNote,
-  Plug,
+  Settings,
   LogOut,
 } from "lucide-react";
 
@@ -60,9 +60,9 @@ const menuItems = [
     icon: StickyNote,
   },
   {
-    name: "Connections",
-    href: "/connections",
-    icon: Plug,
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
   },
 ];
 

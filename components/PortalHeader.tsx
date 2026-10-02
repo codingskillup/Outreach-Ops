@@ -86,8 +86,8 @@ export default function PortalHeader() {
     "/notes":
       "Notes",
 
-    "/connections":
-      "Connections",
+    "/settings":
+      "Settings",
   };
 
   let title =
