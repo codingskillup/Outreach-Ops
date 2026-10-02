@@ -1,38 +1,38 @@
 "use client";
 
-import {
-  useState,
-  type ReactNode,
-} from "react";
-
-import {
-  useRouter,
-} from "next/navigation";
-
+import { useState } from "react";
 import {
   Mail,
   Plus,
   Trash2,
   Bell,
-  Clock3,
+  Clock,
   Power,
   X,
   Send,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  ShieldAlert,
+  Sparkles,
+  CalendarCheck,
+  Check,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-import {
-  createClient,
-} from "@/lib/supabase/client";
-
-type Recipient = {
+export type Recipient = {
   id: string;
   email: string;
   instant_issue_alert: boolean;
   daily_report: boolean;
   is_active: boolean;
-  created_at:
-    | string
-    | null;
+  created_at: string | null;
+};
+
+type ToastNotification = {
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
 };
 
 export default function NotificationSettingsClient({
@@ -42,182 +42,79 @@ export default function NotificationSettingsClient({
   userId: string;
   initialRecipients: Recipient[];
 }) {
-  const router =
-    useRouter();
+  const supabase = createClient();
 
-  const supabase =
-    createClient();
+  const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
+  const [showModal, setShowModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [instantIssueAlert, setInstantIssueAlert] = useState(true);
+  const [dailyReport, setDailyReport] = useState(true);
+  const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
-  const [
-    recipients,
-    setRecipients,
-  ] =
-    useState<Recipient[]>(
-      initialRecipients
-    );
+  const [testingRecipientId, setTestingRecipientId] = useState<string | null>(null);
 
-  const [
-    showModal,
-    setShowModal,
-  ] =
-    useState(false);
+  // Custom remove modal state
+  const [recipientToRemove, setRecipientToRemove] = useState<Recipient | null>(null);
+  const [removing, setRemoving] = useState(false);
 
-  const [
-    email,
-    setEmail,
-  ] =
-    useState("");
+  // In-app Toast state
+  const [toast, setToast] = useState<ToastNotification | null>(null);
 
-  const [
-    instantIssueAlert,
-    setInstantIssueAlert,
-  ] =
-    useState(true);
-
-  const [
-    dailyReport,
-    setDailyReport,
-  ] =
-    useState(true);
-
-  const [
-    isActive,
-    setIsActive,
-  ] =
-    useState(true);
-
-  const [
-    saving,
-    setSaving,
-  ] =
-    useState(false);
-
-  const [
-    error,
-    setError,
-  ] =
-    useState<
-      string | null
-    >(null);
-
-  const [
-    testingRecipientId,
-    setTestingRecipientId,
-  ] =
-    useState<
-      string | null
-    >(null);
+  function triggerToast(toastData: ToastNotification) {
+    setToast(toastData);
+    setTimeout(() => {
+      setToast((curr) => (curr === toastData ? null : curr));
+    }, 5000);
+  }
 
   function openModal() {
     setEmail("");
-
-    setInstantIssueAlert(
-      true
-    );
-
-    setDailyReport(
-      true
-    );
-
-    setIsActive(
-      true
-    );
-
-    setError(
-      null
-    );
-
-    setShowModal(
-      true
-    );
+    setInstantIssueAlert(true);
+    setDailyReport(true);
+    setIsActive(true);
+    setModalError(null);
+    setShowModal(true);
   }
 
   function closeModal() {
-    if (saving) {
-      return;
-    }
-
-    setShowModal(
-      false
-    );
-
-    setError(
-      null
-    );
+    if (saving) return;
+    setShowModal(false);
+    setModalError(null);
   }
 
   async function addRecipient() {
-    const cleanEmail =
-      email
-        .trim()
-        .toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail) {
-      setError(
-        "Please enter an email address."
-      );
-
+      setModalError("Please enter an email address.");
       return;
     }
 
-    const emailPattern =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (
-      !emailPattern.test(
-        cleanEmail
-      )
-    ) {
-      setError(
-        "Please enter a valid email address."
-      );
-
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(cleanEmail)) {
+      setModalError("Please enter a valid email address.");
       return;
     }
 
-    if (
-      !instantIssueAlert &&
-      !dailyReport
-    ) {
-      setError(
-        "Please select at least one notification type."
-      );
-
+    if (!instantIssueAlert && !dailyReport) {
+      setModalError("Please select at least one notification type.");
       return;
     }
 
-    setSaving(
-      true
-    );
+    setSaving(true);
+    setModalError(null);
 
-    setError(
-      null
-    );
-
-    const {
-      data,
-      error:
-        insertError,
-    } =
-      await supabase
-        .from(
-          "notification_recipients"
-        )
+    try {
+      const { data, error: insertError } = await supabase
+        .from("notification_recipients")
         .insert({
-          user_id:
-            userId,
-
-          email:
-            cleanEmail,
-
-          instant_issue_alert:
-            instantIssueAlert,
-
-          daily_report:
-            dailyReport,
-
-          is_active:
-            isActive,
+          user_id: userId,
+          email: cleanEmail,
+          instant_issue_alert: instantIssueAlert,
+          daily_report: dailyReport,
+          is_active: isActive,
         })
         .select(`
           id,
@@ -229,1449 +126,721 @@ export default function NotificationSettingsClient({
         `)
         .single();
 
-    setSaving(
-      false
-    );
-
-    if (
-      insertError
-    ) {
-      if (
-        insertError.code ===
-        "23505"
-      ) {
-        setError(
-          "This email is already added."
-        );
-      } else {
-        setError(
-          insertError.message
-        );
+      if (insertError) {
+        if (insertError.code === "23505") {
+          setModalError("This email address is already subscribed.");
+        } else {
+          setModalError(insertError.message);
+        }
+        setSaving(false);
+        return;
       }
 
-      return;
+      setRecipients((current) => [...current, data as Recipient]);
+      setShowModal(false);
+      setEmail("");
+
+      triggerToast({
+        type: "success",
+        title: "Recipient Subscribed",
+        message: `${cleanEmail} will now receive configured notifications.`,
+      });
+    } catch {
+      setModalError("An unexpected error occurred while adding recipient.");
+    } finally {
+      setSaving(false);
     }
-
-    if (!data) {
-      setError(
-        "Recipient could not be added."
-      );
-
-      return;
-    }
-
-    setRecipients(
-      (
-        current
-      ) => [
-        ...current,
-        data as Recipient,
-      ]
-    );
-
-    setShowModal(
-      false
-    );
-
-    setEmail("");
-
-    router.refresh();
   }
 
   async function updateRecipient(
     id: string,
-    values:
-      Partial<
-        Pick<
-          Recipient,
-          | "instant_issue_alert"
-          | "daily_report"
-          | "is_active"
-        >
-      >
+    patch: Partial<Pick<Recipient, "instant_issue_alert" | "daily_report" | "is_active">>
   ) {
-    setError(
-      null
-    );
-
-    const {
-      error:
-        updateError,
-    } =
-      await supabase
-        .from(
-          "notification_recipients"
-        )
-        .update({
-          ...values,
-
-          updated_at:
-            new Date()
-              .toISOString(),
-        })
-        .eq(
-          "id",
-          id
-        )
-        .eq(
-          "user_id",
-          userId
-        );
-
-    if (
-      updateError
-    ) {
-      setError(
-        updateError.message
-      );
-
-      return;
-    }
-
-    setRecipients(
-      (
-        current
-      ) =>
-        current.map(
-          (
-            recipient
-          ) =>
-            recipient.id ===
-            id
-              ? {
-                  ...recipient,
-                  ...values,
-                }
-              : recipient
-        )
-    );
-  }
-
-  async function removeRecipient(
-    id: string
-  ) {
-    const confirmed =
-      window.confirm(
-        "Remove this email recipient?"
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setError(
-      null
-    );
-
-    const {
-      error:
-        deleteError,
-    } =
-      await supabase
-        .from(
-          "notification_recipients"
-        )
-        .delete()
-        .eq(
-          "id",
-          id
-        )
-        .eq(
-          "user_id",
-          userId
-        );
-
-    if (
-      deleteError
-    ) {
-      setError(
-        deleteError.message
-      );
-
-      return;
-    }
-
-    setRecipients(
-      (
-        current
-      ) =>
-        current.filter(
-          (
-            recipient
-          ) =>
-            recipient.id !==
-            id
-        )
-    );
-  }
-
-  async function testRecipient(
-    recipient: Recipient
-  ) {
-    setTestingRecipientId(
-      recipient.id
-    );
-
-    setError(
-      null
+    // Optimistic update
+    setRecipients((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...patch } : item))
     );
 
     try {
-      const response =
-        await fetch(
-          "/api/email/test-recipient",
-          {
-            method:
-              "POST",
+      const { error: updateError } = await supabase
+        .from("notification_recipients")
+        .update(patch)
+        .eq("id", id)
+        .eq("user_id", userId);
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body:
-              JSON.stringify({
-                recipientId:
-                  recipient.id,
-              }),
-          }
-        );
-
-      const result =
-        await response.json();
-
-      if (
-        !response.ok
-      ) {
-        setError(
-          result.error ||
-            "Test email failed."
-        );
-
-        return;
+      if (updateError) {
+        // Revert on failure
+        triggerToast({
+          type: "error",
+          title: "Update Failed",
+          message: updateError.message,
+        });
+        // Refetch or revert
+        const { data } = await supabase
+          .from("notification_recipients")
+          .select("*")
+          .eq("user_id", userId);
+        if (data) setRecipients(data as Recipient[]);
       }
-
-      window.alert(
-        `Test email sent to ${recipient.email}`
-      );
-    } catch (
-      error
-    ) {
-      console.error(
-        "Test email error:",
-        error
-      );
-
-      setError(
-        "Unable to send test email."
-      );
-    } finally {
-      setTestingRecipientId(
-        null
-      );
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Network Error",
+        message: "Failed to update recipient preferences.",
+      });
     }
   }
 
+  async function handleConfirmRemove() {
+    if (!recipientToRemove) return;
+    setRemoving(true);
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("notification_recipients")
+        .delete()
+        .eq("id", recipientToRemove.id)
+        .eq("user_id", userId);
+
+      if (deleteError) {
+        triggerToast({
+          type: "error",
+          title: "Delete Failed",
+          message: deleteError.message,
+        });
+        return;
+      }
+
+      setRecipients((current) =>
+        current.filter((item) => item.id !== recipientToRemove.id)
+      );
+
+      triggerToast({
+        type: "info",
+        title: "Recipient Removed",
+        message: `${recipientToRemove.email} will no longer receive notifications.`,
+      });
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Error",
+        message: "Unable to remove recipient.",
+      });
+    } finally {
+      setRemoving(false);
+      setRecipientToRemove(null);
+    }
+  }
+
+  async function testRecipient(recipient: Recipient) {
+    setTestingRecipientId(recipient.id);
+
+    try {
+      const response = await fetch("/api/email/test-recipient", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recipientId: recipient.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        triggerToast({
+          type: "error",
+          title: "Test Email Failed",
+          message: result.error || "Unable to dispatch test email.",
+        });
+        return;
+      }
+
+      triggerToast({
+        type: "success",
+        title: "Test Email Dispatched",
+        message: `A sample notification was delivered to ${recipient.email}.`,
+      });
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Delivery Error",
+        message: "Unable to send test notification.",
+      });
+    } finally {
+      setTestingRecipientId(null);
+    }
+  }
+
+  const instantSubscribers = recipients.filter((r) => r.instant_issue_alert && r.is_active).length;
+  const dailySubscribers = recipients.filter((r) => r.daily_report && r.is_active).length;
+
   return (
-    <>
-      <div
-        style={{
-          width:
-            "100%",
-        }}
-      >
-        <div
-          style={{
-            display:
-              "flex",
+    <div className="w-full space-y-8">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div
+            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md flex items-start gap-3 ${
+              toast.type === "success"
+                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                : toast.type === "error"
+                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
+                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+            }`}
+          >
+            {toast.type === "success" && (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+            )}
+            {toast.type === "error" && (
+              <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+            )}
+            {toast.type === "info" && (
+              <Info className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">{toast.title}</p>
+              <p className="text-xs text-slate-300 mt-0.5">{toast.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
-            justifyContent:
-              "space-between",
-
-            alignItems:
-              "center",
-
-            gap:
-              20,
-
-            marginBottom:
-              28,
-          }}
-        >
+      {/* KPI Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
           <div>
-            <h2
-              style={{
-                margin:
-                  0,
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Email Recipients
+            </span>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {recipients.length}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Configured notification endpoints
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+            <Mail className="w-6 h-6" />
+          </div>
+        </div>
 
-                fontSize:
-                  22,
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Instant Issue Alerts
+              </span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {instantSubscribers}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Active real-time alert subscribers
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-200 flex items-center justify-center text-rose-600">
+            <Bell className="w-6 h-6" />
+          </div>
+        </div>
 
-                fontWeight:
-                  700,
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Daily 8 AM Digest
+              </span>
+              <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {dailySubscribers}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Subscribers for morning briefing
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600">
+            <Clock className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
 
-                color:
-                  "#111827",
-              }}
-            >
-              Email Notifications
+      {/* Main Notification Card Container */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="p-5 md:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Subscribed Email Recipients</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                {recipients.length}
+              </span>
             </h2>
-
-            <p
-              style={{
-                margin:
-                  "7px 0 0",
-
-                color:
-                  "#6b7280",
-
-                fontSize:
-                  14,
-              }}
-            >
-              Choose who receives new issue alerts and the daily 8 AM report.
+            <p className="text-xs text-slate-500 mt-1 max-w-xl">
+              Manage team members who receive immediate system alert notifications and the automated morning executive briefing.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={
-              openModal
-            }
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                8,
-
-              border:
-                "none",
-
-              background:
-                "#111827",
-
-              color:
-                "#ffffff",
-
-              padding:
-                "11px 16px",
-
-              borderRadius:
-                9,
-
-              fontWeight:
-                650,
-
-              cursor:
-                "pointer",
-
-              whiteSpace:
-                "nowrap",
-            }}
+            onClick={openModal}
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
           >
-            <Plus
-              size={
-                17
-              }
-            />
-
-            Add Recipient
+            <Plus className="w-4 h-4" />
+            <span>Add Recipient</span>
           </button>
         </div>
 
-        {error &&
-          !showModal && (
-            <div
-              style={{
-                padding:
-                  "12px 14px",
-
-                background:
-                  "#fef2f2",
-
-                border:
-                  "1px solid #fecaca",
-
-                color:
-                  "#b91c1c",
-
-                borderRadius:
-                  9,
-
-                marginBottom:
-                  16,
-
-                fontSize:
-                  13,
-              }}
-            >
-              {error}
+        {/* Recipients List */}
+        {recipients.length === 0 ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+              <Mail className="w-8 h-8 text-slate-300" />
             </div>
-          )}
-
-        <div
-          style={{
-            display:
-              "grid",
-
-            gap:
-              12,
-          }}
-        >
-          {recipients.length ===
-            0 && (
-            <div
-              style={{
-                padding:
-                  45,
-
-                textAlign:
-                  "center",
-
-                background:
-                  "#ffffff",
-
-                border:
-                  "1px solid #e5e7eb",
-
-                borderRadius:
-                  12,
-
-                color:
-                  "#6b7280",
-              }}
+            <h3 className="text-sm font-semibold text-slate-800">
+              No email recipients configured yet
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mt-1 mb-4 leading-relaxed">
+              Add email addresses to ensure your operations team receives instant notifications when mailbox limits, warmup issues, or domain failures occur.
+            </p>
+            <button
+              type="button"
+              onClick={openModal}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
             >
-              No notification emails added yet.
-            </div>
-          )}
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add First Recipient</span>
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {recipients.map((recipient) => {
+              const isSendingTest = testingRecipientId === recipient.id;
+              const initialLetter = recipient.email.charAt(0).toUpperCase();
 
-          {recipients.map(
-            (
-              recipient
-            ) => (
-              <div
-                key={
-                  recipient.id
-                }
-                style={{
-                  background:
-                    "#ffffff",
-
-                  border:
-                    "1px solid #e5e7eb",
-
-                  borderRadius:
-                    12,
-
-                  padding:
-                    "18px",
-
-                  display:
-                    "flex",
-
-                  alignItems:
-                    "center",
-
-                  justifyContent:
-                    "space-between",
-
-                  flexWrap:
-                    "wrap",
-
-                  gap:
-                    18,
-                }}
-              >
+              return (
                 <div
-                  style={{
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
-                    gap:
-                      10,
-
-                    minWidth:
-                      250,
-
-                    flex:
-                      "1 1 300px",
-                  }}
+                  key={recipient.id}
+                  className={`p-4 md:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5 transition-colors duration-150 ${
+                    recipient.is_active ? "hover:bg-slate-50/70" : "bg-slate-50/40 opacity-70"
+                  }`}
                 >
-                  <Mail
-                    size={
-                      18
-                    }
-                    style={{
-                      color:
-                        "#64748b",
-                    }}
-                  />
+                  {/* Recipient Identity */}
+                  <div className="flex items-center gap-3.5 min-w-[240px]">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-800 to-indigo-900 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+                      {initialLetter}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900 truncate">
+                          {recipient.email}
+                        </span>
+                        {!recipient.is_active && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 text-slate-400" />
+                        <span>Email Destination</span>
+                      </div>
+                    </div>
+                  </div>
 
-                  <strong
-                    style={{
-                      color:
-                        "#111827",
-
-                      overflowWrap:
-                        "anywhere",
-                    }}
-                  >
-                    {
-                      recipient.email
-                    }
-                  </strong>
-                </div>
-
-                <div
-                  style={{
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
-                    flexWrap:
-                      "wrap",
-
-                    gap:
-                      16,
-                  }}
-                >
-                  <SettingToggle
-                    icon={
-                      <Bell
-                        size={
-                          16
-                        }
-                      />
-                    }
-                    label="New Issue Alert"
-                    checked={
-                      recipient
-                        .instant_issue_alert
-                    }
-                    onChange={(
-                      checked
-                    ) =>
-                      updateRecipient(
-                        recipient.id,
-                        {
-                          instant_issue_alert:
-                            checked,
-                        }
-                      )
-                    }
-                  />
-
-                  <SettingToggle
-                    icon={
-                      <Clock3
-                        size={
-                          16
-                        }
-                      />
-                    }
-                    label="Daily 8 AM"
-                    checked={
-                      recipient
-                        .daily_report
-                    }
-                    onChange={(
-                      checked
-                    ) =>
-                      updateRecipient(
-                        recipient.id,
-                        {
-                          daily_report:
-                            checked,
-                        }
-                      )
-                    }
-                  />
-
-                  <SettingToggle
-                    icon={
-                      <Power
-                        size={
-                          16
-                        }
-                      />
-                    }
-                    label="Active"
-                    checked={
-                      recipient
-                        .is_active
-                    }
-                    onChange={(
-                      checked
-                    ) =>
-                      updateRecipient(
-                        recipient.id,
-                        {
-                          is_active:
-                            checked,
-                        }
-                      )
-                    }
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      testRecipient(
-                        recipient
-                      )
-                    }
-                    disabled={
-                      testingRecipientId ===
-                      recipient.id
-                    }
-                    title="Send test email"
-                    style={{
-                      height:
-                        40,
-
-                      display:
-                        "flex",
-
-                      alignItems:
-                        "center",
-
-                      justifyContent:
-                        "center",
-
-                      gap:
-                        7,
-
-                      padding:
-                        "0 12px",
-
-                      border:
-                        "1px solid #dbeafe",
-
-                      background:
-                        "#eff6ff",
-
-                      color:
-                        "#2563eb",
-
-                      borderRadius:
-                        8,
-
-                      fontSize:
-                        13,
-
-                      fontWeight:
-                        600,
-
-                      cursor:
-                        testingRecipientId ===
-                        recipient.id
-                          ? "not-allowed"
-                          : "pointer",
-
-                      opacity:
-                        testingRecipientId ===
-                        recipient.id
-                          ? 0.6
-                          : 1,
-                    }}
-                  >
-                    <Send
-                      size={
-                        15
+                  {/* Notification Controls / Switches */}
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-slate-50/90 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+                    <ModernSwitch
+                      icon={<Bell className="w-3.5 h-3.5" />}
+                      label="New Issue Alert"
+                      checked={recipient.instant_issue_alert}
+                      onChange={(checked) =>
+                        updateRecipient(recipient.id, { instant_issue_alert: checked })
                       }
+                      accentColor="rose"
                     />
 
-                    {testingRecipientId ===
-                    recipient.id
-                      ? "Sending..."
-                      : "Test"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      removeRecipient(
-                        recipient.id
-                      )
-                    }
-                    title="Remove recipient"
-                    style={{
-                      width:
-                        40,
-
-                      height:
-                        40,
-
-                      display:
-                        "grid",
-
-                      placeItems:
-                        "center",
-
-                      border:
-                        "1px solid #fecaca",
-
-                      background:
-                        "#ffffff",
-
-                      color:
-                        "#dc2626",
-
-                      borderRadius:
-                        8,
-
-                      cursor:
-                        "pointer",
-                    }}
-                  >
-                    <Trash2
-                      size={
-                        16
+                    <ModernSwitch
+                      icon={<Clock className="w-3.5 h-3.5" />}
+                      label="Daily 8 AM"
+                      checked={recipient.daily_report}
+                      onChange={(checked) =>
+                        updateRecipient(recipient.id, { daily_report: checked })
                       }
+                      accentColor="indigo"
                     />
-                  </button>
+
+                    <ModernSwitch
+                      icon={<Power className="w-3.5 h-3.5" />}
+                      label="Active"
+                      checked={recipient.is_active}
+                      onChange={(checked) =>
+                        updateRecipient(recipient.id, { is_active: checked })
+                      }
+                      accentColor="emerald"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 self-end lg:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => testRecipient(recipient)}
+                      disabled={isSendingTest}
+                      title="Send test email to this address"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      <Send
+                        className={`w-3.5 h-3.5 ${
+                          isSendingTest ? "animate-spin" : ""
+                        }`}
+                      />
+                      <span>{isSendingTest ? "Sending..." : "Test Email"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRecipientToRemove(recipient)}
+                      title="Remove recipient"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-sm"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Remove</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )
-          )}
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modern Information & Delivery Guide Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-900">Instant Issue Alerts</h4>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Real-time incident dispatch triggered when mailboxes drop connection, daily caps are exceeded, or DNS health degrades.
+          </p>
         </div>
 
-        <div
-          style={{
-            marginTop:
-              24,
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <CalendarCheck className="w-5 h-5" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-900">Daily 8 AM Digest</h4>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Executive summary delivered every morning covering total active mailboxes, warmup performance, resolved issues, and campaign velocity.
+          </p>
+        </div>
 
-            padding:
-              16,
-
-            background:
-              "#f9fafb",
-
-            border:
-              "1px solid #e5e7eb",
-
-            borderRadius:
-              10,
-
-            color:
-              "#6b7280",
-
-            fontSize:
-              13,
-
-            lineHeight:
-              1.7,
-          }}
-        >
-          <strong
-            style={{
-              color:
-                "#111827",
-            }}
-          >
-            New Issue Alert:
-          </strong>{" "}
-          Sends an email when Outreach Ops detects a new issue.
-
-          <br />
-
-          <strong
-            style={{
-              color:
-                "#111827",
-            }}
-          >
-            Daily 8 AM:
-          </strong>{" "}
-          Sends the daily Smartlead, EmailGuard and issue summary.
-
-          <br />
-
-          <strong
-            style={{
-              color:
-                "#111827",
-            }}
-          >
-            Active:
-          </strong>{" "}
-          Turns all notifications for this recipient on or off.
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-900">Verified Deliverability</h4>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Emails are authenticated with DKIM, SPF, and DMARC alignment through resilient transactional infrastructure for high inbox placement.
+          </p>
         </div>
       </div>
 
+      {/* Add Recipient Modal */}
       {showModal && (
         <div
-          onMouseDown={(
-            event
-          ) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
-              closeModal();
-            }
-          }}
-          style={{
-            position:
-              "fixed",
-
-            inset:
-              0,
-
-            background:
-              "rgba(15, 23, 42, 0.48)",
-
-            display:
-              "grid",
-
-            placeItems:
-              "center",
-
-            zIndex:
-              1000,
-
-            padding:
-              20,
-          }}
+          onClick={closeModal}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
-            style={{
-              width:
-                "100%",
-
-              maxWidth:
-                520,
-
-              background:
-                "#ffffff",
-
-              borderRadius:
-                14,
-
-              boxShadow:
-                "0 20px 50px rgba(0,0,0,0.20)",
-
-              overflow:
-                "hidden",
-            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
           >
-            <div
-              style={{
-                display:
-                  "flex",
-
-                justifyContent:
-                  "space-between",
-
-                alignItems:
-                  "center",
-
-                gap:
-                  20,
-
-                padding:
-                  "20px 22px",
-
-                borderBottom:
-                  "1px solid #e5e7eb",
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin:
-                      0,
-
-                    fontSize:
-                      19,
-
-                    color:
-                      "#111827",
-                  }}
-                >
-                  Add Email Recipient
-                </h3>
-
-                <p
-                  style={{
-                    margin:
-                      "5px 0 0",
-
-                    color:
-                      "#6b7280",
-
-                    fontSize:
-                      13,
-                  }}
-                >
-                  Choose which notifications this email should receive.
-                </p>
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/70">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-md">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Add Email Recipient
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Configure alert subscriptions for this team member
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
-                disabled={
-                  saving
-                }
-                title="Close"
-                style={{
-                  width:
-                    36,
-
-                  height:
-                    36,
-
-                  display:
-                    "grid",
-
-                  placeItems:
-                    "center",
-
-                  border:
-                    "none",
-
-                  background:
-                    "transparent",
-
-                  cursor:
-                    saving
-                      ? "not-allowed"
-                      : "pointer",
-
-                  color:
-                    "#6b7280",
-                }}
+                onClick={closeModal}
+                disabled={saving}
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <X
-                  size={
-                    20
-                  }
-                />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div
-              style={{
-                padding:
-                  22,
-              }}
-            >
-              <label
-                htmlFor="notification-email"
-                style={{
-                  display:
-                    "block",
-
-                  fontSize:
-                    13,
-
-                  fontWeight:
-                    650,
-
-                  marginBottom:
-                    7,
-
-                  color:
-                    "#374151",
-                }}
-              >
-                Email Address
-              </label>
-
-              <input
-                id="notification-email"
-                autoFocus
-                type="email"
-                value={
-                  email
-                }
-                onChange={(
-                  event
-                ) =>
-                  setEmail(
-                    event
-                      .target
-                      .value
-                  )
-                }
-                onKeyDown={(
-                  event
-                ) => {
-                  if (
-                    event.key ===
-                    "Enter"
-                  ) {
-                    addRecipient();
-                  }
-                }}
-                placeholder="name@example.com"
-                style={{
-                  width:
-                    "100%",
-
-                  boxSizing:
-                    "border-box",
-
-                  border:
-                    "1px solid #d1d5db",
-
-                  borderRadius:
-                    8,
-
-                  padding:
-                    "11px 12px",
-
-                  outline:
-                    "none",
-
-                  fontSize:
-                    14,
-
-                  marginBottom:
-                    22,
-
-                  color:
-                    "#111827",
-
-                  background:
-                    "#ffffff",
-                }}
-              />
-
-              <div
-                style={{
-                  display:
-                    "grid",
-
-                  gap:
-                    12,
-                }}
-              >
-                <ModalOption
-                  icon={
-                    <Bell
-                      size={
-                        18
-                      }
-                    />
-                  }
-                  title="New Issue Alerts"
-                  description="Send an email when a new account or domain issue is detected."
-                  checked={
-                    instantIssueAlert
-                  }
-                  onChange={
-                    setInstantIssueAlert
-                  }
-                />
-
-                <ModalOption
-                  icon={
-                    <Clock3
-                      size={
-                        18
-                      }
-                    />
-                  }
-                  title="Daily 8 AM Report"
-                  description="Receive the daily account, campaign, domain and issue summary."
-                  checked={
-                    dailyReport
-                  }
-                  onChange={
-                    setDailyReport
-                  }
-                />
-
-                <ModalOption
-                  icon={
-                    <Power
-                      size={
-                        18
-                      }
-                    />
-                  }
-                  title="Active Recipient"
-                  description="Enable notifications for this email address."
-                  checked={
-                    isActive
-                  }
-                  onChange={
-                    setIsActive
-                  }
-                />
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+                  <input
+                    type="email"
+                    autoFocus
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addRecipient();
+                    }}
+                    placeholder="teammate@company.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200"
+                  />
+                </div>
               </div>
 
-              {error && (
+              {/* Subscriptions Options */}
+              <div className="space-y-2.5 pt-2">
+                <span className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Subscription Channels
+                </span>
+
                 <div
-                  style={{
-                    marginTop:
-                      16,
-
-                    padding:
-                      "11px 12px",
-
-                    borderRadius:
-                      8,
-
-                    background:
-                      "#fef2f2",
-
-                    color:
-                      "#b91c1c",
-
-                    border:
-                      "1px solid #fecaca",
-
-                    fontSize:
-                      13,
-                  }}
+                  onClick={() => setInstantIssueAlert(!instantIssueAlert)}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
+                    instantIssueAlert
+                      ? "bg-rose-50/60 border-rose-200"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                  }`}
                 >
-                  {error}
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                      instantIssueAlert
+                        ? "bg-rose-600 border-rose-600 text-white"
+                        : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {instantIssueAlert && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-rose-500" />
+                      Instant Issue Alerts
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Sends real-time email alerts whenever an account limit, connection drop, or domain issue is triggered.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setDailyReport(!dailyReport)}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
+                    dailyReport
+                      ? "bg-indigo-50/60 border-indigo-200"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                      dailyReport
+                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {dailyReport && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      Daily 8 AM Digest Report
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Sends the consolidated morning briefing detailing all connected accounts, campaigns, and health scores.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setIsActive(!isActive)}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
+                    isActive
+                      ? "bg-emerald-50/60 border-emerald-200"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                      isActive
+                        ? "bg-emerald-600 border-emerald-600 text-white"
+                        : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {isActive && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Power className="w-3.5 h-3.5 text-emerald-500" />
+                      Active Recipient Status
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Enable or pause all notification deliveries to this address without deleting the record.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {modalError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{modalError}</span>
                 </div>
               )}
             </div>
 
-            <div
-              style={{
-                display:
-                  "flex",
-
-                justifyContent:
-                  "flex-end",
-
-                gap:
-                  10,
-
-                padding:
-                  "16px 22px",
-
-                borderTop:
-                  "1px solid #e5e7eb",
-
-                background:
-                  "#f9fafb",
-              }}
-            >
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
-                disabled={
-                  saving
-                }
-                style={{
-                  border:
-                    "1px solid #d1d5db",
-
-                  background:
-                    "#ffffff",
-
-                  color:
-                    "#374151",
-
-                  borderRadius:
-                    8,
-
-                  padding:
-                    "10px 15px",
-
-                  cursor:
-                    saving
-                      ? "not-allowed"
-                      : "pointer",
-
-                  fontWeight:
-                    600,
-                }}
+                onClick={closeModal}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
-                onClick={
-                  addRecipient
-                }
-                disabled={
-                  saving
-                }
-                style={{
-                  border:
-                    "none",
-
-                  background:
-                    "#111827",
-
-                  color:
-                    "#ffffff",
-
-                  borderRadius:
-                    8,
-
-                  padding:
-                    "10px 16px",
-
-                  fontWeight:
-                    650,
-
-                  cursor:
-                    saving
-                      ? "not-allowed"
-                      : "pointer",
-
-                  opacity:
-                    saving
-                      ? 0.65
-                      : 1,
-                }}
+                onClick={addRecipient}
+                disabled={saving}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
               >
-                {saving
-                  ? "Adding..."
-                  : "Add Recipient"}
+                {saving ? (
+                  <span>Adding...</span>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Add Recipient</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+
+      {/* Confirmation Modal for Removing Recipient */}
+      {recipientToRemove && (
+        <div
+          onClick={() => !removing && setRecipientToRemove(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-1">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Remove Email Recipient?
+              </h3>
+              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                Are you sure you want to remove{" "}
+                <span className="font-semibold text-slate-900">
+                  {recipientToRemove.email}
+                </span>{" "}
+                from receiving automated issue alerts and morning reports?
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRecipientToRemove(null)}
+                disabled={removing}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                disabled={removing}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+              >
+                {removing ? (
+                  <span>Removing...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirm Remove</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-function SettingToggle({
+function ModernSwitch({
   icon,
   label,
   checked,
   onChange,
+  accentColor,
 }: {
-  icon: ReactNode;
+  icon: React.ReactNode;
   label: string;
   checked: boolean;
-
-  onChange: (
-    checked: boolean
-  ) => void;
+  onChange: (checked: boolean) => void;
+  accentColor: "rose" | "indigo" | "emerald";
 }) {
+  const activeBg =
+    accentColor === "rose"
+      ? "bg-rose-600"
+      : accentColor === "indigo"
+      ? "bg-indigo-600"
+      : "bg-emerald-600";
+
   return (
-    <label
-      style={{
-        display:
-          "flex",
-
-        alignItems:
-          "center",
-
-        gap:
-          8,
-
-        cursor:
-          "pointer",
-
-        whiteSpace:
-          "nowrap",
-
-        fontSize:
-          13,
-
-        color:
-          "#374151",
-
-        fontWeight:
-          550,
-      }}
-    >
-      <span
-        style={{
-          display:
-            "flex",
-
-          color:
-            "#64748b",
-        }}
+    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+      <span className="text-slate-400">{icon}</span>
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          checked ? activeBg : "bg-slate-300"
+        }`}
       >
-        {icon}
-      </span>
-
-      {label}
-
-      <input
-        type="checkbox"
-        checked={
-          checked
-        }
-        onChange={(
-          event
-        ) =>
-          onChange(
-            event
-              .target
-              .checked
-          )
-        }
-        style={{
-          width:
-            17,
-
-          height:
-            17,
-
-          cursor:
-            "pointer",
-
-          accentColor:
-            "#2563eb",
-        }}
-      />
-    </label>
-  );
-}
-
-function ModalOption({
-  icon,
-  title,
-  description,
-  checked,
-  onChange,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  checked: boolean;
-
-  onChange: (
-    checked: boolean
-  ) => void;
-}) {
-  return (
-    <label
-      style={{
-        display:
-          "flex",
-
-        alignItems:
-          "center",
-
-        gap:
-          14,
-
-        padding:
-          14,
-
-        border:
-          checked
-            ? "1px solid #bfdbfe"
-            : "1px solid #e5e7eb",
-
-        background:
-          checked
-            ? "#eff6ff"
-            : "#ffffff",
-
-        borderRadius:
-          10,
-
-        cursor:
-          "pointer",
-      }}
-    >
-      <div
-        style={{
-          color:
-            checked
-              ? "#2563eb"
-              : "#64748b",
-
-          display:
-            "flex",
-        }}
-      >
-        {icon}
-      </div>
-
-      <div
-        style={{
-          flex:
-            1,
-
-          minWidth:
-            0,
-        }}
-      >
-        <div
-          style={{
-            fontWeight:
-              650,
-
-            color:
-              "#111827",
-
-            fontSize:
-              14,
-          }}
-        >
-          {title}
-        </div>
-
-        <div
-          style={{
-            marginTop:
-              4,
-
-            color:
-              "#6b7280",
-
-            fontSize:
-              12,
-
-            lineHeight:
-              1.45,
-          }}
-        >
-          {description}
-        </div>
-      </div>
-
-      <input
-        type="checkbox"
-        checked={
-          checked
-        }
-        onChange={(
-          event
-        ) =>
-          onChange(
-            event
-              .target
-              .checked
-          )
-        }
-        style={{
-          width:
-            18,
-
-          height:
-            18,
-
-          cursor:
-            "pointer",
-
-          accentColor:
-            "#2563eb",
-        }}
-      />
+        <span
+          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+            checked ? "translate-x-4" : "translate-x-0"
+          }`}
+        />
+      </button>
     </label>
   );
 }

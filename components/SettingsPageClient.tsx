@@ -1,31 +1,9 @@
 "use client";
 
 import { useState } from "react";
-
-import { Plug, Mail } from "lucide-react";
-
-import ConnectionsPageClient from "@/components/ConnectionsPageClient";
-
-import NotificationSettingsClient from "@/components/NotificationSettingsClient";
-
-type Integration = {
-  id: string;
-  provider: string;
-  name: string;
-  status: string | null;
-  api_key_last4: string | null;
-  last_synced_at: string | null;
-  created_at: string | null;
-};
-
-type Recipient = {
-  id: string;
-  email: string;
-  instant_issue_alert: boolean;
-  daily_report: boolean;
-  is_active: boolean;
-  created_at: string | null;
-};
+import { Plug, Bell, ShieldCheck } from "lucide-react";
+import ConnectionsPageClient, { type Integration } from "@/components/ConnectionsPageClient";
+import NotificationSettingsClient, { type Recipient } from "@/components/NotificationSettingsClient";
 
 type Tab = "connections" | "notifications";
 
@@ -40,142 +18,106 @@ export default function SettingsPageClient({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("connections");
 
+  const activeRecipientsCount = recipients.filter((r) => r.is_active).length;
+
   return (
-    <div
-      style={{
-        maxWidth: "1400px",
+    <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
+      {/* Sleek Top Navigation Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-sm">
+        {/* Segmented Control Tabs */}
+        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/70">
+          <button
+            type="button"
+            onClick={() => setActiveTab("connections")}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "connections"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
+          >
+            <Plug
+              className={`w-4 h-4 ${
+                activeTab === "connections" ? "text-indigo-600" : "text-slate-500"
+              }`}
+            />
+            <span>Platform Connections</span>
+            <span
+              className={`ml-1 text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "connections"
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {integrations.length}
+            </span>
+          </button>
 
-        margin: "0 auto",
+          <button
+            type="button"
+            onClick={() => setActiveTab("notifications")}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "notifications"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
+          >
+            <Bell
+              className={`w-4 h-4 ${
+                activeTab === "notifications" ? "text-indigo-600" : "text-slate-500"
+              }`}
+            />
+            <span>Email Notifications</span>
+            <span
+              className={`ml-1 text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "notifications"
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {recipients.length}
+            </span>
+          </button>
+        </div>
 
-        padding: "8px 0 40px",
-      }}
-    >
-      <div
-        style={{
-          marginBottom: 28,
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
+        {/* Status Indicators on the Right */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              {integrations.length} {integrations.length === 1 ? "Connection" : "Connections"}
+            </span>
+          </div>
 
-            fontSize: 28,
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium">
+            <Bell className="w-3.5 h-3.5 text-indigo-500" />
+            <span>
+              {activeRecipientsCount} Active {activeRecipientsCount === 1 ? "Alert" : "Alerts"}
+            </span>
+          </div>
 
-            fontWeight: 750,
-
-            color: "#111827",
-          }}
-        >
-          Settings
-        </h1>
-
-        <p
-          style={{
-            margin: "7px 0 0",
-
-            color: "#6b7280",
-
-            fontSize: 14,
-          }}
-        >
-          Manage integrations and email notifications.
-        </p>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-800 font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>AES-256 Encrypted</span>
+          </div>
+        </div>
       </div>
 
-      <div
-        style={{
-          display: "inline-flex",
+      {/* Tab Panels */}
+      <div>
+        {activeTab === "connections" && (
+          <ConnectionsPageClient
+            userId={userId}
+            initialIntegrations={integrations}
+          />
+        )}
 
-          padding: 5,
-
-          gap: 5,
-
-          border: "1px solid #e5e7eb",
-
-          borderRadius: 12,
-
-          background: "#f9fafb",
-
-          marginBottom: 28,
-        }}
-      >
-        <TabButton
-          active={activeTab === "connections"}
-          onClick={() => setActiveTab("connections")}
-          icon={<Plug size={16} />}
-        >
-          Connections
-        </TabButton>
-
-        <TabButton
-          active={activeTab === "notifications"}
-          onClick={() => setActiveTab("notifications")}
-          icon={<Mail size={16} />}
-        >
-          Email Notifications
-        </TabButton>
+        {activeTab === "notifications" && (
+          <NotificationSettingsClient
+            userId={userId}
+            initialRecipients={recipients}
+          />
+        )}
       </div>
-
-      {activeTab === "connections" && (
-        <ConnectionsPageClient
-          userId={userId}
-          initialIntegrations={integrations}
-        />
-      )}
-
-      {activeTab === "notifications" && (
-        <NotificationSettingsClient
-          userId={userId}
-          initialRecipients={recipients}
-        />
-      )}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex",
-
-        alignItems: "center",
-
-        gap: 8,
-
-        padding: "10px 16px",
-
-        border: "none",
-
-        borderRadius: 8,
-
-        cursor: "pointer",
-
-        fontWeight: 600,
-
-        fontSize: 14,
-
-        background: active ? "#ffffff" : "transparent",
-
-        color: active ? "#111827" : "#6b7280",
-
-        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-      }}
-    >
-      {icon}
-
-      {children}
-    </button>
   );
 }

@@ -10,11 +10,19 @@ import {
   KeyRound,
   CheckCircle2,
   Server,
+  ShieldCheck,
+  Zap,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Lock,
+  ExternalLink,
+  Clock,
+  Sparkles,
+  Info,
 } from "lucide-react";
 
-type Provider =
-  | "smartlead"
-  | "emailguard";
+export type Provider = "smartlead" | "emailguard";
 
 export type Integration = {
   id: string;
@@ -23,12 +31,19 @@ export type Integration = {
   status: string | null;
   api_key_last4: string | null;
   last_synced_at: string | null;
-  created_at: string;
+  created_at: string | null;
 };
 
 type Props = {
-  userId: string;
+  userId?: string;
   initialIntegrations: Integration[];
+};
+
+type ToastNotification = {
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+  details?: { label: string; value: string | number }[];
 };
 
 export default function ConnectionsPageClient({
@@ -36,97 +51,66 @@ export default function ConnectionsPageClient({
 }: Props) {
   const supabase = createClient();
 
-  const [
-    integrations,
-    setIntegrations,
-  ] = useState<Integration[]>(
-    initialIntegrations
+  const [integrations, setIntegrations] = useState<Integration[]>(initialIntegrations);
+  const [showModal, setShowModal] = useState(false);
+  const [provider, setProvider] = useState<Provider>("smartlead");
+  const [name, setName] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  // Custom remove confirmation modal state
+  const [integrationToRemove, setIntegrationToRemove] = useState<Integration | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  // In-app Toast state
+  const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  const smartleadConnections = useMemo(
+    () => integrations.filter((item) => item.provider === "smartlead"),
+    [integrations]
   );
 
-  const [
-    showModal,
-    setShowModal,
-  ] = useState(false);
+  const emailguardConnections = useMemo(
+    () => integrations.filter((item) => item.provider === "emailguard"),
+    [integrations]
+  );
 
-  const [
-    provider,
-    setProvider,
-  ] =
-    useState<Provider>("smartlead");
+  function triggerToast(toastData: ToastNotification) {
+    setToast(toastData);
+    setTimeout(() => {
+      setToast((current) => (current === toastData ? null : current));
+    }, 6000);
+  }
 
-  const [name, setName] =
-    useState("");
-
-  const [apiKey, setApiKey] =
-    useState("");
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [syncingId, setSyncingId] =
-    useState<string | null>(null);
-
-  const smartleadConnections =
-    useMemo(
-      () =>
-        integrations.filter(
-          (item) =>
-            item.provider ===
-            "smartlead"
-        ),
-      [integrations]
-    );
-
-  const emailguardConnections =
-    useMemo(
-      () =>
-        integrations.filter(
-          (item) =>
-            item.provider ===
-            "emailguard"
-        ),
-      [integrations]
-    );
-
-  function openModal(
-    selectedProvider: Provider
-  ) {
-    setProvider(
-      selectedProvider
-    );
-
+  function openModal(selectedProvider: Provider) {
+    setProvider(selectedProvider);
     setName("");
     setApiKey("");
+    setShowApiKey(false);
     setError("");
     setShowModal(true);
   }
 
   function closeModal() {
-    if (saving) {
-      return;
-    }
-
+    if (saving) return;
     setShowModal(false);
     setName("");
     setApiKey("");
+    setShowApiKey(false);
     setError("");
   }
 
   async function handleAddConnection() {
     if (!name.trim()) {
-      setError(
-        "Connection name is required."
-      );
+      setError("Connection name is required.");
       return;
     }
 
     if (!apiKey.trim()) {
-      setError(
-        "API key is required."
-      );
+      setError("API key is required.");
       return;
     }
 
@@ -134,571 +118,499 @@ export default function ConnectionsPageClient({
     setError("");
 
     try {
-      const response =
-        await fetch(
-          "/api/integrations",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              provider,
-              name:
-                name.trim(),
-              apiKey:
-                apiKey.trim(),
-            }),
-          }
-        );
+      const response = await fetch("/api/integrations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider,
+          name: name.trim(),
+          apiKey: apiKey.trim(),
+        }),
+      });
 
-      const result =
-        await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        setError(
-          result.error ||
-            "Unable to add connection."
-        );
-
+        setError(result.error || "Unable to add connection.");
         setSaving(false);
         return;
       }
 
-      const newIntegration =
-        result.integration as Integration;
+      const newIntegration = result.integration as Integration;
 
-      setIntegrations(
-        (current) => [
-          ...current,
-          newIntegration,
-        ]
-      );
-
+      setIntegrations((current) => [...current, newIntegration]);
       setShowModal(false);
       setName("");
       setApiKey("");
-      setError("");
+
+      triggerToast({
+        type: "success",
+        title: "Connection Added Successfully",
+        message: `Connected "${newIntegration.name}" to ${provider === "smartlead" ? "Smartlead" : "EmailGuard"}.`,
+      });
     } catch {
-      setError(
-        "Unable to connect. Please try again."
-      );
+      setError("Unable to connect. Please check your network and API key.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleRemove(
-    integration: Integration
-  ) {
-    const confirmed =
-      window.confirm(
-        `Remove "${integration.name}" connection?`
+  async function handleConfirmRemove() {
+    if (!integrationToRemove) return;
+    setRemoving(true);
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("integrations")
+        .delete()
+        .eq("id", integrationToRemove.id);
+
+      if (deleteError) {
+        triggerToast({
+          type: "error",
+          title: "Delete Failed",
+          message: deleteError.message,
+        });
+        return;
+      }
+
+      setIntegrations((current) =>
+        current.filter((item) => item.id !== integrationToRemove.id)
       );
 
-    if (!confirmed) {
-      return;
+      triggerToast({
+        type: "info",
+        title: "Connection Removed",
+        message: `Removed "${integrationToRemove.name}".`,
+      });
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Error",
+        message: "Failed to remove connection.",
+      });
+    } finally {
+      setRemoving(false);
+      setIntegrationToRemove(null);
     }
+  }
 
-    const {
-      error: deleteError,
-    } = await supabase
-      .from("integrations")
-      .delete()
-      .eq(
-        "id",
-        integration.id
-      );
+  async function handleSync(integration: Integration) {
+    if (syncingId === integration.id) return;
+    setSyncingId(integration.id);
 
-    if (deleteError) {
-      alert(
-        deleteError.message
-      );
-      return;
-    }
+    try {
+      const endpoint =
+        integration.provider === "emailguard"
+          ? `/api/integrations/${integration.id}/emailguard-sync`
+          : `/api/integrations/${integration.id}/sync`;
 
-    setIntegrations(
-      (current) =>
-        current.filter(
-          (item) =>
-            item.id !==
-            integration.id
+      const response = await fetch(endpoint, {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        triggerToast({
+          type: "error",
+          title: "Sync Failed",
+          message: result.error || "Unable to sync connection.",
+        });
+        return;
+      }
+
+      // Update last_synced_at locally
+      const nowIso = new Date().toISOString();
+      setIntegrations((current) =>
+        current.map((item) =>
+          item.id === integration.id ? { ...item, last_synced_at: nowIso } : item
         )
-    );
-  }
-
-async function handleSync(
-  integration: Integration
-) {
-  if (
-    syncingId ===
-    integration.id
-  ) {
-    return;
-  }
-
-  setSyncingId(
-    integration.id
-  );
-
-  try {
-    const endpoint =
-      integration.provider ===
-      "emailguard"
-        ? `/api/integrations/${integration.id}/emailguard-sync`
-        : `/api/integrations/${integration.id}/sync`;
-
-    const response =
-      await fetch(
-        endpoint,
-        {
-          method: "POST",
-        }
       );
 
-    const result =
-      await response.json();
-
-    if (!response.ok) {
-      alert(
-        result.error ||
-          "Sync failed."
-      );
-
-      return;
+      if (integration.provider === "emailguard") {
+        triggerToast({
+          type: "success",
+          title: "EmailGuard Sync Completed",
+          message: `Successfully synchronized ${integration.name}.`,
+          details: [
+            { label: "Domains Monitored", value: result.summary?.domains ?? 0 },
+            { label: "Healthy", value: result.summary?.healthy ?? 0 },
+            { label: "Need Attention", value: result.summary?.attention ?? 0 },
+          ],
+        });
+      } else {
+        triggerToast({
+          type: "success",
+          title: "Smartlead Sync Completed",
+          message: `Successfully synchronized ${integration.name}.`,
+          details: [
+            { label: "Accounts Synced", value: result.summary?.accountsFetched ?? 0 },
+            { label: "Total Campaigns", value: result.summary?.campaigns ?? 0 },
+            { label: "Active Campaigns", value: result.summary?.activeCampaigns ?? 0 },
+          ],
+        });
+      }
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Sync Error",
+        message: "Network error occurred while syncing connection.",
+      });
+    } finally {
+      setSyncingId(null);
     }
-
-    setIntegrations(
-      (current) =>
-        current.map(
-          (item) =>
-            item.id ===
-            integration.id
-              ? {
-                  ...item,
-
-                  status:
-                    "connected",
-
-                  last_synced_at:
-                    result.lastSyncedAt,
-                }
-              : item
-        )
-    );
-
-    if (
-      integration.provider ===
-      "emailguard"
-    ) {
-      alert(
-        `EmailGuard sync completed
-
-Domains: ${result.summary.domainsFetched}
-Healthy: ${result.summary.healthy}
-Need attention: ${result.summary.attention}`
-      );
-    } else {
-      alert(
-        `Smartlead sync completed
-
-Accounts: ${result.summary.accountsFetched}
-Campaigns: ${result.summary.campaigns}
-Active campaigns: ${result.summary.activeCampaigns}`
-      );
-    }
-  } catch {
-    alert(
-      "Unable to sync connection."
-    );
-  } finally {
-    setSyncingId(null);
   }
-}
 
   return (
-    <div
-      style={{
-        width: "100%",
-        color: "#111827",
-      }}
-    >
-      <div
-        style={{
-          marginBottom: 26,
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          Connections
-        </h1>
+    <div className="w-full space-y-8">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div
+            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md ${
+              toast.type === "success"
+                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                : toast.type === "error"
+                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
+                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              {toast.type === "success" && (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+              )}
+              {toast.type === "error" && (
+                <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+              )}
+              {toast.type === "info" && (
+                <Info className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">{toast.title}</p>
+                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{toast.message}</p>
+                {toast.details && toast.details.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-700/50">
+                    {toast.details.map((detail, idx) => (
+                      <div key={idx} className="text-center bg-slate-800/60 rounded-lg p-1.5">
+                        <span className="block text-[10px] text-slate-400">{detail.label}</span>
+                        <span className="text-xs font-bold text-white">{detail.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        <p
-          style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
-          }}
-        >
-          Connect Smartlead and
-          EmailGuard accounts to
-          Outreach Ops.
-        </p>
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Integrations
+            </span>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {integrations.length}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Across Smartlead & EmailGuard
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+            <Server className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Smartlead Accounts
+              </span>
+              <span className="w-2 h-2 rounded-full bg-orange-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {smartleadConnections.length}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Campaigns & mailboxes sync
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
+            <Zap className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                EmailGuard Accounts
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">
+              {emailguardConnections.length}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Domain DNS & reputation monitors
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+        </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(3, minmax(0, 1fr))",
-          gap: 14,
-          marginBottom: 24,
-        }}
-      >
-        <SummaryCard
-          title="Total Connections"
-          value={
-            integrations.length
-          }
-        />
-
-        <SummaryCard
-          title="Smartlead"
-          value={
-            smartleadConnections.length
-          }
-        />
-
-        <SummaryCard
-          title="EmailGuard"
-          value={
-            emailguardConnections.length
-          }
-        />
-      </div>
-
+      {/* Smartlead Section */}
       <ConnectionSection
-        title="Smartlead"
-        description="Connect one or more Smartlead accounts."
-        count={
-          smartleadConnections.length
-        }
-        onAdd={() =>
-          openModal(
-            "smartlead"
-          )
-        }
-        connections={
-          smartleadConnections
-        }
-        syncingId={
-          syncingId
-        }
-        onSync={
-          handleSync
-        }
-        onRemove={
-          handleRemove
-        }
+        provider="smartlead"
+        title="Smartlead Connections"
+        badge="Cold Email Engine"
+        badgeColor="orange"
+        description="Sync mailboxes, track warmup health, daily sender limits, and monitor campaign performance."
+        count={smartleadConnections.length}
+        connections={smartleadConnections}
+        syncingId={syncingId}
+        onAdd={() => openModal("smartlead")}
+        onSync={handleSync}
+        onRemove={(item) => setIntegrationToRemove(item)}
       />
 
-      <div
-        style={{
-          height: 20,
-        }}
-      />
-
+      {/* EmailGuard Section */}
       <ConnectionSection
-        title="EmailGuard"
-        description="Connect EmailGuard accounts for domain monitoring."
-        count={
-          emailguardConnections.length
-        }
-        onAdd={() =>
-          openModal(
-            "emailguard"
-          )
-        }
-        connections={
-          emailguardConnections
-        }
-        syncingId={
-          syncingId
-        }
-        onSync={
-          handleSync
-        }
-        onRemove={
-          handleRemove
-        }
+        provider="emailguard"
+        title="EmailGuard Connections"
+        badge="Domain & DNS Security"
+        badgeColor="emerald"
+        description="Monitor SPF, DKIM, DMARC, DNS records, and real-time domain blacklisting."
+        count={emailguardConnections.length}
+        connections={emailguardConnections}
+        syncingId={syncingId}
+        onAdd={() => openModal("emailguard")}
+        onSync={handleSync}
+        onRemove={(item) => setIntegrationToRemove(item)}
       />
 
+      {/* Add Connection Modal */}
       {showModal && (
         <div
-          onClick={
-            closeModal
-          }
-          style={{
-            position: "fixed",
-            inset: 0,
-            background:
-              "rgba(15, 23, 42, 0.48)",
-            display: "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "center",
-            padding: 20,
-            zIndex: 100,
-          }}
+          onClick={closeModal}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
-            onClick={(
-              event
-            ) =>
-              event.stopPropagation()
-            }
-            style={{
-              width: "100%",
-              maxWidth: 480,
-              background:
-                "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              boxShadow:
-                "0 22px 70px rgba(15, 23, 42, 0.20)",
-            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems:
-                  "center",
-                marginBottom: 22,
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 20,
-                  }}
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/70">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-md ${
+                    provider === "smartlead"
+                      ? "bg-gradient-to-br from-amber-500 to-orange-600"
+                      : "bg-gradient-to-br from-emerald-500 to-teal-600"
+                  }`}
                 >
-                  Add{" "}
-                  {provider ===
-                  "smartlead"
-                    ? "Smartlead"
-                    : "EmailGuard"}
-                </h2>
-
-                <p
-                  style={{
-                    marginTop: 5,
-                    marginBottom: 0,
-                    color:
-                      "#64748B",
-                    fontSize: 13,
-                  }}
-                >
-                  Your API key will
-                  be encrypted before
-                  it is stored.
-                </p>
+                  {provider === "smartlead" ? (
+                    <Zap className="w-6 h-6" />
+                  ) : (
+                    <ShieldCheck className="w-6 h-6" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Connect {provider === "smartlead" ? "Smartlead" : "EmailGuard"}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Enter your API credentials to synchronize your accounts
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
-                style={{
-                  marginLeft:
-                    "auto",
-                  width: 34,
-                  height: 34,
-                  border:
-                    "1px solid #E5E7EB",
-                  borderRadius: 8,
-                  background:
-                    "#FFFFFF",
-                  display: "flex",
-                  alignItems:
-                    "center",
-                  justifyContent:
-                    "center",
-                  cursor:
-                    "pointer",
-                }}
+                onClick={closeModal}
+                disabled={saving}
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <X
-                  size={17}
-                />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <label
-              style={
-                labelStyle
-              }
-            >
-              Connection Name
-            </label>
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Security Banner */}
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600">
+                <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  Your API key is securely encrypted using AES-256 before storage. Only the last 4 digits will remain visible.
+                </span>
+              </div>
 
-            <input
-              value={name}
-              onChange={(
-                event
-              ) =>
-                setName(
-                  event.target
-                    .value
-                )
-              }
-              placeholder={
-                provider ===
-                "smartlead"
-                  ? "Example: Smartlead Main"
-                  : "Example: EmailGuard Main"
-              }
-              style={
-                fieldStyle
-              }
-            />
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Connection Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={
+                    provider === "smartlead"
+                      ? "e.g., Smartlead Production, Workspace A"
+                      : "e.g., EmailGuard Primary Monitor"
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200"
+                />
+              </div>
 
-            <label
-              style={
-                labelStyle
-              }
-            >
-              API Key
-            </label>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    API Key
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    {provider === "smartlead"
+                      ? "Smartlead > Settings > Profile > API"
+                      : "EmailGuard > Settings > API"}
+                  </span>
+                </div>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Paste your secret API key here"
+                    autoComplete="off"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm font-mono text-slate-900 placeholder:font-sans placeholder:text-slate-400 outline-none transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-            <div
-              style={{
-                position:
-                  "relative",
-              }}
-            >
-              <KeyRound
-                size={16}
-                color="#94A3B8"
-                style={{
-                  position:
-                    "absolute",
-                  left: 12,
-                  top: 14,
-                }}
-              />
-
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(
-                  event
-                ) =>
-                  setApiKey(
-                    event.target
-                      .value
-                  )
-                }
-                placeholder="Paste API key"
-                autoComplete="off"
-                style={{
-                  ...fieldStyle,
-                  paddingLeft: 38,
-                }}
-              />
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
             </div>
 
-            {error && (
-              <div
-                style={{
-                  background:
-                    "#FEF2F2",
-                  border:
-                    "1px solid #FECACA",
-                  color:
-                    "#B91C1C",
-                  padding: 11,
-                  borderRadius: 8,
-                  fontSize: 12,
-                  marginBottom: 16,
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-              }}
-            >
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
-                disabled={
-                  saving
-                }
-                style={{
-                  flex: 1,
-                  height: 44,
-                  border:
-                    "1px solid #D1D5DB",
-                  borderRadius: 9,
-                  background:
-                    "#FFFFFF",
-                  color:
-                    "#111827",
-                  cursor:
-                    "pointer",
-                  fontWeight: 650,
-                }}
+                onClick={closeModal}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
-                onClick={
-                  handleAddConnection
-                }
-                disabled={
+                onClick={handleAddConnection}
+                disabled={saving}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm flex items-center gap-2 transition-all ${
                   saving
-                }
-                style={{
-                  flex: 1,
-                  height: 44,
-                  border: 0,
-                  borderRadius: 9,
-                  background:
-                    "#111827",
-                  color:
-                    "#FFFFFF",
-                  cursor:
-                    saving
-                      ? "not-allowed"
-                      : "pointer",
-                  fontWeight: 650,
-                  opacity:
-                    saving
-                      ? 0.7
-                      : 1,
-                }}
+                    ? "bg-slate-400 cursor-not-allowed"
+                    : provider === "smartlead"
+                    ? "bg-slate-900 hover:bg-slate-800"
+                    : "bg-slate-900 hover:bg-slate-800"
+                }`}
               >
-                {saving
-                  ? "Connecting..."
-                  : "Add Connection"}
+                {saving ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Verifying & Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Add Connection</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Removing Connection */}
+      {integrationToRemove && (
+        <div
+          onClick={() => !removing && setIntegrationToRemove(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-1">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Remove Connection?
+              </h3>
+              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                Are you sure you want to disconnect{" "}
+                <span className="font-semibold text-slate-900">
+                  &ldquo;{integrationToRemove.name}&rdquo;
+                </span>
+                ? Automated sync for its accounts and campaigns will stop immediately.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIntegrationToRemove(null)}
+                disabled={removing}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors"
+              >
+                Keep Connection
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                disabled={removing}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+              >
+                {removing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirm Remove</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -709,441 +621,210 @@ Active campaigns: ${result.summary.activeCampaigns}`
 }
 
 function ConnectionSection({
+  provider,
   title,
+  badge,
+  badgeColor,
   description,
   count,
-  onAdd,
   connections,
   syncingId,
+  onAdd,
   onSync,
   onRemove,
 }: {
+  provider: Provider;
   title: string;
+  badge: string;
+  badgeColor: "orange" | "emerald";
   description: string;
   count: number;
-  onAdd: () => void;
   connections: Integration[];
   syncingId: string | null;
-  onSync: (
-    integration: Integration
-  ) => void;
-  onRemove: (
-    integration: Integration
-  ) => void;
+  onAdd: () => void;
+  onSync: (integration: Integration) => void;
+  onRemove: (integration: Integration) => void;
 }) {
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border:
-          "1px solid #E5E7EB",
-        borderRadius: 14,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: 20,
-          borderBottom:
-            "1px solid #E5E7EB",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 10,
-            background:
-              "#F1F5F9",
-            display: "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "center",
-            marginRight: 12,
-          }}
-        >
-          <Server
-            size={19}
-            color="#334155"
-          />
-        </div>
-
-        <div>
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden transition-all duration-200 hover:border-slate-300">
+      {/* Section Header */}
+      <div className="p-5 md:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/40">
+        <div className="flex items-center gap-3.5">
           <div
-            style={{
-              display: "flex",
-              alignItems:
-                "center",
-              gap: 8,
-            }}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+              badgeColor === "orange"
+                ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white"
+                : "bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
+            }`}
           >
-            <div
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-              }}
-            >
-              {title}
-            </div>
-
-            <span
-              style={{
-                background:
-                  "#F1F5F9",
-                color:
-                  "#475569",
-                padding:
-                  "4px 7px",
-                borderRadius: 6,
-                fontSize: 10,
-                fontWeight: 700,
-              }}
-            >
-              {count}
-            </span>
+            {provider === "smartlead" ? (
+              <Zap className="w-6 h-6" />
+            ) : (
+              <ShieldCheck className="w-6 h-6" />
+            )}
           </div>
 
-          <div
-            style={{
-              color:
-                "#64748B",
-              fontSize: 12,
-              marginTop: 4,
-            }}
-          >
-            {description}
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                {title}
+              </h2>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                  badgeColor === "orange"
+                    ? "bg-orange-100 text-orange-800 border border-orange-200"
+                    : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                }`}
+              >
+                {badge}
+              </span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+                {count} {count === 1 ? "account" : "accounts"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 max-w-xl">
+              {description}
+            </p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={onAdd}
-          style={{
-            marginLeft:
-              "auto",
-            height: 38,
-            border: 0,
-            borderRadius: 8,
-            background:
-              "#111827",
-            color:
-              "#FFFFFF",
-            display: "flex",
-            alignItems:
-              "center",
-            gap: 6,
-            padding:
-              "0 12px",
-            cursor: "pointer",
-            fontSize: 12,
-            fontWeight: 700,
-          }}
+          className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
         >
-          <Plus size={15} />
-          Add
+          <Plus className="w-4 h-4" />
+          <span>Add {provider === "smartlead" ? "Smartlead" : "EmailGuard"}</span>
         </button>
       </div>
 
-      {connections.length ===
-      0 ? (
-        <div
-          style={{
-            padding: 32,
-            textAlign:
-              "center",
-            color:
-              "#64748B",
-            fontSize: 13,
-          }}
-        >
-          No {title} connections yet.
+      {/* Connection List / Empty State */}
+      {connections.length === 0 ? (
+        <div className="p-12 text-center flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+            {provider === "smartlead" ? (
+              <Zap className="w-8 h-8 text-slate-300" />
+            ) : (
+              <ShieldCheck className="w-8 h-8 text-slate-300" />
+            )}
+          </div>
+          <h3 className="text-sm font-semibold text-slate-800">
+            No {provider === "smartlead" ? "Smartlead" : "EmailGuard"} accounts connected
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mt-1 mb-4 leading-relaxed">
+            {provider === "smartlead"
+              ? "Connect your Smartlead workspace to import active sender mailboxes, analyze daily caps, and monitor campaign statuses."
+              : "Connect your EmailGuard workspace to monitor domain reputation, DMARC alignment, and DNS delivery health."}
+          </p>
+          <button
+            type="button"
+            onClick={onAdd}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Connect First Account</span>
+          </button>
         </div>
       ) : (
-        <div>
-          {connections.map(
-            (integration) => (
-              <div
-                key={
-                  integration.id
-                }
-                style={{
-                  padding:
-                    "16px 20px",
-                  display: "flex",
-                  alignItems:
-                    "center",
-                  borderTop:
-                    "1px solid #F1F5F9",
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius:
-                      "50%",
-                    background:
-                      integration.status ===
-                      "connected"
-                        ? "#10B981"
-                        : "#F59E0B",
-                    marginRight: 12,
-                  }}
-                />
+        <div className="divide-y divide-slate-100">
+          {connections.map((integration) => {
+            const isConnected = integration.status === "connected";
+            const isSyncing = syncingId === integration.id;
 
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color:
-                        "#111827",
-                    }}
-                  >
-                    {
-                      integration.name
-                    }
+            return (
+              <div
+                key={integration.id}
+                className="p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors duration-150"
+              >
+                {/* Connection Info */}
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="mt-1 sm:mt-0 relative flex items-center justify-center">
+                    <span
+                      className={`h-3 w-3 rounded-full ${
+                        isConnected ? "bg-emerald-500" : "bg-amber-500"
+                      }`}
+                    />
+                    {isConnected && (
+                      <span className="absolute h-3 w-3 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                    )}
                   </div>
 
-                  <div
-                    style={{
-                      display:
-                        "flex",
-                      alignItems:
-                        "center",
-                      gap: 12,
-                      marginTop: 5,
-                      color:
-                        "#64748B",
-                      fontSize: 11,
-                    }}
-                  >
-                    <span>
-                      Key ••••
-                      {integration.api_key_last4 ||
-                        "****"}
-                    </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-900">
+                        {integration.name}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Connected
+                      </span>
+                    </div>
 
-                    <span>
-                      Last sync{" "}
-                      {formatLastSync(
-                        integration.last_synced_at
-                      )}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+                      <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px] text-slate-600 border border-slate-200">
+                        Key: •••• {integration.api_key_last4 || "****"}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        Last synced: {formatLastSync(integration.last_synced_at)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    marginLeft:
-                      "auto",
-                    display:
-                      "flex",
-                    alignItems:
-                      "center",
-                    gap: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      background:
-                        "#ECFDF5",
-                      color:
-                        "#047857",
-                      padding:
-                        "6px 8px",
-                      borderRadius: 7,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems:
-                        "center",
-                      gap: 5,
-                    }}
-                  >
-                    <CheckCircle2
-                      size={13}
-                    />
-                    Connected
-                  </div>
-
+                {/* Actions Toolbar */}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
                     type="button"
-                    onClick={() =>
-                      onSync(
-                        integration
-                      )
-                    }
-                    disabled={
-                      syncingId ===
-                      integration.id
-                    }
-                    style={
-                      actionButtonStyle
-                    }
+                    onClick={() => onSync(integration)}
+                    disabled={isSyncing}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-xs font-semibold text-slate-700 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <RefreshCw
-                      size={14}
-                      style={{
-                        animation:
-                          syncingId ===
-                          integration.id
-                            ? "spin 0.8s linear infinite"
-                            : "none",
-                      }}
+                      className={`w-3.5 h-3.5 ${
+                        isSyncing ? "animate-spin text-indigo-600" : "text-slate-500"
+                      }`}
                     />
-
-                    {syncingId ===
-                    integration.id
-                      ? "Syncing"
-                      : "Sync"}
+                    <span>{isSyncing ? "Syncing..." : "Sync Now"}</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() =>
-                      onRemove(
-                        integration
-                      )
-                    }
-                    style={{
-                      ...actionButtonStyle,
-                      color:
-                        "#B91C1C",
-                      border:
-                        "1px solid #FECACA",
-                    }}
+                    onClick={() => onRemove(integration)}
+                    title="Remove connection"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-sm"
                   >
-                    <Trash2
-                      size={14}
-                    />
-                    Remove
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Remove</span>
                   </button>
                 </div>
               </div>
-            )
-          )}
+            );
+          })}
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
-function SummaryCard({
-  title,
-  value,
-}: {
-  title: string;
-  value: number;
-}) {
-  return (
-    <div
-      style={{
-        background:
-          "#FFFFFF",
-        border:
-          "1px solid #E5E7EB",
-        borderRadius: 13,
-        padding: 18,
-      }}
-    >
-      <div
-        style={{
-          color:
-            "#64748B",
-          fontSize: 12,
-        }}
-      >
-        {title}
-      </div>
+function formatLastSync(value: string | null): string {
+  if (!value) return "Never synced";
+  try {
+    const date = new Date(value);
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
 
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 25,
-          fontWeight: 750,
-          color:
-            "#111827",
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-const fieldStyle = {
-  width: "100%",
-  height: 44,
-  border:
-    "1px solid #D1D5DB",
-  borderRadius: 9,
-  padding:
-    "0 11px",
-  background:
-    "#FFFFFF",
-  color:
-    "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-  marginBottom: 16,
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: 12,
-  fontWeight: 700,
-  color:
-    "#374151",
-  marginBottom: 7,
-};
-
-const actionButtonStyle = {
-  height: 34,
-  border:
-    "1px solid #D1D5DB",
-  borderRadius: 8,
-  background:
-    "#FFFFFF",
-  color:
-    "#334155",
-  display: "flex",
-  alignItems:
-    "center",
-  gap: 5,
-  padding:
-    "0 9px",
-  cursor:
-    "pointer",
-  fontSize: 10,
-  fontWeight: 700,
-};
-
-function formatLastSync(
-  value: string | null
-) {
-  if (!value) {
-    return "Never";
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes === 1 ? "" : "s"} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "Recently";
   }
-
-  return new Date(
-    value
-  ).toLocaleString();
 }
