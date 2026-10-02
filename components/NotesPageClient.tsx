@@ -12,16 +12,21 @@ import {
   X,
   Search,
   StickyNote,
-  CalendarDays,
+  Calendar,
   Eye,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Flame,
+  Check,
+  Building2,
+  Sparkles,
+  Info,
 } from "lucide-react";
 
-type Priority =
-  | "Normal"
-  | "Important"
-  | "Follow Up";
+export type Priority = "Normal" | "Important" | "Follow Up";
 
-type Note = {
+export type Note = {
   id: string;
   user_id: string;
   title: string;
@@ -34,6 +39,12 @@ type Note = {
   updated_at: string;
 };
 
+type ToastNotification = {
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+};
+
 export default function NotesPageClient({
   userId,
   initialNotes,
@@ -43,159 +54,87 @@ export default function NotesPageClient({
 }) {
   const supabase = createClient();
 
-  const [notes, setNotes] =
-    useState<Note[]>(initialNotes);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [activeKpiFilter, setActiveKpiFilter] = useState<string | null>(null);
 
-  const [search, setSearch] =
-    useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [viewNote, setViewNote] = useState<Note | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [
-    clientFilter,
-    setClientFilter,
-  ] = useState("all");
+  // Form State
+  const [title, setTitle] = useState("");
+  const [client, setClient] = useState("");
+  const [content, setContent] = useState("");
+  const [priority, setPriority] = useState<Priority>("Normal");
+  const [dueDate, setDueDate] = useState("");
+  const [isPinned, setIsPinned] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [
-    priorityFilter,
-    setPriorityFilter,
-  ] = useState("all");
+  // Remove confirmation modal state
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const [showModal, setShowModal] =
-    useState(false);
+  // In-app Toast state
+  const [toast, setToast] = useState<ToastNotification | null>(null);
 
-  const [viewNote, setViewNote] =
-    useState<Note | null>(null);
+  function triggerToast(toastData: ToastNotification) {
+    setToast(toastData);
+    setTimeout(() => {
+      setToast((curr) => (curr === toastData ? null : curr));
+    }, 4500);
+  }
 
-  const [editingId, setEditingId] =
-    useState<string | null>(null);
+  const clients = clientDemoData.map((item) => item.name);
 
-  const [title, setTitle] =
-    useState("");
+  const pinnedCount = notes.filter((note) => note.is_pinned).length;
+  const importantCount = notes.filter((note) => note.priority === "Important").length;
+  const followUpCount = notes.filter((note) => note.priority === "Follow Up").length;
+  const overdueCount = notes.filter((note) => {
+    if (!note.due_date) return false;
+    return note.due_date < getTodayDate();
+  }).length;
 
-  const [client, setClient] =
-    useState("");
+  const filteredNotes = useMemo(() => {
+    const value = search.trim().toLowerCase();
 
-  const [content, setContent] =
-    useState("");
+    return notes
+      .filter((note) => {
+        // Quick KPI filter
+        if (activeKpiFilter === "pinned" && !note.is_pinned) return false;
+        if (activeKpiFilter === "important" && note.priority !== "Important") return false;
+        if (activeKpiFilter === "followup" && note.priority !== "Follow Up") return false;
+        if (activeKpiFilter === "overdue") {
+          if (!note.due_date || note.due_date >= getTodayDate()) return false;
+        }
 
-  const [priority, setPriority] =
-    useState<Priority>("Normal");
+        const matchesSearch =
+          !value ||
+          note.title.toLowerCase().includes(value) ||
+          note.content.toLowerCase().includes(value) ||
+          note.client?.toLowerCase().includes(value);
 
-  const [dueDate, setDueDate] =
-    useState("");
+        const matchesClient = clientFilter === "all" || note.client === clientFilter;
+        const matchesPriority =
+          priorityFilter === "all" || note.priority === priorityFilter;
 
-  const [saving, setSaving] =
-    useState(false);
+        return matchesSearch && matchesClient && matchesPriority;
+      })
+      .sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) {
+          return Number(b.is_pinned) - Number(a.is_pinned);
+        }
 
-  const [error, setError] =
-    useState("");
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
 
-  const clients = clientDemoData.map(
-    (item) => item.name
-  );
-
-  const filteredNotes =
-    useMemo(() => {
-      const value =
-        search.trim().toLowerCase();
-
-      return notes
-        .filter((note) => {
-          const matchesSearch =
-            !value ||
-            note.title
-              .toLowerCase()
-              .includes(value) ||
-            note.content
-              .toLowerCase()
-              .includes(value) ||
-            note.client
-              ?.toLowerCase()
-              .includes(value);
-
-          const matchesClient =
-            clientFilter === "all" ||
-            note.client === clientFilter;
-
-          const matchesPriority =
-            priorityFilter === "all" ||
-            note.priority ===
-              priorityFilter;
-
-          return (
-            matchesSearch &&
-            matchesClient &&
-            matchesPriority
-          );
-        })
-        .sort((a, b) => {
-          if (
-            a.is_pinned !==
-            b.is_pinned
-          ) {
-            return (
-              Number(b.is_pinned) -
-              Number(a.is_pinned)
-            );
-          }
-
-          if (
-            a.due_date &&
-            b.due_date
-          ) {
-            return (
-              new Date(
-                a.due_date
-              ).getTime() -
-              new Date(
-                b.due_date
-              ).getTime()
-            );
-          }
-
-          return (
-            new Date(
-              b.updated_at
-            ).getTime() -
-            new Date(
-              a.updated_at
-            ).getTime()
-          );
-        });
-    }, [
-      notes,
-      search,
-      clientFilter,
-      priorityFilter,
-    ]);
-
-  const pinnedCount =
-    notes.filter(
-      (note) => note.is_pinned
-    ).length;
-
-  const importantCount =
-    notes.filter(
-      (note) =>
-        note.priority === "Important"
-    ).length;
-
-  const followUpCount =
-    notes.filter(
-      (note) =>
-        note.priority === "Follow Up"
-    ).length;
-
-  const overdueCount =
-    notes.filter((note) => {
-      if (!note.due_date) {
-        return false;
-      }
-
-      return (
-        note.due_date <
-        getTodayDate()
-      );
-    }).length;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+  }, [notes, search, clientFilter, priorityFilter, activeKpiFilter]);
 
   function resetForm() {
     setEditingId(null);
@@ -204,6 +143,7 @@ export default function NotesPageClient({
     setContent("");
     setPriority("Normal");
     setDueDate("");
+    setIsPinned(false);
     setError("");
   }
 
@@ -212,979 +152,929 @@ export default function NotesPageClient({
     setShowModal(true);
   }
 
-  function openEditNote(
-    note: Note
-  ) {
+  function openEditNote(note: Note) {
     setEditingId(note.id);
     setTitle(note.title);
-    setClient(
-      note.client || ""
-    );
+    setClient(note.client || "");
     setContent(note.content);
     setPriority(note.priority);
-    setDueDate(
-      note.due_date || ""
-    );
+    setDueDate(note.due_date || "");
+    setIsPinned(note.is_pinned);
     setError("");
     setViewNote(null);
     setShowModal(true);
   }
 
   function closeModal() {
-    if (saving) {
-      return;
-    }
-
+    if (saving) return;
     setShowModal(false);
     resetForm();
   }
 
   async function handleSave() {
     if (!title.trim()) {
-      setError(
-        "Note title is required."
-      );
+      setError("Note title is required.");
       return;
     }
 
     if (!content.trim()) {
-      setError(
-        "Note content is required."
-      );
+      setError("Note content is required.");
       return;
     }
 
     setSaving(true);
     setError("");
 
-    if (editingId) {
-      const {
-        data,
-        error: updateError,
-      } = await supabase
-        .from("notes")
-        .update({
-          title: title.trim(),
-          client:
-            client || null,
-          content:
-            content.trim(),
-          priority,
-          due_date:
-            dueDate || null,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq("id", editingId)
-        .select()
-        .single();
+    try {
+      if (editingId) {
+        const { data, error: updateError } = await supabase
+          .from("notes")
+          .update({
+            title: title.trim(),
+            client: client || null,
+            content: content.trim(),
+            priority,
+            due_date: dueDate || null,
+            is_pinned: isPinned,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingId)
+          .select()
+          .single();
 
-      if (updateError) {
-        setError(
-          updateError.message
+        if (updateError) {
+          setError(updateError.message);
+          setSaving(false);
+          return;
+        }
+
+        setNotes((current) =>
+          current.map((note) => (note.id === editingId ? data : note))
         );
-        setSaving(false);
-        return;
+
+        triggerToast({
+          type: "success",
+          title: "Note Updated",
+          message: `Saved changes to "${title.trim()}".`,
+        });
+      } else {
+        const { data, error: insertError } = await supabase
+          .from("notes")
+          .insert({
+            user_id: userId,
+            title: title.trim(),
+            client: client || null,
+            content: content.trim(),
+            priority,
+            due_date: dueDate || null,
+            is_pinned: isPinned,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          setError(insertError.message);
+          setSaving(false);
+          return;
+        }
+
+        setNotes((current) => [data, ...current]);
+
+        triggerToast({
+          type: "success",
+          title: "Note Created",
+          message: `Added new note "${title.trim()}".`,
+        });
       }
 
-      setNotes((current) =>
-        current.map((note) =>
-          note.id === editingId
-            ? data
-            : note
-        )
-      );
-    } else {
-      const {
-        data,
-        error: insertError,
-      } = await supabase
-        .from("notes")
-        .insert({
-          user_id: userId,
-          title: title.trim(),
-          client:
-            client || null,
-          content:
-            content.trim(),
-          priority,
-          due_date:
-            dueDate || null,
-          is_pinned: false,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        setError(
-          insertError.message
-        );
-        setSaving(false);
-        return;
-      }
-
-      setNotes((current) => [
-        data,
-        ...current,
-      ]);
+      setSaving(false);
+      setShowModal(false);
+      resetForm();
+    } catch {
+      setError("Unable to save note. Please check your network connection.");
+      setSaving(false);
     }
-
-    setSaving(false);
-    setShowModal(false);
-    resetForm();
   }
 
-  async function handlePin(
-    note: Note
-  ) {
-    const nextValue =
-      !note.is_pinned;
+  async function handleTogglePin(note: Note) {
+    const nextValue = !note.is_pinned;
 
-    const {
-      error: updateError,
-    } = await supabase
-      .from("notes")
-      .update({
-        is_pinned: nextValue,
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq("id", note.id);
-
-    if (updateError) {
-      alert(
-        updateError.message
-      );
-      return;
-    }
-
+    // Optimistic update
     setNotes((current) =>
       current.map((item) =>
-        item.id === note.id
-          ? {
-              ...item,
-              is_pinned:
-                nextValue,
-              updated_at:
-                new Date().toISOString(),
-            }
-          : item
+        item.id === note.id ? { ...item, is_pinned: nextValue } : item
       )
     );
+
+    try {
+      const { error: updateError } = await supabase
+        .from("notes")
+        .update({
+          is_pinned: nextValue,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", note.id);
+
+      if (updateError) {
+        // Revert
+        setNotes((current) =>
+          current.map((item) =>
+            item.id === note.id ? { ...item, is_pinned: note.is_pinned } : item
+          )
+        );
+        triggerToast({
+          type: "error",
+          title: "Pin Failed",
+          message: updateError.message,
+        });
+      } else {
+        triggerToast({
+          type: "info",
+          title: nextValue ? "Note Pinned" : "Note Unpinned",
+          message: nextValue
+            ? `Pinned "${note.title}" to top.`
+            : `Unpinned "${note.title}".`,
+        });
+      }
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Network Error",
+        message: "Failed to update pin state.",
+      });
+    }
   }
 
-  async function handleDelete(
-    note: Note
-  ) {
-    const confirmed =
-      window.confirm(
-        `Delete "${note.title}"?`
-      );
+  async function handleConfirmDelete() {
+    if (!noteToDelete) return;
+    setDeleting(true);
 
-    if (!confirmed) {
-      return;
+    try {
+      const { error: deleteError } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", noteToDelete.id);
+
+      if (deleteError) {
+        triggerToast({
+          type: "error",
+          title: "Delete Failed",
+          message: deleteError.message,
+        });
+        return;
+      }
+
+      setNotes((current) => current.filter((item) => item.id !== noteToDelete.id));
+
+      if (viewNote?.id === noteToDelete.id) {
+        setViewNote(null);
+      }
+
+      triggerToast({
+        type: "info",
+        title: "Note Deleted",
+        message: `Removed note "${noteToDelete.title}".`,
+      });
+    } catch {
+      triggerToast({
+        type: "error",
+        title: "Error",
+        message: "Unable to delete note.",
+      });
+    } finally {
+      setDeleting(false);
+      setNoteToDelete(null);
     }
+  }
 
-    const {
-      error: deleteError,
-    } = await supabase
-      .from("notes")
-      .delete()
-      .eq("id", note.id);
-
-    if (deleteError) {
-      alert(
-        deleteError.message
-      );
-      return;
-    }
-
-    setNotes((current) =>
-      current.filter(
-        (item) =>
-          item.id !== note.id
-      )
-    );
-
-    if (
-      viewNote?.id === note.id
-    ) {
-      setViewNote(null);
-    }
+  function toggleKpiFilter(filterName: string) {
+    setActiveKpiFilter((curr) => (curr === filterName ? null : filterName));
   }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minWidth: 0,
-        color: "#111827",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          marginBottom: 26,
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 750,
-            }}
-          >
-            Notes
-          </h1>
-
-          <p
-            style={{
-              marginTop: 7,
-              marginBottom: 0,
-              color: "#6B7280",
-              fontSize: 14,
-            }}
-          >
-            Keep client tasks,
-            follow ups and due dates
-            in one place.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={openNewNote}
-          style={{
-            marginLeft: "auto",
-            height: 42,
-            border: 0,
-            borderRadius: 9,
-            background: "#111827",
-            color: "#FFFFFF",
-            paddingLeft: 14,
-            paddingRight: 14,
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            cursor: "pointer",
-            fontWeight: 650,
-          }}
-        >
-          <Plus size={16} />
-          Add Note
-        </button>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
-          gap: 14,
-          marginBottom: 22,
-        }}
-      >
-        <SummaryCard
-          title="Total Notes"
-          value={notes.length}
-        />
-
-        <SummaryCard
-          title="Pinned"
-          value={pinnedCount}
-        />
-
-        <SummaryCard
-          title="Important"
-          value={importantCount}
-          warning
-        />
-
-        <SummaryCard
-          title="Follow Up"
-          value={followUpCount}
-        />
-
-        <SummaryCard
-          title="Overdue"
-          value={overdueCount}
-          danger
-        />
-      </div>
-
-      <div
-        style={{
-          background: "#FFFFFF",
-          border:
-            "1px solid #E5E7EB",
-          borderRadius: 14,
-          padding: 18,
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "2fr 1fr 1fr",
-            gap: 10,
-          }}
-        >
+    <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              border:
-                "1px solid #D1D5DB",
-              borderRadius: 9,
-              paddingLeft: 11,
-              paddingRight: 11,
-              height: 42,
-              background: "#FFFFFF",
-            }}
+            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md flex items-start gap-3 ${
+              toast.type === "success"
+                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                : toast.type === "error"
+                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
+                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+            }`}
           >
-            <Search
-              size={15}
-              color="#94A3B8"
-            />
-
-            <input
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder="Search notes"
-              style={{
-                flex: 1,
-                minWidth: 0,
-                border: 0,
-                outline: "none",
-                marginLeft: 8,
-                fontSize: 13,
-                color: "#111827",
-                background:
-                  "transparent",
-              }}
-            />
-          </div>
-
-          <select
-            value={clientFilter}
-            onChange={(event) =>
-              setClientFilter(
-                event.target.value
-              )
-            }
-            style={selectStyle}
-          >
-            <option value="all">
-              All Clients
-            </option>
-
-            {clients.map(
-              (item) => (
-                <option
-                  key={item}
-                  value={item}
-                >
-                  {item}
-                </option>
-              )
+            {toast.type === "success" && (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
             )}
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(event) =>
-              setPriorityFilter(
-                event.target.value
-              )
-            }
-            style={selectStyle}
-          >
-            <option value="all">
-              All Priorities
-            </option>
-
-            <option value="Normal">
-              Normal
-            </option>
-
-            <option value="Important">
-              Important
-            </option>
-
-            <option value="Follow Up">
-              Follow Up
-            </option>
-          </select>
-        </div>
-      </div>
-
-      {filteredNotes.length ===
-      0 ? (
-        <div
-          style={{
-            background: "#FFFFFF",
-            border:
-              "1px solid #E5E7EB",
-            borderRadius: 14,
-            padding: 50,
-            textAlign: "center",
-          }}
-        >
-          <StickyNote
-            size={30}
-            color="#94A3B8"
-          />
-
-          <div
-            style={{
-              marginTop: 12,
-              fontWeight: 700,
-            }}
-          >
-            No notes found
+            {toast.type === "error" && (
+              <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+            )}
+            {toast.type === "info" && (
+              <Info className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">{toast.title}</p>
+              <p className="text-xs text-slate-300 mt-0.5">{toast.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(2, minmax(0, 1fr))",
-            gap: 16,
-            width: "100%",
-          }}
-        >
-          {filteredNotes.map(
-            (note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onView={
-                  setViewNote
-                }
-                onPin={
-                  handlePin
-                }
-                onEdit={
-                  openEditNote
-                }
-                onDelete={
-                  handleDelete
-                }
-              />
-            )
-          )}
         </div>
       )}
 
-      {viewNote && (
+      {/* Top Action Bar (Header with prominent Add Note button) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+              Workspace Workspace & Client Memo
+            </span>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            Organize action items, account follow-ups, and client commitments in one centralized place.
+          </p>
+        </div>
+
+        {/* HIGH-VISIBILITY ADD NOTE BUTTON */}
+        <button
+          type="button"
+          onClick={openNewNote}
+          className="inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-md shadow-slate-900/10 hover:shadow-lg transition-all duration-150 shrink-0"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Add New Note</span>
+        </button>
+      </div>
+
+      {/* Interactive KPI Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div
-          onClick={() =>
-            setViewNote(null)
-          }
-          style={{
-            position: "fixed",
-            inset: 0,
-            background:
-              "rgba(15, 23, 42, 0.48)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent:
-              "center",
-            padding: 20,
-            zIndex: 120,
-          }}
+          onClick={() => setActiveKpiFilter(null)}
+          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+            activeKpiFilter === null
+              ? "border-slate-800 ring-2 ring-slate-800/10 shadow-sm"
+              : "border-slate-200/90 hover:border-slate-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Total Notes
+            </span>
+            <StickyNote className="w-4 h-4 text-slate-600" />
+          </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+            {notes.length}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">All active memos</p>
+        </div>
+
+        <div
+          onClick={() => toggleKpiFilter("pinned")}
+          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+            activeKpiFilter === "pinned"
+              ? "border-amber-500 ring-2 ring-amber-500/20 shadow-sm"
+              : "border-slate-200/90 hover:border-slate-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Pinned
+            </span>
+            <Pin className="w-4 h-4 fill-amber-500 text-amber-500" />
+          </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+            {pinnedCount}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Kept at top</p>
+        </div>
+
+        <div
+          onClick={() => toggleKpiFilter("important")}
+          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+            activeKpiFilter === "important"
+              ? "border-rose-500 ring-2 ring-rose-500/20 shadow-sm"
+              : "border-slate-200/90 hover:border-slate-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-rose-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Important
+            </span>
+            <Flame className="w-4 h-4 text-rose-500" />
+          </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+            {importantCount}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">High priority</p>
+        </div>
+
+        <div
+          onClick={() => toggleKpiFilter("followup")}
+          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+            activeKpiFilter === "followup"
+              ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm"
+              : "border-slate-200/90 hover:border-slate-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-indigo-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Follow Up
+            </span>
+            <Clock className="w-4 h-4 text-indigo-500" />
+          </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+            {followUpCount}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Pending action</p>
+        </div>
+
+        <div
+          onClick={() => toggleKpiFilter("overdue")}
+          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md col-span-2 sm:col-span-1 ${
+            activeKpiFilter === "overdue"
+              ? "border-red-500 ring-2 ring-red-500/20 shadow-sm"
+              : "border-slate-200/90 hover:border-slate-300"
+          }`}
+        >
+          <div className="flex items-center justify-between text-red-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Overdue
+            </span>
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+          </div>
+          <div className="text-2xl font-bold text-red-600 mt-1.5">
+            {overdueCount}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Past due date</p>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-sm flex flex-col md:flex-row md:items-center gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes by title, description, or client..."
+            className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Client Filter Dropdown */}
+        <div className="flex items-center gap-2">
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+          >
+            <option value="all">All Clients</option>
+            {clients.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+
+          {/* Priority Filter Dropdown */}
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+          >
+            <option value="all">All Priorities</option>
+            <option value="Normal">Normal</option>
+            <option value="Important">Important</option>
+            <option value="Follow Up">Follow Up</option>
+          </select>
+
+          {/* Clear Filters Button if any active */}
+          {(search ||
+            clientFilter !== "all" ||
+            priorityFilter !== "all" ||
+            activeKpiFilter !== null) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setClientFilter("all");
+                setPriorityFilter("all");
+                setActiveKpiFilter(null);
+              }}
+              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors whitespace-nowrap"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Notes Grid or Empty State */}
+      {filteredNotes.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center flex flex-col items-center justify-center shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+            <StickyNote className="w-8 h-8 text-slate-300" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">
+            {notes.length === 0 ? "No notes added yet" : "No matching notes found"}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mt-1 mb-4 leading-relaxed">
+            {notes.length === 0
+              ? "Create your first memo to track client deliverables, inbox warmup reminders, and urgent action items."
+              : "Try adjusting your search keywords or filter criteria to view more notes."}
+          </p>
+          <button
+            type="button"
+            onClick={openNewNote}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create First Note</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredNotes.map((note) => {
+            const isOverdue =
+              note.due_date && note.due_date < getTodayDate();
+            const isDueToday =
+              note.due_date && note.due_date === getTodayDate();
+
+            return (
+              <div
+                key={note.id}
+                className={`group bg-white rounded-2xl border transition-all duration-200 hover:shadow-md flex flex-col justify-between overflow-hidden ${
+                  note.is_pinned
+                    ? "border-amber-300/80 bg-gradient-to-b from-amber-50/20 to-white"
+                    : "border-slate-200/90 hover:border-slate-300"
+                }`}
+              >
+                {/* Note Top Bar */}
+                <div className="p-5 pb-3">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <PriorityBadge priority={note.priority} />
+                      {note.client && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <Building2 className="w-2.5 h-2.5 text-slate-500" />
+                          <span className="truncate max-w-[120px]">
+                            {note.client}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Pin button */}
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePin(note)}
+                      title={note.is_pinned ? "Unpin note" : "Pin note to top"}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                        note.is_pinned
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Pin
+                        className={`w-3.5 h-3.5 ${
+                          note.is_pinned ? "fill-amber-600 text-amber-600" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Note Title */}
+                  <h3
+                    onClick={() => setViewNote(note)}
+                    className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer line-clamp-1"
+                  >
+                    {note.title}
+                  </h3>
+
+                  {/* Note Description preview */}
+                  <p
+                    onClick={() => setViewNote(note)}
+                    className="text-xs text-slate-600 mt-2 line-clamp-3 leading-relaxed cursor-pointer"
+                  >
+                    {note.content}
+                  </p>
+                </div>
+
+                {/* Note Bottom Details & Actions */}
+                <div className="p-4 pt-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2 text-xs">
+                  {/* Due Date Indicator */}
+                  {note.due_date ? (
+                    <div
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                        isOverdue
+                          ? "bg-red-50 text-red-700 border border-red-200"
+                          : isDueToday
+                          ? "bg-amber-50 text-amber-800 border border-amber-200"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span>{formatDueDate(note.due_date)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">
+                      No due date
+                    </span>
+                  )}
+
+                  {/* Quick Action Buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setViewNote(note)}
+                      title="View full note"
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditNote(note)}
+                      title="Edit note"
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNoteToDelete(note)}
+                      title="Delete note"
+                      className="w-7 h-7 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add / Edit Note Modal */}
+      {showModal && (
+        <div
+          onClick={closeModal}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-            style={{
-              width: "100%",
-              maxWidth: 650,
-              maxHeight: "85vh",
-              overflowY: "auto",
-              background: "#FFFFFF",
-              borderRadius: 16,
-              padding: 26,
-              boxShadow:
-                "0 24px 70px rgba(15, 23, 42, 0.20)",
-            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems:
-                  "flex-start",
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                }}
-              >
-                <PriorityBadge
-                  priority={
-                    viewNote.priority
-                  }
-                />
+            {/* Modal Header */}
+            <div className="p-5 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                  {editingId ? (
+                    <Pencil className="w-4 h-4" />
+                  ) : (
+                    <Plus className="w-5 h-5 stroke-[2.5]" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    {editingId ? "Edit Note" : "Create New Note"}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {editingId
+                      ? "Update task details, priority, or client association"
+                      : "Add a memo, follow-up deadline, or client action item"}
+                  </p>
+                </div>
+              </div>
 
-                <h2
-                  style={{
-                    marginTop: 16,
-                    marginBottom: 0,
-                    fontSize: 23,
-                    lineHeight: 1.3,
-                    wordBreak:
-                      "break-word",
-                  }}
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Note Title *
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Follow up with Acme Corp on DNS warmup caps"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                />
+              </div>
+
+              {/* Client and Due Date Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Associated Client
+                  </label>
+                  <select
+                    value={client}
+                    onChange={(e) => setClient(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  >
+                    <option value="">No Client (General Note)</option>
+                    {clients.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Priority Radio Pills */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                  Priority Level
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["Normal", "Important", "Follow Up"] as Priority[]).map((p) => {
+                    const isSelected = priority === p;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPriority(p)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                          isSelected
+                            ? p === "Important"
+                              ? "bg-rose-50 border-rose-400 text-rose-700 shadow-sm"
+                              : p === "Follow Up"
+                              ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-sm"
+                              : "bg-slate-100 border-slate-400 text-slate-800 shadow-sm"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        <span>{p}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Note Content */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Note Content *
+                </label>
+                <textarea
+                  rows={5}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write task details, context, key metrics, or meeting notes..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Pin Note Checkbox */}
+              <div
+                onClick={() => setIsPinned(!isPinned)}
+                className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-colors ${
+                  isPinned
+                    ? "bg-amber-50/70 border-amber-300"
+                    : "bg-slate-50/60 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Pin
+                    className={`w-4 h-4 ${
+                      isPinned ? "fill-amber-600 text-amber-600" : "text-slate-400"
+                    }`}
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-900">
+                      Pin to Top
+                    </span>
+                    <p className="text-[11px] text-slate-500">
+                      Keep this note pinned above normal notes
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                    isPinned
+                      ? "bg-amber-600 border-amber-600 text-white"
+                      : "border-slate-300 bg-white"
+                  }`}
                 >
+                  {isPinned && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                {saving ? (
+                  <span>Saving...</span>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{editingId ? "Update Note" : "Save Note"}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Full Note Modal */}
+      {viewNote && (
+        <div
+          onClick={() => setViewNote(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col"
+          >
+            {/* Header */}
+            <div className="p-5 px-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/60">
+              <div className="space-y-1.5 flex-1 pr-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <PriorityBadge priority={viewNote.priority} />
+                  {viewNote.client && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <Building2 className="w-3 h-3" />
+                      {viewNote.client}
+                    </span>
+                  )}
+                  {viewNote.is_pinned && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                      <Pin className="w-3 h-3 fill-amber-500" />
+                      Pinned
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-lg font-bold text-slate-900 break-words">
                   {viewNote.title}
                 </h2>
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setViewNote(null)
-                }
-                style={{
-                  width: 36,
-                  height: 36,
-                  border:
-                    "1px solid #E5E7EB",
-                  borderRadius: 9,
-                  background: "#FFFFFF",
-                  display: "flex",
-                  alignItems:
-                    "center",
-                  justifyContent:
-                    "center",
-                  cursor: "pointer",
-                }}
+                onClick={() => setViewNote(null)}
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <X size={18} />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {viewNote.client && (
-              <div
-                style={{
-                  marginTop: 13,
-                  color: "#2563EB",
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                {viewNote.client}
-              </div>
-            )}
+            {/* Note Content */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              {viewNote.due_date && (
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <Calendar className="w-4 h-4 text-indigo-600" />
+                  <span>Due Date: {formatDueDate(viewNote.due_date)}</span>
+                </div>
+              )}
 
-            {viewNote.due_date && (
-              <div
-                style={{
-                  marginTop: 13,
-                  display: "flex",
-                  alignItems:
-                    "center",
-                  gap: 7,
-                }}
-              >
-                <CalendarDays
-                  size={15}
-                  color="#64748B"
-                />
-
-                <DueDateBadge
-                  date={
-                    viewNote.due_date
-                  }
-                />
-              </div>
-            )}
-
-            <div
-              style={{
-                marginTop: 22,
-                paddingTop: 20,
-                borderTop:
-                  "1px solid #E5E7EB",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#64748B",
-                  fontWeight: 700,
-                  marginBottom: 8,
-                }}
-              >
-                Description
-              </div>
-
-              <div
-                style={{
-                  color: "#334155",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                  whiteSpace:
-                    "pre-wrap",
-                  overflowWrap:
-                    "anywhere",
-                  wordBreak:
-                    "break-word",
-                }}
-              >
-                {viewNote.content}
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Content
+                </span>
+                <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50/50 p-4 rounded-xl border border-slate-200/80">
+                  {viewNote.content}
+                </div>
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 22,
-                paddingTop: 16,
-                borderTop:
-                  "1px solid #E5E7EB",
-                display: "flex",
-                alignItems:
-                  "center",
-              }}
-            >
-              <span
-                style={{
-                  color: "#94A3B8",
-                  fontSize: 11,
-                }}
-              >
-                Updated{" "}
-                {new Date(
-                  viewNote.updated_at
-                ).toLocaleString()}
+            {/* Footer */}
+            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+              <span>
+                Updated: {new Date(viewNote.updated_at).toLocaleDateString()}
               </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  openEditNote(
-                    viewNote
-                  )
-                }
-                style={{
-                  marginLeft: "auto",
-                  height: 38,
-                  border:
-                    "1px solid #D1D5DB",
-                  borderRadius: 8,
-                  background: "#FFFFFF",
-                  padding:
-                    "0 13px",
-                  display: "flex",
-                  alignItems:
-                    "center",
-                  gap: 6,
-                  cursor: "pointer",
-                  fontWeight: 650,
-                }}
-              >
-                <Pencil
-                  size={14}
-                />
-                Edit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEditNote(viewNote)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit Note</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {showModal && (
+      {/* Delete Confirmation Modal */}
+      {noteToDelete && (
         <div
-          onClick={closeModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background:
-              "rgba(15, 23, 42, 0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent:
-              "center",
-            padding: 20,
-            zIndex: 130,
-          }}
+          onClick={() => !deleting && setNoteToDelete(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              maxHeight: "90vh",
-              overflowY: "auto",
-              background: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              boxShadow:
-                "0 20px 60px rgba(0, 0, 0, 0.18)",
-            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200"
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 22,
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 20,
-                  }}
-                >
-                  {editingId
-                    ? "Edit Note"
-                    : "Add Note"}
-                </h2>
-
-                <p
-                  style={{
-                    marginTop: 5,
-                    marginBottom: 0,
-                    color: "#6B7280",
-                    fontSize: 13,
-                  }}
-                >
-                  Add task details
-                  and due date.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                style={{
-                  marginLeft: "auto",
-                  border: 0,
-                  background:
-                    "transparent",
-                  cursor: "pointer",
-                  color: "#64748B",
-                }}
-              >
-                <X size={20} />
-              </button>
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-1">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Delete Note?
+              </h3>
+              <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-slate-900">
+                  &ldquo;{noteToDelete.title}&rdquo;
+                </span>
+                ? This action cannot be undone.
+              </p>
             </div>
 
-            <label
-              style={labelStyle}
-            >
-              Title
-            </label>
-
-            <input
-              value={title}
-              onChange={(event) =>
-                setTitle(
-                  event.target.value
-                )
-              }
-              placeholder="Example: Check Reverba campaigns"
-              style={fieldStyle}
-            />
-
-            <label
-              style={labelStyle}
-            >
-              Client
-            </label>
-
-            <select
-              value={client}
-              onChange={(event) =>
-                setClient(
-                  event.target.value
-                )
-              }
-              style={fieldStyle}
-            >
-              <option value="">
-                General
-              </option>
-
-              {clients.map(
-                (item) => (
-                  <option
-                    key={item}
-                    value={item}
-                  >
-                    {item}
-                  </option>
-                )
-              )}
-            </select>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
-                gap: 12,
-              }}
-            >
-              <div>
-                <label
-                  style={labelStyle}
-                >
-                  Priority
-                </label>
-
-                <select
-                  value={priority}
-                  onChange={(event) =>
-                    setPriority(
-                      event.target
-                        .value as Priority
-                    )
-                  }
-                  style={fieldStyle}
-                >
-                  <option value="Normal">
-                    Normal
-                  </option>
-
-                  <option value="Important">
-                    Important
-                  </option>
-
-                  <option value="Follow Up">
-                    Follow Up
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  style={labelStyle}
-                >
-                  Due Date
-                </label>
-
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(event) =>
-                    setDueDate(
-                      event.target.value
-                    )
-                  }
-                  style={fieldStyle}
-                />
-              </div>
-            </div>
-
-            <label
-              style={labelStyle}
-            >
-              Note
-            </label>
-
-            <textarea
-              value={content}
-              onChange={(event) =>
-                setContent(
-                  event.target.value
-                )
-              }
-              placeholder="Write task details or client update"
-              rows={6}
-              style={{
-                ...fieldStyle,
-                height: "auto",
-                minHeight: 130,
-                paddingTop: 11,
-                paddingBottom: 11,
-                resize: "vertical",
-                fontFamily:
-                  "inherit",
-              }}
-            />
-
-            {error && (
-              <div
-                style={{
-                  background:
-                    "#FEF2F2",
-                  border:
-                    "1px solid #FECACA",
-                  color: "#B91C1C",
-                  padding: 11,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  marginBottom: 16,
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-              }}
-            >
+            <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={closeModal}
-                disabled={saving}
-                style={{
-                  flex: 1,
-                  height: 44,
-                  border:
-                    "1px solid #D1D5DB",
-                  borderRadius: 9,
-                  background: "#FFFFFF",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
+                onClick={() => setNoteToDelete(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
-                onClick={handleSave}
-                disabled={saving}
-                style={{
-                  flex: 1,
-                  height: 44,
-                  border: 0,
-                  borderRadius: 9,
-                  background: "#111827",
-                  color: "#FFFFFF",
-                  cursor: "pointer",
-                  fontWeight: 650,
-                  opacity:
-                    saving
-                      ? 0.7
-                      : 1,
-                }}
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
               >
-                {saving
-                  ? "Saving..."
-                  : editingId
-                    ? "Save Changes"
-                    : "Add Note"}
+                {deleting ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Note</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1194,488 +1084,43 @@ export default function NotesPageClient({
   );
 }
 
-const selectStyle = {
-  width: "100%",
-  height: 42,
-  border:
-    "1px solid #D1D5DB",
-  borderRadius: 9,
-  paddingLeft: 11,
-  paddingRight: 11,
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  boxSizing:
-    "border-box" as const,
-};
-
-const fieldStyle = {
-  display: "block",
-  width: "100%",
-  minWidth: 0,
-  height: 44,
-  border:
-    "1px solid #D1D5DB",
-  borderRadius: 9,
-  paddingLeft: 11,
-  paddingRight: 11,
-  background: "#FFFFFF",
-  color: "#111827",
-  fontSize: 13,
-  outline: "none",
-  marginBottom: 16,
-  boxSizing:
-    "border-box" as const,
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 650,
-  marginBottom: 7,
-  color: "#374151",
-};
-
-function SummaryCard({
-  title,
-  value,
-  warning,
-  danger,
-}: {
-  title: string;
-  value: number;
-  warning?: boolean;
-  danger?: boolean;
-}) {
-  let color = "#111827";
-
-  if (warning) {
-    color = "#B45309";
+function PriorityBadge({ priority }: { priority: Priority }) {
+  if (priority === "Important") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+        Important
+      </span>
+    );
   }
 
-  if (danger) {
-    color = "#B91C1C";
+  if (priority === "Follow Up") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+        <Clock className="w-2.5 h-2.5 text-indigo-500" />
+        Follow Up
+      </span>
+    );
   }
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border:
-          "1px solid #E5E7EB",
-        borderRadius: 13,
-        padding: 18,
-      }}
-    >
-      <div
-        style={{
-          color: "#64748B",
-          fontSize: 12,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 25,
-          fontWeight: 750,
-          color,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function NoteCard({
-  note,
-  onView,
-  onPin,
-  onEdit,
-  onDelete,
-}: {
-  note: Note;
-  onView: (
-    note: Note
-  ) => void;
-  onPin: (
-    note: Note
-  ) => void;
-  onEdit: (
-    note: Note
-  ) => void;
-  onDelete: (
-    note: Note
-  ) => void;
-}) {
-  return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border:
-          note.is_pinned
-            ? "1px solid #BFDBFE"
-            : "1px solid #E5E7EB",
-        borderRadius: 14,
-        padding: 20,
-        minWidth: 0,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <PriorityBadge
-          priority={
-            note.priority
-          }
-        />
-
-        {note.is_pinned && (
-          <div
-            style={{
-              marginLeft: 8,
-              color: "#2563EB",
-              fontSize: 11,
-              fontWeight: 700,
-            }}
-          >
-            Pinned
-          </div>
-        )}
-
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: 7,
-          }}
-        >
-          <IconButton
-            title="View"
-            onClick={() =>
-              onView(note)
-            }
-          >
-            <Eye size={15} />
-          </IconButton>
-
-          <IconButton
-            title={
-              note.is_pinned
-                ? "Unpin"
-                : "Pin"
-            }
-            onClick={() =>
-              onPin(note)
-            }
-          >
-            <Pin size={15} />
-          </IconButton>
-
-          <IconButton
-            title="Edit"
-            onClick={() =>
-              onEdit(note)
-            }
-          >
-            <Pencil size={15} />
-          </IconButton>
-
-          <IconButton
-            title="Delete"
-            onClick={() =>
-              onDelete(note)
-            }
-            danger
-          >
-            <Trash2 size={15} />
-          </IconButton>
-        </div>
-      </div>
-
-      <h3
-        style={{
-          marginTop: 16,
-          marginBottom: 0,
-          fontSize: 17,
-          color: "#111827",
-          overflowWrap:
-            "anywhere",
-          wordBreak:
-            "break-word",
-        }}
-      >
-        {note.title}
-      </h3>
-
-      {note.client && (
-        <div
-          style={{
-            color: "#2563EB",
-            fontSize: 12,
-            fontWeight: 650,
-            marginTop: 6,
-          }}
-        >
-          {note.client}
-        </div>
-      )}
-
-      {note.due_date && (
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            alignItems:
-              "center",
-            gap: 7,
-          }}
-        >
-          <CalendarDays
-            size={14}
-            color="#64748B"
-          />
-
-          <DueDateBadge
-            date={note.due_date}
-          />
-        </div>
-      )}
-
-      <p
-        style={{
-          color: "#475569",
-          fontSize: 13,
-          lineHeight: 1.65,
-          marginTop: 14,
-          marginBottom: 10,
-
-          display:
-            "-webkit-box",
-
-          WebkitLineClamp: 3,
-
-          WebkitBoxOrient:
-            "vertical",
-
-          overflow: "hidden",
-
-          overflowWrap:
-            "anywhere",
-
-          wordBreak:
-            "break-word",
-
-          whiteSpace:
-            "pre-wrap",
-        }}
-      >
-        {note.content}
-      </p>
-
-      <button
-        type="button"
-        onClick={() =>
-          onView(note)
-        }
-        style={{
-          border: 0,
-          padding: 0,
-          marginTop: 2,
-          background:
-            "transparent",
-          color: "#2563EB",
-          fontSize: 11,
-          fontWeight: 700,
-          cursor: "pointer",
-        }}
-      >
-        View full note
-      </button>
-
-      <div
-        style={{
-          marginTop: 18,
-          color: "#94A3B8",
-          fontSize: 11,
-        }}
-      >
-        Updated{" "}
-        {new Date(
-          note.updated_at
-        ).toLocaleString()}
-      </div>
-    </div>
-  );
-}
-
-function PriorityBadge({
-  priority,
-}: {
-  priority: Priority;
-}) {
-  let background =
-    "#F1F5F9";
-
-  let color = "#475569";
-
-  if (
-    priority === "Important"
-  ) {
-    background = "#FEF3C7";
-    color = "#B45309";
-  }
-
-  if (
-    priority === "Follow Up"
-  ) {
-    background = "#EFF6FF";
-    color = "#2563EB";
-  }
-
-  return (
-    <div
-      style={{
-        background,
-        color,
-        padding: "5px 8px",
-        borderRadius: 7,
-        fontSize: 10,
-        fontWeight: 700,
-      }}
-    >
-      {priority}
-    </div>
-  );
-}
-
-function DueDateBadge({
-  date,
-}: {
-  date: string;
-}) {
-  const today =
-    getTodayDate();
-
-  const overdue =
-    date < today;
-
-  const dueToday =
-    date === today;
-
-  let background =
-    "#EFF6FF";
-
-  let color = "#2563EB";
-
-  let prefix = "Due";
-
-  if (dueToday) {
-    background = "#FEF3C7";
-    color = "#B45309";
-    prefix = "Today";
-  }
-
-  if (overdue) {
-    background = "#FEF2F2";
-    color = "#B91C1C";
-    prefix = "Overdue";
-  }
-
-  const [
-    year,
-    month,
-    day,
-  ] = date.split("-");
-
-  const formattedDate =
-    `${day}/${month}/${year}`;
-
-  return (
-    <span
-      style={{
-        display:
-          "inline-block",
-        padding: "5px 8px",
-        borderRadius: 7,
-        background,
-        color,
-        fontSize: 10,
-        fontWeight: 700,
-      }}
-    >
-      {prefix} ·{" "}
-      {formattedDate}
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+      Normal
     </span>
   );
 }
 
-function IconButton({
-  children,
-  title,
-  onClick,
-  danger,
-}: {
-  children:
-    React.ReactNode;
-  title: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      style={{
-        width: 32,
-        height: 32,
-        border:
-          danger
-            ? "1px solid #FECACA"
-            : "1px solid #E5E7EB",
-        borderRadius: 8,
-        background: "#FFFFFF",
-        color:
-          danger
-            ? "#B91C1C"
-            : "#475569",
-        display: "flex",
-        alignItems:
-          "center",
-        justifyContent:
-          "center",
-        cursor: "pointer",
-      }}
-    >
-      {children}
-    </button>
-  );
+function formatDueDate(dateStr: string): string {
+  const today = getTodayDate();
+  if (dateStr === today) return "Due Today";
+  if (dateStr < today) return `Overdue (${dateStr})`;
+  return `Due ${dateStr}`;
 }
 
-function getTodayDate() {
+function getTodayDate(): string {
   const now = new Date();
-
-  const year =
-    now.getFullYear();
-
-  const month =
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0");
-
-  const day =
-    String(
-      now.getDate()
-    ).padStart(2, "0");
-
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
