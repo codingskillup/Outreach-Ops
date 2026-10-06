@@ -6,18 +6,17 @@ import {
   CheckCircle2,
   TriangleAlert,
   Search,
-  Calendar,
+
   Eye,
   Clock,
   Zap,
   ShieldCheck,
-  Building2,
+
   X,
   List,
-  Sparkles,
+
   Activity,
-  Layers,
-  Check,
+
 } from "lucide-react";
 import { activityDemoData } from "@/lib/activityDemoData";
 

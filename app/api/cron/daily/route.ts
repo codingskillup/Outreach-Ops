@@ -19,6 +19,8 @@ import {
   sendDailyReport,
 } from "@/lib/email/dailyReport";
 
+
+
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
@@ -47,11 +49,6 @@ type SyncResult = {
   error?: string;
 };
 
-type ReportResult = {
-  userId: string;
-  success: boolean;
-  error?: string;
-};
 
 export async function GET(
   request: NextRequest
@@ -78,6 +75,13 @@ export async function GET(
       }
     );
   }
+
+  const mode =
+    request.nextUrl.searchParams.get(
+      "mode"
+    ) === "monitor"
+      ? "monitor"
+      : "daily";
 
   const supabase =
     createAdminClient();
@@ -114,12 +118,6 @@ export async function GET(
     const results:
       SyncResult[] = [];
 
-    /*
-     * STEP 1
-     *
-     * Sync every Smartlead
-     * and EmailGuard connection.
-     */
     for (
       const integration of
       typedIntegrations
@@ -134,9 +132,7 @@ export async function GET(
               integration
             );
 
-          results.push(
-            result
-          );
+          results.push(result);
 
           continue;
         }
@@ -150,9 +146,7 @@ export async function GET(
               integration
             );
 
-          results.push(
-            result
-          );
+          results.push(result);
 
           continue;
         }
@@ -167,8 +161,7 @@ export async function GET(
           name:
             integration.name,
 
-          success:
-            false,
+          success: false,
 
           error:
             "Unsupported provider.",
@@ -194,25 +187,18 @@ export async function GET(
           name:
             integration.name,
 
-          success:
-            false,
+          success: false,
 
-          error:
-            message,
+          error: message,
         });
       }
     }
 
     /*
-     * STEP 2
-     *
-     * Get all unique users.
-     *
-     * Currently your portal
-     * has one main user,
-     * but this keeps the cron
-     * reusable.
-     */
+      Run issue scanning once
+      per portal user.
+    */
+
     const userIds = [
       ...new Set(
         typedIntegrations.map(
@@ -222,73 +208,86 @@ export async function GET(
       ),
     ];
 
-    /*
-     * STEP 3
-     *
-     * After fresh sync:
-     *
-     * Scan issues
-     * Send NEW issue alerts
-     * Send daily report
-     */
-    const reportResults:
-      ReportResult[] = [];
+    const notificationResults: {
+      userId: string;
+      success: boolean;
+      dailyReportSent: boolean;
+      scanSummary?: unknown;
+      error?: string;
+    }[] = [];
 
     for (
       const userId of
       userIds
     ) {
       try {
+        /*
+          sendAlerts = true
+
+          scanIssues itself decides
+          whether an issue is NEW
+          before sending an alert.
+        */
+
         const scanSummary =
           await scanIssues({
             supabase,
-
             userId,
-
-            sendAlerts:
-              true,
+            sendAlerts: true,
           });
 
-        await sendDailyReport({
-          supabase,
+        /*
+          Only the daily mode
+          sends the 8 AM report.
 
+          monitor mode only scans
+          and sends NEW issue alerts.
+        */
+
+        if (
+          mode === "daily"
+        ) {
+          await sendDailyReport({
+            supabase,
+            userId,
+            scanSummary,
+          });
+        }
+
+        notificationResults.push({
           userId,
+
+          success: true,
+
+          dailyReportSent:
+            mode === "daily",
 
           scanSummary,
-        });
-
-        reportResults.push({
-          userId,
-          success: true,
         });
       } catch (error) {
         const message =
           error instanceof Error
             ? error.message
-            : "Daily report failed.";
+            : "Issue scan failed.";
 
         console.error(
-          "Daily report error:",
+          `Cron notification error for ${userId}:`,
           message
         );
 
-        reportResults.push({
+        notificationResults.push({
           userId,
 
-          success:
+          success: false,
+
+          dailyReportSent:
             false,
 
-          error:
-            message,
+          error: message,
         });
       }
     }
 
-    /*
-     * STEP 4
-     *
-     * Build cron result.
-     */
     const successful =
       results.filter(
         (result) =>
@@ -301,62 +300,51 @@ export async function GET(
           !result.success
       ).length;
 
-    const successfulReports =
-      reportResults.filter(
-        (report) =>
-          report.success
-      ).length;
-
-    const failedReports =
-      reportResults.filter(
-        (report) =>
-          !report.success
+    const notificationFailures =
+      notificationResults.filter(
+        (result) =>
+          !result.success
       ).length;
 
     return NextResponse.json({
       success:
         failed === 0 &&
-        failedReports === 0,
+        notificationFailures ===
+          0,
+
+      mode,
 
       executedAt:
-        new Date()
-          .toISOString(),
+        new Date().toISOString(),
 
-      sync: {
-        integrations:
-          results.length,
+      integrations:
+        results.length,
 
-        successful,
+      successful,
 
-        failed,
+      failed,
 
-        results,
-      },
+      results,
 
-      reports: {
-        users:
-          reportResults.length,
+      usersProcessed:
+        userIds.length,
 
-        successful:
-          successfulReports,
+      notificationFailures,
 
-        failed:
-          failedReports,
-
-        results:
-          reportResults,
-      },
+      notifications:
+        notificationResults,
     });
   } catch (error) {
     return NextResponse.json(
       {
-        success:
-          false,
+        success: false,
+
+        mode,
 
         error:
           error instanceof Error
             ? error.message
-            : "Daily sync failed.",
+            : "Automatic monitoring failed.",
       },
       {
         status: 500,
@@ -935,7 +923,7 @@ async function syncEmailGuard(
           domainRows,
           {
             onConflict:
-              "user_id,domain",
+  "integration_id,domain",
           }
         );
 

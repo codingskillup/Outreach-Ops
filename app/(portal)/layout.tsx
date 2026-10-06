@@ -37,7 +37,7 @@ export default async function PortalLayout({
 
         <main
           style={{
-            paddingTop: 128,
+            paddingTop: 108,
             paddingLeft: 28,
             paddingRight: 28,
             paddingBottom: 40,
