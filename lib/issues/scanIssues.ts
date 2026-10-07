@@ -9,8 +9,7 @@ import {
   sendNotificationEmail,
 } from "@/lib/email";
 
-type RawData =
-  Record<string, unknown>;
+type RawData = Record<string, unknown>;
 
 type Account = {
   id: string;
@@ -23,73 +22,45 @@ type Account = {
 
 type Domain = {
   id: string;
-  integration_id:
-    | string
-    | null;
+  integration_id: string | null;
   domain: string;
   client: string | null;
   spf_status: string | null;
   dkim_status: string | null;
   dmarc_status: string | null;
   dmarc_policy: string | null;
-  reporting_status:
-    | string
-    | null;
-  overall_status:
-    | string
-    | null;
+  reporting_status: string | null;
+  overall_status: string | null;
 };
 
 type ExistingIssue = {
   id: string;
   issue_key: string;
   status: string;
-  alert_sent_at:
-    | string
-    | null;
+  alert_sent_at: string | null;
 };
 
 type DetectedIssue = {
   user_id: string;
-
-  integration_id:
-    | string
-    | null;
-
-  email_account_id:
-    | string
-    | null;
-
+  integration_id: string | null;
+  email_account_id: string | null;
   issue_key: string;
-
   source: string;
-
   client: string;
-
   issue_type: string;
-
   item: string;
-
-  account_type:
-    | string
-    | null;
-
-  current_value:
-    | string
-    | null;
-
-  expected_value:
-    | string
-    | null;
-
+  account_type: string | null;
+  current_value: string | null;
+  expected_value: string | null;
   severity: string;
-
   status: string;
-
   last_seen_at: string;
-
   resolved_at: null;
 };
+
+const PAGE_SIZE = 1000;
+const WRITE_CHUNK_SIZE = 500;
+const ID_CHUNK_SIZE = 100;
 
 export async function scanIssues({
   supabase,
@@ -100,110 +71,36 @@ export async function scanIssues({
   userId: string;
   sendAlerts?: boolean;
 }) {
+  /*
+   * Load ALL rows, not only Supabase's first 1000 rows.
+   * This matters for Smartlead workspaces with 1400+ accounts
+   * and for resolving older issue records in a single scan.
+   */
   const [
-    accountsResult,
-    domainsResult,
-    existingIssuesResult,
+    accounts,
+    domains,
+    existingIssues,
   ] = await Promise.all([
-    supabase
-      .from("email_accounts")
-      .select(`
-        id,
-        integration_id,
-        email,
-        username,
-        account_type,
-        raw_data
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
-    supabase
-      .from("domains")
-      .select(`
-        id,
-        integration_id,
-        domain,
-        client,
-        spf_status,
-        dkim_status,
-        dmarc_status,
-        dmarc_policy,
-        reporting_status,
-        overall_status
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
-    supabase
-      .from("issues")
-      .select(`
-        id,
-        issue_key,
-        status,
-        alert_sent_at
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
+    fetchAllAccounts(
+      supabase,
+      userId
+    ),
+    fetchAllDomains(
+      supabase,
+      userId
+    ),
+    fetchAllExistingIssues(
+      supabase,
+      userId
+    ),
   ]);
-
-  if (
-    accountsResult.error
-  ) {
-    throw new Error(
-      accountsResult
-        .error
-        .message
-    );
-  }
-
-  if (
-    domainsResult.error
-  ) {
-    throw new Error(
-      domainsResult
-        .error
-        .message
-    );
-  }
-
-  if (
-    existingIssuesResult.error
-  ) {
-    throw new Error(
-      existingIssuesResult
-        .error
-        .message
-    );
-  }
-
-  const accounts =
-    (accountsResult.data ||
-      []) as Account[];
-
-  const domains =
-    (domainsResult.data ||
-      []) as Domain[];
-
-  const existingIssues =
-    (existingIssuesResult.data ||
-      []) as ExistingIssue[];
 
   const now =
     new Date().toISOString();
 
-  const detected:
-    DetectedIssue[] = [];
+  const detected: DetectedIssue[] = [];
 
-  for (
-    const account of accounts
-  ) {
+  for (const account of accounts) {
     scanAccount(
       account,
       userId,
@@ -212,9 +109,7 @@ export async function scanIssues({
     );
   }
 
-  for (
-    const domain of domains
-  ) {
+  for (const domain of domains) {
     scanDomain(
       domain,
       userId,
@@ -233,6 +128,12 @@ export async function scanIssues({
       )
     );
 
+  /*
+   * Alert when:
+   * 1. issue is new
+   * 2. issue was resolved and has returned
+   * 3. previous alert was never successfully sent
+   */
   const newAlertIssues =
     detected.filter(
       (issue) => {
@@ -252,36 +153,67 @@ export async function scanIssues({
           return true;
         }
 
-        if (
-          !existing
-            .alert_sent_at
-        ) {
-          return true;
-        }
-
-        return false;
+        return !existing.alert_sent_at;
       }
     );
 
-  if (
-    detected.length > 0
-  ) {
-    const {
-      error: upsertError,
-    } = await supabase
-      .from("issues")
-      .upsert(
-        detected,
-        {
-          onConflict:
-            "user_id,issue_key",
+  const newAlertKeys =
+    new Set(
+      newAlertIssues.map(
+        (issue) =>
+          issue.issue_key
+      )
+    );
+
+  if (detected.length > 0) {
+    const issuesToUpsert =
+      detected.map(
+        (issue) => {
+          if (
+            newAlertKeys.has(
+              issue.issue_key
+            )
+          ) {
+            return {
+              ...issue,
+              alert_sent_at:
+                null,
+            };
+          }
+
+          return issue;
         }
       );
 
-    if (upsertError) {
-      throw new Error(
-        upsertError.message
-      );
+    for (
+      let index = 0;
+      index < issuesToUpsert.length;
+      index += WRITE_CHUNK_SIZE
+    ) {
+      const chunk =
+        issuesToUpsert.slice(
+          index,
+          index + WRITE_CHUNK_SIZE
+        );
+
+      const {
+        error: upsertError,
+      } =
+        await supabase
+          .from("issues")
+          .upsert(
+            chunk,
+            {
+              onConflict:
+                "user_id,issue_key",
+            }
+          );
+
+      if (upsertError) {
+        throw new Error(
+          upsertError.message
+        );
+      }
     }
   }
 
@@ -308,28 +240,42 @@ export async function scanIssues({
           issue.id
       );
 
-  if (
-    resolvedIds.length > 0
+  /*
+   * Resolve in smaller chunks so 1000+ old issues can be
+   * cleared safely without a very large .in(...) request.
+   */
+  for (
+    let index = 0;
+    index < resolvedIds.length;
+    index += ID_CHUNK_SIZE
   ) {
-    const {
-      error:
-        resolveError,
-    } = await supabase
-      .from("issues")
-      .update({
-        status:
-          "Resolved",
-
-        resolved_at:
-          now,
-
-        last_seen_at:
-          now,
-      })
-      .in(
-        "id",
-        resolvedIds
+    const chunk =
+      resolvedIds.slice(
+        index,
+        index + ID_CHUNK_SIZE
       );
+
+    const {
+      error: resolveError,
+    } =
+      await supabase
+        .from("issues")
+        .update({
+          status:
+            "Resolved",
+          resolved_at:
+            now,
+          last_seen_at:
+            now,
+        })
+        .eq(
+          "user_id",
+          userId
+        )
+        .in(
+          "id",
+          chunk
+        );
 
     if (resolveError) {
       throw new Error(
@@ -338,12 +284,8 @@ export async function scanIssues({
     }
   }
 
-  let alertSent =
-    false;
-
-  let alertError:
-    string | null =
-    null;
+  let alertSent = false;
+  let alertError: string | null = null;
 
   if (
     sendAlerts &&
@@ -355,62 +297,80 @@ export async function scanIssues({
           issue.issue_key
       );
 
-    await supabase
-      .from("issues")
-      .update({
-        alert_sent_at:
-          null,
-      })
-      .eq(
-        "user_id",
-        userId
-      )
-      .in(
-        "issue_key",
-        alertKeys
-      );
-
     try {
-      await sendNewIssueAlert(
-  supabase,
-  userId,
-  newAlertIssues
-);
-
-      const alertTime =
-        new Date()
-          .toISOString();
-
-      const {
-        error:
-          alertUpdateError,
-      } = await supabase
-        .from("issues")
-        .update({
-          alert_sent_at:
-            alertTime,
-        })
-        .eq(
-          "user_id",
-          userId
-        )
-        .in(
-          "issue_key",
-          alertKeys
+      const emailResult =
+        await sendNewIssueAlert(
+          supabase,
+          userId,
+          newAlertIssues
         );
 
+      /*
+       * alert_sent_at is written only after Resend confirms
+       * that the email was actually sent.
+       */
       if (
-        alertUpdateError
+        emailResult.sent ===
+        true
       ) {
-        throw new Error(
-          alertUpdateError
-            .message
+        const alertTime =
+          new Date().toISOString();
+
+        for (
+          let index = 0;
+          index < alertKeys.length;
+          index += ID_CHUNK_SIZE
+        ) {
+          const chunk =
+            alertKeys.slice(
+              index,
+              index + ID_CHUNK_SIZE
+            );
+
+          const {
+            error:
+              alertUpdateError,
+          } =
+            await supabase
+              .from("issues")
+              .update({
+                alert_sent_at:
+                  alertTime,
+              })
+              .eq(
+                "user_id",
+                userId
+              )
+              .in(
+                "issue_key",
+                chunk
+              );
+
+          if (
+            alertUpdateError
+          ) {
+            throw new Error(
+              alertUpdateError.message
+            );
+          }
+        }
+
+        alertSent = true;
+      } else {
+        alertError =
+          "reason" in emailResult &&
+          typeof emailResult.reason ===
+            "string"
+            ? emailResult.reason
+            : "Issue alert was not sent.";
+
+        console.warn(
+          "Issue alert skipped:",
+          alertError
         );
       }
-
-      alertSent =
-        true;
     } catch (error) {
+      alertSent = false;
       alertError =
         error instanceof Error
           ? error.message
@@ -454,31 +414,203 @@ export async function scanIssues({
   return {
     accountsChecked:
       accounts.length,
-
     domainsChecked:
       domains.length,
-
     openIssues:
       detected.length,
-
     smartleadIssues,
-
     emailGuardIssues,
-
     critical,
-
     warnings,
-
     resolved:
       resolvedIds.length,
-
     newIssues:
       newAlertIssues.length,
-
     alertSent,
-
     alertError,
   };
+}
+
+async function fetchAllAccounts(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Account[]> {
+  const rows: Account[] = [];
+  let from = 0;
+
+  while (true) {
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from("email_accounts")
+        .select(`
+          id,
+          integration_id,
+          email,
+          username,
+          account_type,
+          raw_data
+        `)
+        .eq(
+          "user_id",
+          userId
+        )
+        .order(
+          "id",
+          {
+            ascending: true,
+          }
+        )
+        .range(
+          from,
+          from + PAGE_SIZE - 1
+        );
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+
+    const page =
+      (data || []) as Account[];
+
+    rows.push(...page);
+
+    if (
+      page.length < PAGE_SIZE
+    ) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  return rows;
+}
+
+async function fetchAllDomains(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Domain[]> {
+  const rows: Domain[] = [];
+  let from = 0;
+
+  while (true) {
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from("domains")
+        .select(`
+          id,
+          integration_id,
+          domain,
+          client,
+          spf_status,
+          dkim_status,
+          dmarc_status,
+          dmarc_policy,
+          reporting_status,
+          overall_status
+        `)
+        .eq(
+          "user_id",
+          userId
+        )
+        .order(
+          "id",
+          {
+            ascending: true,
+          }
+        )
+        .range(
+          from,
+          from + PAGE_SIZE - 1
+        );
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+
+    const page =
+      (data || []) as Domain[];
+
+    rows.push(...page);
+
+    if (
+      page.length < PAGE_SIZE
+    ) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  return rows;
+}
+
+async function fetchAllExistingIssues(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<ExistingIssue[]> {
+  const rows: ExistingIssue[] = [];
+  let from = 0;
+
+  while (true) {
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from("issues")
+        .select(`
+          id,
+          issue_key,
+          status,
+          alert_sent_at
+        `)
+        .eq(
+          "user_id",
+          userId
+        )
+        .order(
+          "id",
+          {
+            ascending: true,
+          }
+        )
+        .range(
+          from,
+          from + PAGE_SIZE - 1
+        );
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+
+    const page =
+      (data || []) as ExistingIssue[];
+
+    rows.push(...page);
+
+    if (
+      page.length < PAGE_SIZE
+    ) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 async function sendNewIssueAlert(
@@ -501,10 +633,7 @@ async function sendNewIssueAlert(
     ).length;
 
   const visibleIssues =
-    issues.slice(
-      0,
-      50
-    );
+    issues.slice(0, 50);
 
   const rows =
     visibleIssues
@@ -512,41 +641,28 @@ async function sendNewIssueAlert(
         (issue) => `
           <tr>
             <td style="${tdStyle()}">
-              ${escapeHtml(
-                issue.client
-              )}
+              ${escapeHtml(issue.client)}
             </td>
-
             <td style="${tdStyle()}">
-              ${escapeHtml(
-                issue.item
-              )}
+              ${escapeHtml(issue.item)}
             </td>
-
             <td style="${tdStyle()}">
-              ${escapeHtml(
-                issue.issue_type
-              )}
+              ${escapeHtml(issue.issue_type)}
             </td>
-
             <td style="${tdStyle()}">
               ${escapeHtml(
                 issue.current_value ||
                   "Unknown"
               )}
             </td>
-
             <td style="${tdStyle()}">
               ${escapeHtml(
                 issue.expected_value ||
                   "N/A"
               )}
             </td>
-
             <td style="${tdStyle()}">
-              ${escapeHtml(
-                issue.severity
-              )}
+              ${escapeHtml(issue.severity)}
             </td>
           </tr>
         `
@@ -557,40 +673,29 @@ async function sendNewIssueAlert(
     issues.length -
     visibleIssues.length;
 
-await sendNotificationEmail({
-  supabase,
-  userId,
-
-  type:
-    "instant_issue_alert",
-
-  subject:
-    issues.length === 1
-      ? "Outreach Ops Alert: New Issue Detected"
-      : `Outreach Ops Alert: ${issues.length} New Issues Detected`,
-
-  html: `
+  return await sendNotificationEmail({
+    supabase,
+    userId,
+    type:
+      "instant_issue_alert",
+    subject:
+      issues.length === 1
+        ? "Outreach Ops Alert: New Issue Detected"
+        : `Outreach Ops Alert: ${issues.length} New Issues Detected`,
+    html: `
       <div
         style="
-          font-family:
-            Arial,
-            sans-serif;
-          max-width:
-            900px;
-          margin:
-            0 auto;
-          color:
-            #111827;
-          padding:
-            24px;
+          font-family: Arial, sans-serif;
+          max-width: 900px;
+          margin: 0 auto;
+          color: #111827;
+          padding: 24px;
         "
       >
         <h1
           style="
-            font-size:
-              24px;
-            margin:
-              0 0 8px;
+            font-size: 24px;
+            margin: 0 0 8px;
           "
         >
           Outreach Ops Alert
@@ -598,10 +703,8 @@ await sendNotificationEmail({
 
         <p
           style="
-            color:
-              #6b7280;
-            margin:
-              0 0 24px;
+            color: #6b7280;
+            margin: 0 0 24px;
           "
         >
           New outreach infrastructure issues were detected.
@@ -609,59 +712,41 @@ await sendNotificationEmail({
 
         <div
           style="
-            display:
-              flex;
-            gap:
-              12px;
-            margin-bottom:
-              24px;
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
           "
         >
           <div
             style="
-              padding:
-                12px 16px;
-              border:
-                1px solid #e5e7eb;
-              border-radius:
-                8px;
+              padding: 12px 16px;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
             "
           >
-            <strong>
-              ${issues.length}
-            </strong>
+            <strong>${issues.length}</strong>
             New Issues
           </div>
 
           <div
             style="
-              padding:
-                12px 16px;
-              border:
-                1px solid #e5e7eb;
-              border-radius:
-                8px;
+              padding: 12px 16px;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
             "
           >
-            <strong>
-              ${critical}
-            </strong>
+            <strong>${critical}</strong>
             Critical
           </div>
 
           <div
             style="
-              padding:
-                12px 16px;
-              border:
-                1px solid #e5e7eb;
-              border-radius:
-                8px;
+              padding: 12px 16px;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
             "
           >
-            <strong>
-              ${warning}
-            </strong>
+            <strong>${warning}</strong>
             Warnings
           </div>
         </div>
@@ -670,42 +755,21 @@ await sendNotificationEmail({
           cellpadding="0"
           cellspacing="0"
           style="
-            width:
-              100%;
-            border-collapse:
-              collapse;
-            font-size:
-              14px;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
           "
         >
           <thead>
             <tr>
-              <th style="${thStyle()}">
-                Client
-              </th>
-
-              <th style="${thStyle()}">
-                Account / Domain
-              </th>
-
-              <th style="${thStyle()}">
-                Issue
-              </th>
-
-              <th style="${thStyle()}">
-                Current
-              </th>
-
-              <th style="${thStyle()}">
-                Expected
-              </th>
-
-              <th style="${thStyle()}">
-                Severity
-              </th>
+              <th style="${thStyle()}">Client</th>
+              <th style="${thStyle()}">Account / Domain</th>
+              <th style="${thStyle()}">Issue</th>
+              <th style="${thStyle()}">Current</th>
+              <th style="${thStyle()}">Expected</th>
+              <th style="${thStyle()}">Severity</th>
             </tr>
           </thead>
-
           <tbody>
             ${rows}
           </tbody>
@@ -716,16 +780,11 @@ await sendNotificationEmail({
             ? `
               <p
                 style="
-                  margin-top:
-                    16px;
-                  color:
-                    #6b7280;
+                  margin-top: 16px;
+                  color: #6b7280;
                 "
               >
-                + ${remaining}
-                additional issues
-                are available
-                in Outreach Ops.
+                + ${remaining} additional issues are available in Outreach Ops.
               </p>
             `
             : ""
@@ -733,12 +792,9 @@ await sendNotificationEmail({
 
         <p
           style="
-            margin-top:
-              24px;
-            color:
-              #6b7280;
-            font-size:
-              13px;
+            margin-top: 24px;
+            color: #6b7280;
+            font-size: 13px;
           "
         >
           This notification was generated automatically by Outreach Ops.
@@ -752,12 +808,15 @@ function scanAccount(
   account: Account,
   userId: string,
   now: string,
-  detected:
-    DetectedIssue[]
+  detected: DetectedIssue[]
 ) {
   const raw =
-    account.raw_data ||
-    {};
+    account.raw_data || {};
+
+  const warmupDetails =
+    asObject(
+      raw["warmup_details"]
+    );
 
   const email =
     account.email ||
@@ -766,13 +825,13 @@ function scanAccount(
 
   const client =
     getText(
-      raw.client_name
+      raw["client_name"]
     ) ||
     getText(
-      raw.clientName
+      raw["clientName"]
     ) ||
     getText(
-      raw.client
+      raw["client"]
     ) ||
     "Unassigned";
 
@@ -789,20 +848,15 @@ function scanAccount(
         email,
         client,
         now,
-
         key:
           "account_type",
-
         issueType:
           "Account Type",
-
         currentValue:
           account.account_type ||
           "Unclassified",
-
         expectedValue:
-          "Azure/Entra, Hypertide Google or Google Workspace",
-
+          "Hypertide Azure/Entra, Hypertide Google or Google Workspace",
         severity:
           "Warning",
       }
@@ -816,13 +870,24 @@ function scanAccount(
       account.account_type
     ];
 
+  /*
+   * Real Smartlead field mapping confirmed from synced API data:
+   * message_per_day
+   * minTimeToWaitInMins
+   * warmup_details.status
+   * warmup_details.max_email_per_day
+   * warmup_details.reply_rate
+   */
+
   const dailyLimit =
     getNumber(
-      raw.max_email_per_day
+      raw[
+        "message_per_day"
+      ]
     );
 
   if (
-    dailyLimit !== null &&
+    dailyLimit === null ||
     dailyLimit !==
       rules.dailyLimit
   ) {
@@ -834,23 +899,60 @@ function scanAccount(
         email,
         client,
         now,
-
         key:
           "daily_limit",
-
         issueType:
           "Daily Limit",
-
         currentValue:
-          String(
-            dailyLimit
-          ),
-
+          dailyLimit === null
+            ? "Missing"
+            : String(
+                dailyLimit
+              ),
         expectedValue:
           String(
             rules.dailyLimit
           ),
+        severity:
+          "Warning",
+      }
+    );
+  }
 
+  const minimumGap =
+    getNumber(
+      raw[
+        "minTimeToWaitInMins"
+      ]
+    );
+
+  if (
+    minimumGap === null ||
+    minimumGap !==
+      rules.minimumGap
+  ) {
+    addAccountIssue(
+      detected,
+      {
+        userId,
+        account,
+        email,
+        client,
+        now,
+        key:
+          "minimum_gap",
+        issueType:
+          "Minimum Gap",
+        currentValue:
+          minimumGap === null
+            ? "Missing"
+            : String(
+                minimumGap
+              ),
+        expectedValue:
+          String(
+            rules.minimumGap
+          ),
         severity:
           "Warning",
       }
@@ -858,13 +960,19 @@ function scanAccount(
   }
 
   const warmupEnabled =
+    getWarmupEnabled(
+      warmupDetails[
+        "status"
+      ]
+    ) ??
     getBoolean(
-      raw.warmup_enabled
+      raw[
+        "warmup_enabled"
+      ]
     );
 
   if (
-    warmupEnabled !==
-      null &&
+    warmupEnabled === null ||
     warmupEnabled !==
       rules.warmupEnabled
   ) {
@@ -876,23 +984,20 @@ function scanAccount(
         email,
         client,
         now,
-
         key:
           "warmup_enabled",
-
         issueType:
           "Warmup",
-
         currentValue:
-          warmupEnabled
-            ? "ON"
-            : "OFF",
-
+          warmupEnabled === null
+            ? "Missing"
+            : warmupEnabled
+              ? "ON"
+              : "OFF",
         expectedValue:
           rules.warmupEnabled
             ? "ON"
             : "OFF",
-
         severity:
           "Warning",
       }
@@ -901,11 +1006,13 @@ function scanAccount(
 
   const warmupDaily =
     getNumber(
-      raw.total_warmup_per_day
+      warmupDetails[
+        "max_email_per_day"
+      ]
     );
 
   if (
-    warmupDaily !== null &&
+    warmupDaily === null ||
     warmupDaily !==
       rules.warmupDaily
   ) {
@@ -917,23 +1024,20 @@ function scanAccount(
         email,
         client,
         now,
-
         key:
           "warmup_daily",
-
         issueType:
           "Warmup Daily",
-
         currentValue:
-          String(
-            warmupDaily
-          ),
-
+          warmupDaily === null
+            ? "Missing"
+            : String(
+                warmupDaily
+              ),
         expectedValue:
           String(
             rules.warmupDaily
           ),
-
         severity:
           "Warning",
       }
@@ -942,11 +1046,13 @@ function scanAccount(
 
   const replyRate =
     getNumber(
-      raw.reply_rate_percentage
+      warmupDetails[
+        "reply_rate"
+      ]
     );
 
   if (
-    replyRate !== null &&
+    replyRate === null ||
     replyRate !==
       rules.replyRate
   ) {
@@ -958,19 +1064,16 @@ function scanAccount(
         email,
         client,
         now,
-
         key:
           "reply_rate",
-
         issueType:
           "Reply Rate",
-
         currentValue:
-          `${replyRate}%`,
-
+          replyRate === null
+            ? "Missing"
+            : `${replyRate}%`,
         expectedValue:
           `${rules.replyRate}%`,
-
         severity:
           "Warning",
       }
@@ -982,8 +1085,7 @@ function scanDomain(
   domain: Domain,
   userId: string,
   now: string,
-  detected:
-    DetectedIssue[]
+  detected: DetectedIssue[]
 ) {
   const client =
     domain.client ||
@@ -1001,19 +1103,14 @@ function scanDomain(
         domain,
         client,
         now,
-
         key:
           "spf",
-
         issueType:
           "SPF",
-
         currentValue:
           domain.spf_status,
-
         expectedValue:
           "Valid",
-
         severity:
           "Warning",
       }
@@ -1032,19 +1129,14 @@ function scanDomain(
         domain,
         client,
         now,
-
         key:
           "dkim",
-
         issueType:
           "DKIM",
-
         currentValue:
           domain.dkim_status,
-
         expectedValue:
           "Valid",
-
         severity:
           "Warning",
       }
@@ -1063,19 +1155,14 @@ function scanDomain(
         domain,
         client,
         now,
-
         key:
           "dmarc",
-
         issueType:
           "DMARC",
-
         currentValue:
           domain.dmarc_status,
-
         expectedValue:
           "Valid",
-
         severity:
           "Critical",
       }
@@ -1085,8 +1172,7 @@ function scanDomain(
   if (
     normalizeValue(
       domain.reporting_status
-    ) ===
-    "not monitored"
+    ) === "not monitored"
   ) {
     addDomainIssue(
       detected,
@@ -1095,20 +1181,14 @@ function scanDomain(
         domain,
         client,
         now,
-
         key:
           "dmarc_reporting",
-
         issueType:
           "DMARC Reporting",
-
         currentValue:
-          domain
-            .reporting_status,
-
+          domain.reporting_status,
         expectedValue:
           "Monitored",
-
         severity:
           "Warning",
       }
@@ -1117,8 +1197,7 @@ function scanDomain(
 }
 
 function addAccountIssue(
-  detected:
-    DetectedIssue[],
+  detected: DetectedIssue[],
   options: {
     userId: string;
     account: Account;
@@ -1139,56 +1218,41 @@ function addAccountIssue(
   detected.push({
     user_id:
       options.userId,
-
     integration_id:
       options.account
         .integration_id,
-
     email_account_id:
       options.account.id,
-
     issue_key:
       `account:${options.account.id}:${options.key}`,
-
     source:
       "Smartlead",
-
     client:
       options.client,
-
     issue_type:
       options.issueType,
-
     item:
       options.email,
-
     account_type:
       options.account
         .account_type,
-
     current_value:
       options.currentValue,
-
     expected_value:
       options.expectedValue,
-
     severity:
       options.severity,
-
     status:
       "Open",
-
     last_seen_at:
       options.now,
-
     resolved_at:
       null,
   });
 }
 
 function addDomainIssue(
-  detected:
-    DetectedIssue[],
+  detected: DetectedIssue[],
   options: {
     userId: string;
     domain: Domain;
@@ -1208,56 +1272,54 @@ function addDomainIssue(
   detected.push({
     user_id:
       options.userId,
-
     integration_id:
       options.domain
         .integration_id,
-
     email_account_id:
       null,
-
     issue_key:
       `domain:${options.domain.id}:${options.key}`,
-
     source:
       "EmailGuard",
-
     client:
       options.client,
-
     issue_type:
       options.issueType,
-
     item:
       options.domain.domain,
-
     account_type:
       null,
-
     current_value:
       options.currentValue,
-
     expected_value:
       options.expectedValue,
-
     severity:
       options.severity,
-
     status:
       "Open",
-
     last_seen_at:
       options.now,
-
     resolved_at:
       null,
   });
 }
 
+function asObject(
+  value: unknown
+): RawData {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    return value as RawData;
+  }
+
+  return {};
+}
+
 function normalizeValue(
-  value:
-    | string
-    | null
+  value: string | null
 ) {
   return (
     value
@@ -1280,8 +1342,7 @@ function getText(
   const result =
     value.trim();
 
-  return result ||
-    null;
+  return result || null;
 }
 
 function getNumber(
@@ -1334,17 +1395,53 @@ function getBoolean(
 
     if (
       text === "true" ||
-      text === "1"
+      text === "1" ||
+      text === "on" ||
+      text === "enabled"
     ) {
       return true;
     }
 
     if (
       text === "false" ||
-      text === "0"
+      text === "0" ||
+      text === "off" ||
+      text === "disabled"
     ) {
       return false;
     }
+  }
+
+  return null;
+}
+
+function getWarmupEnabled(
+  value: unknown
+) {
+  const status =
+    getText(value)
+      ?.toUpperCase();
+
+  if (!status) {
+    return null;
+  }
+
+  if (
+    status === "ACTIVE" ||
+    status === "ENABLED" ||
+    status === "ON"
+  ) {
+    return true;
+  }
+
+  if (
+    status === "INACTIVE" ||
+    status === "DISABLED" ||
+    status === "OFF" ||
+    status === "PAUSED" ||
+    status === "STOPPED"
+  ) {
+    return false;
   }
 
   return null;

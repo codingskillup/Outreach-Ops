@@ -9,15 +9,16 @@ type RouteContext = {
   }>;
 };
 
-type JsonObject = Record<
-  string,
-  unknown
->;
+type JsonObject = Record<string, unknown>;
+
+type AccountType =
+  | "Hypertide Azure/Entra"
+  | "Hypertide Google"
+  | "Google Workspace";
 
 function sleep(ms: number) {
-  return new Promise(
-    (resolve) =>
-      setTimeout(resolve, ms)
+  return new Promise((resolve) =>
+    setTimeout(resolve, ms)
   );
 }
 
@@ -93,16 +94,120 @@ function getString(
 function getNumber(
   value: unknown
 ) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
   const number =
     Number(value);
 
   if (
-    Number.isNaN(number)
+    !Number.isFinite(number)
   ) {
     return null;
   }
 
   return number;
+}
+
+function getAccountTagNames(
+  account: JsonObject
+) {
+  const tags =
+    getArray(
+      account.tags
+    );
+
+  return tags
+    .map(
+      (tag) =>
+        getString(
+          tag.tag_name
+        ) ||
+        getString(
+          tag.name
+        )
+    )
+    .filter(
+      (
+        tag
+      ): tag is string =>
+        Boolean(tag)
+    );
+}
+
+function classifyAccountType(
+  account: JsonObject
+): AccountType | null {
+  const tags =
+    getAccountTagNames(
+      account
+    ).map(
+      (tag) =>
+        tag
+          .trim()
+          .toLowerCase()
+    );
+
+  /*
+   * SOP mapping:
+   *
+   * Hypertide Azure...
+   * Hypertide P1 Only...
+   * Hypertide P2 Only...
+   *   -> Hypertide Azure/Entra
+   *
+   * Hypertide Google...
+   *   -> Hypertide Google
+   *
+   * Google Workspace...
+   *   -> Google Workspace
+   */
+
+  if (
+    tags.some(
+      (tag) =>
+        tag.startsWith(
+          "hypertide azure"
+        ) ||
+        tag.startsWith(
+          "hypertide p1 only"
+        ) ||
+        tag.startsWith(
+          "hypertide p2 only"
+        )
+    )
+  ) {
+    return "Hypertide Azure/Entra";
+  }
+
+  if (
+    tags.some(
+      (tag) =>
+        tag.startsWith(
+          "hypertide google"
+        )
+    )
+  ) {
+    return "Hypertide Google";
+  }
+
+  if (
+    tags.some(
+      (tag) =>
+        tag.startsWith(
+          "google workspace"
+        )
+    )
+  ) {
+    return "Google Workspace";
+  }
+
+  return null;
 }
 
 async function fetchJsonWithRetry(
@@ -136,7 +241,8 @@ async function fetchJsonWithRetry(
     }
 
     if (
-      response.status !== 429 &&
+      response.status !==
+        429 &&
       response.status < 500
     ) {
       const body =
@@ -256,7 +362,7 @@ async function fetchCampaigns(
 }
 
 export async function POST(
-  request: Request,
+  _request: Request,
   context: RouteContext
 ) {
   const supabase =
@@ -371,6 +477,12 @@ export async function POST(
           .encrypted_api_key
       );
 
+    /*
+     * IMPORTANT:
+     * These Smartlead requests are GET only.
+     * This route does NOT modify Smartlead.
+     */
+
     const [
       accounts,
       campaigns,
@@ -386,7 +498,14 @@ export async function POST(
       ]);
 
     const now =
-      new Date().toISOString();
+      new Date()
+        .toISOString();
+
+    /*
+     * =========================================
+     * EMAIL ACCOUNTS
+     * =========================================
+     */
 
     const accountRows =
       accounts
@@ -403,6 +522,11 @@ export async function POST(
             return null;
           }
 
+          const accountType =
+            classifyAccountType(
+              account
+            );
+
           return {
             user_id:
               user.id,
@@ -418,6 +542,9 @@ export async function POST(
                 account.from_email
               ) ||
               getString(
+                account.email
+              ) ||
+              getString(
                 account.username
               ),
 
@@ -430,6 +557,23 @@ export async function POST(
               getString(
                 account.username
               ),
+
+            account_type:
+              accountType,
+
+            /*
+             * Keep the original
+             * Smartlead response intact.
+             *
+             * Sending settings remain
+             * available here:
+             *
+             * message_per_day
+             * minTimeToWaitInMins
+             * warmup_details.status
+             * warmup_details.max_email_per_day
+             * warmup_details.reply_rate
+             */
 
             raw_data:
               account,
@@ -451,34 +595,63 @@ export async function POST(
             null
         );
 
+    /*
+     * Chunk account writes so large
+     * Smartlead workspaces are safe.
+     */
+
     if (
       accountRows.length >
       0
     ) {
-      const {
-        error:
-          accountUpsertError,
-      } =
-        await supabase
-          .from(
-            "email_accounts"
-          )
-          .upsert(
-            accountRows,
-            {
-              onConflict:
-                "integration_id,external_id",
-            }
+      const chunkSize =
+        500;
+
+      for (
+        let index = 0;
+        index <
+        accountRows.length;
+        index +=
+          chunkSize
+      ) {
+        const chunk =
+          accountRows.slice(
+            index,
+            index +
+              chunkSize
           );
 
-      if (
-        accountUpsertError
-      ) {
-        throw new Error(
-          `Account save failed: ${accountUpsertError.message}`
-        );
+        const {
+          error:
+            accountUpsertError,
+        } =
+          await supabase
+            .from(
+              "email_accounts"
+            )
+            .upsert(
+              chunk,
+              {
+                onConflict:
+                  "integration_id,external_id",
+              }
+            );
+
+        if (
+          accountUpsertError
+        ) {
+          throw new Error(
+            `Account save failed: ${accountUpsertError.message}`
+          );
+        }
       }
     }
+
+    /*
+     * =========================================
+     * CAMPAIGNS
+     * =========================================
+     */
 
     const {
       data:
@@ -487,7 +660,9 @@ export async function POST(
         existingError,
     } =
       await supabase
-        .from("campaigns")
+        .from(
+          "campaigns"
+        )
         .select(`
           id,
           external_id,
@@ -499,9 +674,12 @@ export async function POST(
           integrationId
         );
 
-    if (existingError) {
+    if (
+      existingError
+    ) {
       throw new Error(
-        existingError.message
+        existingError
+          .message
       );
     }
 
@@ -510,9 +688,11 @@ export async function POST(
         number,
         {
           id: string;
+
           status:
             | string
             | null;
+
           first_seen_active_at:
             | string
             | null;
@@ -526,7 +706,8 @@ export async function POST(
     ) {
       existingMap.set(
         Number(
-          campaign.external_id
+          campaign
+            .external_id
         ),
         {
           id:
@@ -536,7 +717,8 @@ export async function POST(
             campaign.status,
 
           first_seen_active_at:
-            campaign.first_seen_active_at,
+            campaign
+              .first_seen_active_at,
         }
       );
     }
@@ -625,30 +807,54 @@ export async function POST(
       campaignRows.length >
       0
     ) {
-      const {
-        error:
-          campaignUpsertError,
-      } =
-        await supabase
-          .from(
-            "campaigns"
-          )
-          .upsert(
-            campaignRows,
-            {
-              onConflict:
-                "integration_id,external_id",
-            }
+      const chunkSize =
+        500;
+
+      for (
+        let index = 0;
+        index <
+        campaignRows.length;
+        index +=
+          chunkSize
+      ) {
+        const chunk =
+          campaignRows.slice(
+            index,
+            index +
+              chunkSize
           );
 
-      if (
-        campaignUpsertError
-      ) {
-        throw new Error(
-          `Campaign save failed: ${campaignUpsertError.message}`
-        );
+        const {
+          error:
+            campaignUpsertError,
+        } =
+          await supabase
+            .from(
+              "campaigns"
+            )
+            .upsert(
+              chunk,
+              {
+                onConflict:
+                  "integration_id,external_id",
+              }
+            );
+
+        if (
+          campaignUpsertError
+        ) {
+          throw new Error(
+            `Campaign save failed: ${campaignUpsertError.message}`
+          );
+        }
       }
     }
+
+    /*
+     * =========================================
+     * CAMPAIGN STATUS HISTORY
+     * =========================================
+     */
 
     const {
       data:
@@ -657,7 +863,9 @@ export async function POST(
         savedCampaignsError,
     } =
       await supabase
-        .from("campaigns")
+        .from(
+          "campaigns"
+        )
         .select(`
           id,
           external_id,
@@ -672,16 +880,19 @@ export async function POST(
       savedCampaignsError
     ) {
       throw new Error(
-        savedCampaignsError.message
+        savedCampaignsError
+          .message
       );
     }
 
     const historyRows: {
       user_id: string;
       campaign_id: string;
+
       old_status:
         | string
         | null;
+
       new_status: string;
       changed_at: string;
     }[] = [];
@@ -708,15 +919,11 @@ export async function POST(
             )
           : null;
 
-      if (
-        !newStatus
-      ) {
+      if (!newStatus) {
         continue;
       }
 
-      if (
-        !oldCampaign
-      ) {
+      if (!oldCampaign) {
         historyRows.push({
           user_id:
             user.id,
@@ -764,26 +971,50 @@ export async function POST(
       historyRows.length >
       0
     ) {
-      const {
-        error:
-          historyError,
-      } =
-        await supabase
-          .from(
-            "campaign_status_history"
-          )
-          .insert(
-            historyRows
+      const chunkSize =
+        500;
+
+      for (
+        let index = 0;
+        index <
+        historyRows.length;
+        index +=
+          chunkSize
+      ) {
+        const chunk =
+          historyRows.slice(
+            index,
+            index +
+              chunkSize
           );
 
-      if (
-        historyError
-      ) {
-        throw new Error(
-          `Campaign history save failed: ${historyError.message}`
-        );
+        const {
+          error:
+            historyError,
+        } =
+          await supabase
+            .from(
+              "campaign_status_history"
+            )
+            .insert(
+              chunk
+            );
+
+        if (
+          historyError
+        ) {
+          throw new Error(
+            `Campaign history save failed: ${historyError.message}`
+          );
+        }
       }
     }
+
+    /*
+     * =========================================
+     * SUMMARY
+     * =========================================
+     */
 
     const activeCampaigns =
       campaignRows.filter(
@@ -791,6 +1022,39 @@ export async function POST(
           campaign.status ===
           "ACTIVE"
       ).length;
+
+    const azureEntraAccounts =
+      accountRows.filter(
+        (account) =>
+          account.account_type ===
+          "Hypertide Azure/Entra"
+      ).length;
+
+    const hypertideGoogleAccounts =
+      accountRows.filter(
+        (account) =>
+          account.account_type ===
+          "Hypertide Google"
+      ).length;
+
+    const googleWorkspaceAccounts =
+      accountRows.filter(
+        (account) =>
+          account.account_type ===
+          "Google Workspace"
+      ).length;
+
+    const unclassifiedAccounts =
+      accountRows.filter(
+        (account) =>
+          !account.account_type
+      ).length;
+
+    /*
+     * =========================================
+     * CONNECTION STATUS
+     * =========================================
+     */
 
     const {
       error:
@@ -820,39 +1084,62 @@ export async function POST(
       integrationUpdateError
     ) {
       throw new Error(
-        integrationUpdateError.message
+        integrationUpdateError
+          .message
       );
     }
 
-    await supabase
-      .from(
-        "sync_logs"
-      )
-      .insert({
-        user_id:
-          user.id,
+    /*
+     * =========================================
+     * SYNC LOG
+     * =========================================
+     */
 
-        integration_id:
-          integrationId,
+    const {
+      error:
+        syncLogError,
+    } =
+      await supabase
+        .from(
+          "sync_logs"
+        )
+        .insert({
+          user_id:
+            user.id,
 
-        provider:
-          "smartlead",
+          integration_id:
+            integrationId,
 
-        accounts_fetched:
-          accountRows.length,
+          provider:
+            "smartlead",
 
-        campaigns_fetched:
-          campaignRows.length,
+          accounts_fetched:
+            accountRows.length,
 
-        active_campaigns:
-          activeCampaigns,
+          campaigns_fetched:
+            campaignRows.length,
 
-        status:
-          "success",
+          active_campaigns:
+            activeCampaigns,
 
-        message:
-          "Smartlead sync completed.",
-      });
+          domains_fetched:
+            0,
+
+          status:
+            "success",
+
+          message:
+            `Smartlead sync completed. ${accountRows.length} accounts fetched; ${unclassifiedAccounts} unclassified.`,
+        });
+
+    if (
+      syncLogError
+    ) {
+      console.error(
+        "Smartlead sync log error:",
+        syncLogError.message
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -863,6 +1150,14 @@ export async function POST(
       summary: {
         accountsFetched:
           accountRows.length,
+
+        azureEntraAccounts,
+
+        hypertideGoogleAccounts,
+
+        googleWorkspaceAccounts,
+
+        unclassifiedAccounts,
 
         campaigns:
           campaignRows.length,
@@ -901,6 +1196,9 @@ export async function POST(
             0,
 
           active_campaigns:
+            0,
+
+          domains_fetched:
             0,
 
           status:
