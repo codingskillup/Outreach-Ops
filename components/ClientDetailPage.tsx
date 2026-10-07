@@ -1,121 +1,239 @@
 "use client";
 
 import Link from "next/link";
-import type { ClientDetail } from "@/lib/clientDetailDemoData";
+
+import type {
+  ReactNode,
+} from "react";
+
+export type ClientCampaign = {
+  id: string;
+  name: string;
+  status: string;
+  accounts: number | null;
+  activeSince: string;
+};
+
+export type ClientIssue = {
+  id: string;
+  type: string;
+  item: string;
+  severity:
+    | "Warning"
+    | "Critical";
+};
+
+export type ClientDetailData = {
+  id: string;
+  name: string;
+  totalAccounts: number;
+  healthyAccounts: number;
+  issues: number;
+  activeCampaigns: number;
+  azureEntra: number;
+  hypertideGoogle: number;
+  googleWorkspace: number;
+  campaigns:
+    ClientCampaign[];
+  recentIssues:
+    ClientIssue[];
+};
 
 export default function ClientDetailPage({
   client,
 }: {
-  client: ClientDetail;
+  client:
+    ClientDetailData;
 }) {
   const health =
-    client.totalAccounts > 0
+    client.totalAccounts >
+    0
       ? (
-          (client.healthyAccounts /
-            client.totalAccounts) *
+          (
+            client.healthyAccounts /
+            client.totalAccounts
+          ) *
           100
         ).toFixed(1)
-      : "0";
+      : "0.0";
 
   return (
     <div
       style={{
-        width: "100%",
-        color: "#111827",
+        width:
+          "100%",
+        minWidth:
+          0,
+        color:
+          "#111827",
       }}
     >
       <div
         style={{
-          marginBottom: 26,
+          display:
+            "flex",
+          alignItems:
+            "flex-start",
+          gap:
+            16,
+          marginBottom:
+            26,
         }}
       >
-        <Link
-          href="/clients"
-          style={{
-            color: "#2563EB",
-            textDecoration: "none",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Back to Clients
-        </Link>
+        <div>
+          <Link
+            href="/clients"
+            style={{
+              color:
+                "#2563EB",
+              textDecoration:
+                "none",
+              fontSize:
+                13,
+              fontWeight:
+                600,
+            }}
+          >
+            ← Back to Clients
+          </Link>
 
-        <h1
-          style={{
-            marginTop: 12,
-            marginBottom: 0,
-            fontSize: 28,
-            fontWeight: 750,
-          }}
-        >
-          {client.name}
-        </h1>
+          <h1
+            style={{
+              marginTop:
+                12,
+              marginBottom:
+                0,
+              fontSize:
+                28,
+              fontWeight:
+                750,
+            }}
+          >
+            {client.name}
+          </h1>
 
-        <p
+          <p
+            style={{
+              marginTop:
+                7,
+              marginBottom:
+                0,
+              color:
+                "#6B7280",
+              fontSize:
+                14,
+            }}
+          >
+            Live account health,
+            account types,
+            campaigns and current
+            issues.
+          </p>
+        </div>
+
+        <div
           style={{
-            marginTop: 7,
-            marginBottom: 0,
-            color: "#6B7280",
-            fontSize: 14,
+            marginLeft:
+              "auto",
+            background:
+              "#ECFDF5",
+            color:
+              "#047857",
+            borderRadius:
+              8,
+            padding:
+              "7px 10px",
+            fontSize:
+              11,
+            fontWeight:
+              700,
           }}
         >
-          Account health, account types, campaigns and current issues.
-        </p>
+          Live Data
+        </div>
       </div>
 
       <div
         style={{
-          display: "grid",
+          display:
+            "grid",
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
-          gap: 14,
-          marginBottom: 22,
+          gap:
+            14,
+          marginBottom:
+            22,
         }}
       >
         <SummaryCard
           title="Total Accounts"
-          value={client.totalAccounts.toLocaleString()}
+          value={
+            client.totalAccounts.toLocaleString()
+          }
         />
 
         <SummaryCard
           title="Healthy"
-          value={client.healthyAccounts.toLocaleString()}
+          value={
+            client.healthyAccounts.toLocaleString()
+          }
           success
         />
 
         <SummaryCard
           title="Need Attention"
-          value={client.issues.toLocaleString()}
-          warning
+          value={
+            client.issues.toLocaleString()
+          }
+          warning={
+            client.issues >
+            0
+          }
         />
 
         <SummaryCard
           title="Active Campaigns"
-          value={client.activeCampaigns.toLocaleString()}
+          value={
+            client.activeCampaigns.toLocaleString()
+          }
         />
 
         <SummaryCard
           title="Account Health"
           value={`${health}%`}
-          success={Number(health) >= 95}
-          warning={Number(health) < 95}
+          success={
+            Number(
+              health
+            ) >= 95
+          }
+          warning={
+            Number(
+              health
+            ) < 95
+          }
         />
       </div>
 
       <section
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: 14,
-          padding: 22,
-          marginBottom: 20,
+          background:
+            "#FFFFFF",
+          border:
+            "1px solid #E5E7EB",
+          borderRadius:
+            14,
+          padding:
+            22,
+          marginBottom:
+            20,
         }}
       >
         <div
           style={{
-            fontSize: 17,
-            fontWeight: 700,
+            fontSize:
+              17,
+            fontWeight:
+              700,
           }}
         >
           Account Types
@@ -123,62 +241,92 @@ export default function ClientDetailPage({
 
         <p
           style={{
-            marginTop: 5,
-            color: "#6B7280",
-            fontSize: 13,
+            marginTop:
+              5,
+            marginBottom:
+              0,
+            color:
+              "#6B7280",
+            fontSize:
+              13,
           }}
         >
-          Mailbox distribution for this client
+          Live mailbox distribution
+          for this client
         </p>
 
         <div
           style={{
-            display: "grid",
+            display:
+              "grid",
             gridTemplateColumns:
               "repeat(3, minmax(0, 1fr))",
-            gap: 14,
-            marginTop: 18,
+            gap:
+              14,
+            marginTop:
+              18,
           }}
         >
           <TypeCard
             title="Hypertide Azure/Entra"
-            value={client.azureEntra}
-            total={client.totalAccounts}
+            value={
+              client.azureEntra
+            }
+            total={
+              client.totalAccounts
+            }
           />
 
           <TypeCard
             title="Hypertide Google"
-            value={client.hypertideGoogle}
-            total={client.totalAccounts}
+            value={
+              client.hypertideGoogle
+            }
+            total={
+              client.totalAccounts
+            }
           />
 
           <TypeCard
             title="Google Workspace"
-            value={client.googleWorkspace}
-            total={client.totalAccounts}
+            value={
+              client.googleWorkspace
+            }
+            total={
+              client.totalAccounts
+            }
           />
         </div>
       </section>
 
       <section
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: 14,
-          overflow: "hidden",
-          marginBottom: 20,
+          background:
+            "#FFFFFF",
+          border:
+            "1px solid #E5E7EB",
+          borderRadius:
+            14,
+          overflow:
+            "hidden",
+          marginBottom:
+            20,
         }}
       >
         <div
           style={{
-            padding: 20,
-            borderBottom: "1px solid #E5E7EB",
+            padding:
+              20,
+            borderBottom:
+              "1px solid #E5E7EB",
           }}
         >
           <div
             style={{
-              fontSize: 17,
-              fontWeight: 700,
+              fontSize:
+                17,
+              fontWeight:
+                700,
             }}
           >
             Campaigns
@@ -186,94 +334,150 @@ export default function ClientDetailPage({
 
           <div
             style={{
-              color: "#6B7280",
-              fontSize: 13,
-              marginTop: 5,
+              color:
+                "#6B7280",
+              fontSize:
+                13,
+              marginTop:
+                5,
             }}
           >
-            Campaign activity for {client.name}
+            Live campaign activity
+            for {client.name}
           </div>
         </div>
 
-        {client.campaigns.length === 0 ? (
-          <EmptyState text="No demo campaigns available for this client." />
+        {client.campaigns.length ===
+        0 ? (
+          <EmptyState
+            text="No campaigns found for this client."
+          />
         ) : (
-          <table
+          <div
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
+              overflowX:
+                "auto",
             }}
           >
-            <thead>
-              <tr
-                style={{
-                  background: "#F8FAFC",
-                }}
-              >
-                <TableHeader text="Campaign" />
-                <TableHeader text="Status" />
-                <TableHeader text="Accounts" />
-                <TableHeader text="Active Since" />
-              </tr>
-            </thead>
-
-            <tbody>
-              {client.campaigns.map((campaign) => (
+            <table
+              style={{
+                width:
+                  "100%",
+                minWidth:
+                  700,
+                borderCollapse:
+                  "collapse",
+              }}
+            >
+              <thead>
                 <tr
-                  key={campaign.id}
                   style={{
-                    borderTop: "1px solid #F1F5F9",
+                    background:
+                      "#F8FAFC",
                   }}
                 >
-                  <TableCell>
-                    <span
+                  <TableHeader
+                    text="Campaign"
+                  />
+
+                  <TableHeader
+                    text="Status"
+                  />
+
+                  <TableHeader
+                    text="Accounts"
+                  />
+
+                  <TableHeader
+                    text="Active Since"
+                  />
+                </tr>
+              </thead>
+
+              <tbody>
+                {client.campaigns.map(
+                  (
+                    campaign
+                  ) => (
+                    <tr
+                      key={
+                        campaign.id
+                      }
                       style={{
-                        fontWeight: 650,
-                        color: "#111827",
+                        borderTop:
+                          "1px solid #F1F5F9",
                       }}
                     >
-                      {campaign.name}
-                    </span>
-                  </TableCell>
+                      <TableCell>
+                        <span
+                          style={{
+                            fontWeight:
+                              650,
+                            color:
+                              "#111827",
+                          }}
+                        >
+                          {
+                            campaign.name
+                          }
+                        </span>
+                      </TableCell>
 
-                  <TableCell>
-                    <CampaignStatus
-                      status={campaign.status}
-                    />
-                  </TableCell>
+                      <TableCell>
+                        <CampaignStatus
+                          status={
+                            campaign.status
+                          }
+                        />
+                      </TableCell>
 
-                  <TableCell>
-                    {campaign.accounts}
-                  </TableCell>
+                      <TableCell>
+                        {campaign.accounts ===
+                        null
+                          ? "—"
+                          : campaign.accounts.toLocaleString()}
+                      </TableCell>
 
-                  <TableCell>
-                    {campaign.activeSince}
-                  </TableCell>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <TableCell>
+                        {
+                          campaign.activeSince
+                        }
+                      </TableCell>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
       <section
         style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: 14,
-          overflow: "hidden",
+          background:
+            "#FFFFFF",
+          border:
+            "1px solid #E5E7EB",
+          borderRadius:
+            14,
+          overflow:
+            "hidden",
         }}
       >
         <div
           style={{
-            padding: 20,
-            borderBottom: "1px solid #E5E7EB",
+            padding:
+              20,
+            borderBottom:
+              "1px solid #E5E7EB",
           }}
         >
           <div
             style={{
-              fontSize: 17,
-              fontWeight: 700,
+              fontSize:
+                17,
+              fontWeight:
+                700,
             }}
           >
             Current Issues
@@ -281,61 +485,101 @@ export default function ClientDetailPage({
 
           <div
             style={{
-              color: "#6B7280",
-              fontSize: 13,
-              marginTop: 5,
+              color:
+                "#6B7280",
+              fontSize:
+                13,
+              marginTop:
+                5,
             }}
           >
-            Recent items that need attention
+            Open items that need
+            attention
           </div>
         </div>
 
-        {client.recentIssues.length === 0 ? (
-          <EmptyState text="No current demo issues." />
+        {client.recentIssues.length ===
+        0 ? (
+          <EmptyState
+            text="No current issues. This client is healthy."
+          />
         ) : (
-          <table
+          <div
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
+              overflowX:
+                "auto",
             }}
           >
-            <thead>
-              <tr
-                style={{
-                  background: "#F8FAFC",
-                }}
-              >
-                <TableHeader text="Issue" />
-                <TableHeader text="Account" />
-                <TableHeader text="Severity" />
-              </tr>
-            </thead>
-
-            <tbody>
-              {client.recentIssues.map((issue) => (
+            <table
+              style={{
+                width:
+                  "100%",
+                minWidth:
+                  650,
+                borderCollapse:
+                  "collapse",
+              }}
+            >
+              <thead>
                 <tr
-                  key={issue.id}
                   style={{
-                    borderTop: "1px solid #F1F5F9",
+                    background:
+                      "#F8FAFC",
                   }}
                 >
-                  <TableCell>
-                    {issue.type}
-                  </TableCell>
+                  <TableHeader
+                    text="Issue"
+                  />
 
-                  <TableCell>
-                    {issue.item}
-                  </TableCell>
+                  <TableHeader
+                    text="Account / Domain"
+                  />
 
-                  <TableCell>
-                    <IssueStatus
-                      severity={issue.severity}
-                    />
-                  </TableCell>
+                  <TableHeader
+                    text="Severity"
+                  />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {client.recentIssues.map(
+                  (
+                    issue
+                  ) => (
+                    <tr
+                      key={
+                        issue.id
+                      }
+                      style={{
+                        borderTop:
+                          "1px solid #F1F5F9",
+                      }}
+                    >
+                      <TableCell>
+                        {
+                          issue.type
+                        }
+                      </TableCell>
+
+                      <TableCell>
+                        {
+                          issue.item
+                        }
+                      </TableCell>
+
+                      <TableCell>
+                        <IssueStatus
+                          severity={
+                            issue.severity
+                          }
+                        />
+                      </TableCell>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>
@@ -353,29 +597,38 @@ function SummaryCard({
   warning?: boolean;
   success?: boolean;
 }) {
-  let color = "#111827";
+  let color =
+    "#111827";
 
   if (warning) {
-    color = "#B45309";
+    color =
+      "#B45309";
   }
 
   if (success) {
-    color = "#047857";
+    color =
+      "#047857";
   }
 
   return (
     <div
       style={{
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
-        borderRadius: 13,
-        padding: 18,
+        background:
+          "#FFFFFF",
+        border:
+          "1px solid #E5E7EB",
+        borderRadius:
+          13,
+        padding:
+          18,
       }}
     >
       <div
         style={{
-          color: "#64748B",
-          fontSize: 12,
+          color:
+            "#64748B",
+          fontSize:
+            12,
         }}
       >
         {title}
@@ -383,9 +636,12 @@ function SummaryCard({
 
       <div
         style={{
-          marginTop: 8,
-          fontSize: 25,
-          fontWeight: 750,
+          marginTop:
+            8,
+          fontSize:
+            25,
+          fontWeight:
+            750,
           color,
         }}
       >
@@ -405,22 +661,34 @@ function TypeCard({
   total: number;
 }) {
   const percentage =
-    total > 0
-      ? ((value / total) * 100).toFixed(1)
-      : "0";
+    total >
+    0
+      ? (
+          (
+            value /
+            total
+          ) *
+          100
+        ).toFixed(1)
+      : "0.0";
 
   return (
     <div
       style={{
-        border: "1px solid #E5E7EB",
-        borderRadius: 11,
-        padding: 17,
+        border:
+          "1px solid #E5E7EB",
+        borderRadius:
+          11,
+        padding:
+          17,
       }}
     >
       <div
         style={{
-          color: "#64748B",
-          fontSize: 12,
+          color:
+            "#64748B",
+          fontSize:
+            12,
         }}
       >
         {title}
@@ -428,9 +696,12 @@ function TypeCard({
 
       <div
         style={{
-          fontSize: 24,
-          fontWeight: 750,
-          marginTop: 8,
+          fontSize:
+            24,
+          fontWeight:
+            750,
+          marginTop:
+            8,
         }}
       >
         {value.toLocaleString()}
@@ -438,12 +709,16 @@ function TypeCard({
 
       <div
         style={{
-          color: "#94A3B8",
-          fontSize: 11,
-          marginTop: 5,
+          color:
+            "#94A3B8",
+          fontSize:
+            11,
+          marginTop:
+            5,
         }}
       >
-        {percentage}% of client accounts
+        {percentage}% of client
+        accounts
       </div>
     </div>
   );
@@ -457,11 +732,18 @@ function TableHeader({
   return (
     <th
       style={{
-        textAlign: "left",
-        padding: "13px 16px",
-        fontSize: 12,
-        color: "#64748B",
-        fontWeight: 600,
+        textAlign:
+          "left",
+        padding:
+          "13px 16px",
+        fontSize:
+          12,
+        color:
+          "#64748B",
+        fontWeight:
+          600,
+        whiteSpace:
+          "nowrap",
       }}
     >
       {text}
@@ -472,14 +754,18 @@ function TableHeader({
 function TableCell({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    ReactNode;
 }) {
   return (
     <td
       style={{
-        padding: "14px 16px",
-        color: "#475569",
-        fontSize: 13,
+        padding:
+          "14px 16px",
+        color:
+          "#475569",
+        fontSize:
+          13,
       }}
     >
       {children}
@@ -490,27 +776,77 @@ function TableCell({
 function CampaignStatus({
   status,
 }: {
-  status: "ACTIVE" | "PAUSED";
+  status: string;
 }) {
-  const active =
-    status === "ACTIVE";
+  const normalized =
+    status
+      .trim()
+      .toUpperCase();
+
+  let background =
+    "#F1F5F9";
+
+  let color =
+    "#475569";
+
+  if (
+    normalized ===
+    "ACTIVE"
+  ) {
+    background =
+      "#ECFDF5";
+
+    color =
+      "#047857";
+  } else if (
+    normalized ===
+    "PAUSED"
+  ) {
+    background =
+      "#FEF3C7";
+
+    color =
+      "#B45309";
+  } else if (
+    normalized ===
+      "STOPPED" ||
+    normalized ===
+      "FAILED"
+  ) {
+    background =
+      "#FEF2F2";
+
+    color =
+      "#B91C1C";
+  } else if (
+    normalized ===
+    "DRAFTED"
+  ) {
+    background =
+      "#EFF6FF";
+
+    color =
+      "#2563EB";
+  }
 
   return (
     <span
       style={{
-        background: active
-          ? "#ECFDF5"
-          : "#FEF3C7",
-        color: active
-          ? "#047857"
-          : "#B45309",
-        borderRadius: 8,
-        padding: "6px 9px",
-        fontSize: 11,
-        fontWeight: 700,
+        background,
+        color,
+        borderRadius:
+          8,
+        padding:
+          "6px 9px",
+        fontSize:
+          11,
+        fontWeight:
+          700,
+        whiteSpace:
+          "nowrap",
       }}
     >
-      {status}
+      {normalized}
     </span>
   );
 }
@@ -518,17 +854,33 @@ function CampaignStatus({
 function IssueStatus({
   severity,
 }: {
-  severity: "Warning" | "Critical";
+  severity:
+    | "Warning"
+    | "Critical";
 }) {
+  const critical =
+    severity ===
+    "Critical";
+
   return (
     <span
       style={{
-        background: "#FEF3C7",
-        color: "#B45309",
-        borderRadius: 8,
-        padding: "6px 9px",
-        fontSize: 11,
-        fontWeight: 700,
+        background:
+          critical
+            ? "#FEF2F2"
+            : "#FEF3C7",
+        color:
+          critical
+            ? "#B91C1C"
+            : "#B45309",
+        borderRadius:
+          8,
+        padding:
+          "6px 9px",
+        fontSize:
+          11,
+        fontWeight:
+          700,
       }}
     >
       {severity}
@@ -544,10 +896,14 @@ function EmptyState({
   return (
     <div
       style={{
-        padding: 30,
-        color: "#64748B",
-        fontSize: 13,
-        textAlign: "center",
+        padding:
+          30,
+        color:
+          "#64748B",
+        fontSize:
+          13,
+        textAlign:
+          "center",
       }}
     >
       {text}

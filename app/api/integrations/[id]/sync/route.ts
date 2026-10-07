@@ -16,6 +16,11 @@ type AccountType =
   | "Hypertide Google"
   | "Google Workspace";
 
+type SmartleadClient = {
+  id: number;
+  name: string;
+};
+
 function sleep(ms: number) {
   return new Promise((resolve) =>
     setTimeout(resolve, ms)
@@ -75,6 +80,170 @@ function getArray(
   return [];
 }
 
+function looksLikeClient(
+  value: unknown
+) {
+  const object =
+    asObject(value);
+
+  const id =
+    getNumber(
+      object.id
+    ) ??
+    getNumber(
+      object.client_id
+    ) ??
+    getNumber(
+      object.clientId
+    );
+
+  const name =
+    getString(
+      object.name
+    ) ||
+    getString(
+      object.client_name
+    ) ||
+    getString(
+      object.clientName
+    ) ||
+    getString(
+      object.company_name
+    ) ||
+    getString(
+      object.companyName
+    );
+
+  return (
+    id !== null &&
+    Boolean(name)
+  );
+}
+
+function getClientArray(
+  value: unknown,
+  depth = 0
+): JsonObject[] {
+  if (
+    depth > 5 ||
+    value === null ||
+    value === undefined
+  ) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    const directClients =
+      value
+        .filter(
+          (item) =>
+            looksLikeClient(
+              item
+            )
+        )
+        .map(
+          (item) =>
+            item as JsonObject
+        );
+
+    if (
+      directClients.length >
+      0
+    ) {
+      return directClients;
+    }
+
+    for (
+      const item of value
+    ) {
+      const nested =
+        getClientArray(
+          item,
+          depth + 1
+        );
+
+      if (
+        nested.length >
+        0
+      ) {
+        return nested;
+      }
+    }
+
+    return [];
+  }
+
+  if (
+    typeof value !==
+      "object"
+  ) {
+    return [];
+  }
+
+  if (
+    looksLikeClient(
+      value
+    )
+  ) {
+    return [
+      value as JsonObject,
+    ];
+  }
+
+  const object =
+    value as JsonObject;
+
+  const preferredKeys = [
+    "clients",
+    "client_list",
+    "clientList",
+    "data",
+    "result",
+    "results",
+    "items",
+  ];
+
+  for (
+    const key of preferredKeys
+  ) {
+    if (
+      key in object
+    ) {
+      const nested =
+        getClientArray(
+          object[key],
+          depth + 1
+        );
+
+      if (
+        nested.length >
+        0
+      ) {
+        return nested;
+      }
+    }
+  }
+
+  for (
+    const nestedValue of
+    Object.values(object)
+  ) {
+    const nested =
+      getClientArray(
+        nestedValue,
+        depth + 1
+      );
+
+    if (
+      nested.length >
+      0
+    ) {
+      return nested;
+    }
+  }
+
+  return [];
+}
 function getString(
   value: unknown
 ) {
@@ -153,21 +322,6 @@ function classifyAccountType(
           .toLowerCase()
     );
 
-  /*
-   * SOP mapping:
-   *
-   * Hypertide Azure...
-   * Hypertide P1 Only...
-   * Hypertide P2 Only...
-   *   -> Hypertide Azure/Entra
-   *
-   * Hypertide Google...
-   *   -> Hypertide Google
-   *
-   * Google Workspace...
-   *   -> Google Workspace
-   */
-
   if (
     tags.some(
       (tag) =>
@@ -221,17 +375,18 @@ async function fetchJsonWithRetry(
     attempt++
   ) {
     const response =
-      await fetch(url, {
-        method: "GET",
-
-        cache:
-          "no-store",
-
-        signal:
-          AbortSignal.timeout(
-            25000
-          ),
-      });
+      await fetch(
+        url,
+        {
+          method: "GET",
+          cache:
+            "no-store",
+          signal:
+            AbortSignal.timeout(
+              25000
+            ),
+        }
+      );
 
     lastStatus =
       response.status;
@@ -243,7 +398,8 @@ async function fetchJsonWithRetry(
     if (
       response.status !==
         429 &&
-      response.status < 500
+      response.status <
+        500
     ) {
       const body =
         await response.text();
@@ -278,7 +434,6 @@ async function fetchAllEmailAccounts(
     JsonObject[] = [];
 
   const limit = 100;
-
   let offset = 0;
 
   while (true) {
@@ -324,10 +479,11 @@ async function fetchAllEmailAccounts(
     offset += limit;
 
     if (
-      offset > 50000
+      offset >
+      50000
     ) {
       throw new Error(
-        "Smartlead pagination safety limit reached."
+        "Smartlead account pagination safety limit reached."
       );
     }
   }
@@ -361,6 +517,181 @@ async function fetchCampaigns(
   return getArray(json);
 }
 
+async function fetchClients(
+  apiKey: string
+) {
+  const endpoints = [
+    "https://server.smartlead.ai/api/v1/analytics/client/list",
+    "https://server.smartlead.ai/api/v1/client/",
+  ];
+
+  for (
+    const endpoint of endpoints
+  ) {
+    try {
+      const url =
+        new URL(
+          endpoint
+        );
+
+      url.searchParams.set(
+        "api_key",
+        apiKey
+      );
+
+      const json =
+        await fetchJsonWithRetry(
+          url.toString()
+        );
+
+      const clientItems =
+        getClientArray(
+          json
+        );
+
+      const clientMap =
+        new Map<
+          number,
+          SmartleadClient
+        >();
+
+      for (
+        const client of
+        clientItems
+      ) {
+        const id =
+          getNumber(
+            client.id
+          ) ??
+          getNumber(
+            client.client_id
+          ) ??
+          getNumber(
+            client.clientId
+          );
+
+        const name =
+          getString(
+            client.name
+          ) ||
+          getString(
+            client.client_name
+          ) ||
+          getString(
+            client.clientName
+          ) ||
+          getString(
+            client.company_name
+          ) ||
+          getString(
+            client.companyName
+          );
+
+        if (
+          id === null ||
+          !name
+        ) {
+          continue;
+        }
+
+        clientMap.set(
+          id,
+          {
+            id,
+            name,
+          }
+        );
+      }
+
+      const clients =
+        Array.from(
+          clientMap.values()
+        );
+
+      if (
+        clients.length >
+        0
+      ) {
+        return clients;
+      }
+    } catch (error) {
+      /*
+       * Client enrichment must never
+       * break the core Smartlead sync.
+       *
+       * Try the next read-only GET
+       * endpoint if this one is not
+       * available for the account.
+       */
+      console.warn(
+        `Smartlead client endpoint failed: ${endpoint}`,
+        error instanceof Error
+          ? error.message
+          : error
+      );
+    }
+  }
+
+  return [];
+}
+function buildClientMap(
+  clients: SmartleadClient[]
+) {
+  return new Map(
+    clients.map(
+      (client) => [
+        client.id,
+        client,
+      ]
+    )
+  );
+}
+
+function enrichWithClient(
+  raw: JsonObject,
+  clientMap: Map<
+    number,
+    SmartleadClient
+  >
+) {
+  const clientId =
+    getNumber(
+      raw.client_id
+    );
+
+  if (
+    clientId ===
+    null
+  ) {
+    return {
+      ...raw,
+      client_name:
+        null,
+    };
+  }
+
+  const client =
+    clientMap.get(
+      clientId
+    );
+
+  if (!client) {
+    return {
+      ...raw,
+      client_name:
+        null,
+    };
+  }
+
+  return {
+    ...raw,
+    client_id:
+      clientId,
+    client_name:
+      client.name,
+  };
+}
+
 export async function POST(
   _request: Request,
   context: RouteContext
@@ -382,9 +713,13 @@ export async function POST(
       id;
 
     const {
-      data: { user },
+      data: {
+        user,
+      },
     } =
-      await supabase.auth.getUser();
+      await supabase
+        .auth
+        .getUser();
 
     if (!user) {
       return NextResponse.json(
@@ -402,7 +737,8 @@ export async function POST(
       user.id;
 
     const {
-      data: integration,
+      data:
+        integration,
       error:
         integrationError,
     } =
@@ -478,24 +814,30 @@ export async function POST(
       );
 
     /*
-     * IMPORTANT:
-     * These Smartlead requests are GET only.
-     * This route does NOT modify Smartlead.
+     * Smartlead calls in this route are GET only.
+     * Nothing is changed inside Smartlead.
      */
-
     const [
       accounts,
       campaigns,
+      clients,
     ] =
       await Promise.all([
         fetchAllEmailAccounts(
           apiKey
         ),
-
         fetchCampaigns(
           apiKey
         ),
+        fetchClients(
+          apiKey
+        ),
       ]);
+
+    const clientMap =
+      buildClientMap(
+        clients
+      );
 
     const now =
       new Date()
@@ -509,82 +851,76 @@ export async function POST(
 
     const accountRows =
       accounts
-        .map((account) => {
-          const externalId =
-            getNumber(
-              account.id
-            );
+        .map(
+          (account) => {
+            const externalId =
+              getNumber(
+                account.id
+              );
 
-          if (
-            externalId ===
-            null
-          ) {
-            return null;
+            if (
+              externalId ===
+              null
+            ) {
+              return null;
+            }
+
+            const accountType =
+              classifyAccountType(
+                account
+              );
+
+            const enrichedRawData =
+              enrichWithClient(
+                account,
+                clientMap
+              );
+
+            return {
+              user_id:
+                user.id,
+
+              integration_id:
+                integrationId,
+
+              external_id:
+                externalId,
+
+              email:
+                getString(
+                  account.from_email
+                ) ||
+                getString(
+                  account.email
+                ) ||
+                getString(
+                  account.username
+                ),
+
+              from_name:
+                getString(
+                  account.from_name
+                ),
+
+              username:
+                getString(
+                  account.username
+                ),
+
+              account_type:
+                accountType,
+
+              raw_data:
+                enrichedRawData,
+
+              synced_at:
+                now,
+
+              updated_at:
+                now,
+            };
           }
-
-          const accountType =
-            classifyAccountType(
-              account
-            );
-
-          return {
-            user_id:
-              user.id,
-
-            integration_id:
-              integrationId,
-
-            external_id:
-              externalId,
-
-            email:
-              getString(
-                account.from_email
-              ) ||
-              getString(
-                account.email
-              ) ||
-              getString(
-                account.username
-              ),
-
-            from_name:
-              getString(
-                account.from_name
-              ),
-
-            username:
-              getString(
-                account.username
-              ),
-
-            account_type:
-              accountType,
-
-            /*
-             * Keep the original
-             * Smartlead response intact.
-             *
-             * Sending settings remain
-             * available here:
-             *
-             * message_per_day
-             * minTimeToWaitInMins
-             * warmup_details.status
-             * warmup_details.max_email_per_day
-             * warmup_details.reply_rate
-             */
-
-            raw_data:
-              account,
-
-            synced_at:
-              now,
-
-            updated_at:
-              now,
-          };
-        })
+        )
         .filter(
           (
             value
@@ -594,11 +930,6 @@ export async function POST(
             value !==
             null
         );
-
-    /*
-     * Chunk account writes so large
-     * Smartlead workspaces are safe.
-     */
 
     if (
       accountRows.length >
@@ -688,11 +1019,9 @@ export async function POST(
         number,
         {
           id: string;
-
           status:
             | string
             | null;
-
           first_seen_active_at:
             | string
             | null;
@@ -725,74 +1054,83 @@ export async function POST(
 
     const campaignRows =
       campaigns
-        .map((campaign) => {
-          const externalId =
-            getNumber(
-              campaign.id
-            );
+        .map(
+          (campaign) => {
+            const externalId =
+              getNumber(
+                campaign.id
+              );
 
-          if (
-            externalId ===
-            null
-          ) {
-            return null;
-          }
+            if (
+              externalId ===
+              null
+            ) {
+              return null;
+            }
 
-          const status =
-            getString(
-              campaign.status
-            )?.toUpperCase() ||
-            null;
-
-          const existing =
-            existingMap.get(
-              externalId
-            );
-
-          let firstSeenActiveAt =
-            existing
-              ?.first_seen_active_at ||
-            null;
-
-          if (
-            status ===
-              "ACTIVE" &&
-            !firstSeenActiveAt
-          ) {
-            firstSeenActiveAt =
-              now;
-          }
-
-          return {
-            user_id:
-              user.id,
-
-            integration_id:
-              integrationId,
-
-            external_id:
-              externalId,
-
-            name:
+            const status =
               getString(
-                campaign.name
-              ),
+                campaign.status
+              )
+                ?.toUpperCase() ||
+              null;
 
-            status,
+            const existing =
+              existingMap.get(
+                externalId
+              );
 
-            first_seen_active_at:
-              firstSeenActiveAt,
+            let firstSeenActiveAt =
+              existing
+                ?.first_seen_active_at ||
+              null;
 
-            raw_data:
-              campaign,
+            if (
+              status ===
+                "ACTIVE" &&
+              !firstSeenActiveAt
+            ) {
+              firstSeenActiveAt =
+                now;
+            }
 
-            synced_at:
-              now,
+            const enrichedRawData =
+              enrichWithClient(
+                campaign,
+                clientMap
+              );
 
-            updated_at:
-              now,
-          };
-        })
+            return {
+              user_id:
+                user.id,
+
+              integration_id:
+                integrationId,
+
+              external_id:
+                externalId,
+
+              name:
+                getString(
+                  campaign.name
+                ),
+
+              status,
+
+              first_seen_active_at:
+                firstSeenActiveAt,
+
+              raw_data:
+                enrichedRawData,
+
+              synced_at:
+                now,
+
+              updated_at:
+                now,
+            };
+          }
+        )
         .filter(
           (
             value
@@ -888,11 +1226,9 @@ export async function POST(
     const historyRows: {
       user_id: string;
       campaign_id: string;
-
       old_status:
         | string
         | null;
-
       new_status: string;
       changed_at: string;
     }[] = [];
@@ -1050,6 +1386,26 @@ export async function POST(
           !account.account_type
       ).length;
 
+    const clientMappedAccounts =
+      accountRows.filter(
+        (account) => {
+          const raw =
+            asObject(
+              account.raw_data
+            );
+
+          return Boolean(
+            getString(
+              raw.client_name
+            )
+          );
+        }
+      ).length;
+
+    const unmappedClientAccounts =
+      accountRows.length -
+      clientMappedAccounts;
+
     /*
      * =========================================
      * CONNECTION STATUS
@@ -1129,7 +1485,7 @@ export async function POST(
             "success",
 
           message:
-            `Smartlead sync completed. ${accountRows.length} accounts fetched; ${unclassifiedAccounts} unclassified.`,
+            `Smartlead sync completed. ${accountRows.length} accounts fetched; ${clients.length} clients fetched; ${clientMappedAccounts} accounts mapped to clients; ${unmappedClientAccounts} accounts without a client mapping; ${unclassifiedAccounts} unclassified account types.`,
         });
 
     if (
@@ -1151,6 +1507,13 @@ export async function POST(
         accountsFetched:
           accountRows.length,
 
+        clientsFetched:
+          clients.length,
+
+        clientMappedAccounts,
+
+        unmappedClientAccounts,
+
         azureEntraAccounts,
 
         hypertideGoogleAccounts,
@@ -1164,6 +1527,16 @@ export async function POST(
 
         activeCampaigns,
       },
+
+      clients:
+        clients.map(
+          (client) => ({
+            id:
+              client.id,
+            name:
+              client.name,
+          })
+        ),
     });
   } catch (error) {
     const message =

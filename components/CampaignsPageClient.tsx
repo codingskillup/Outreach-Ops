@@ -1,13 +1,13 @@
 "use client";
 
+import type {
+  ReactNode,
+} from "react";
+
 import {
   useMemo,
   useState,
 } from "react";
-
-import {
-  campaignDemoData,
-} from "@/lib/campaignDemoData";
 
 type RawData =
   Record<string, unknown>;
@@ -30,14 +30,18 @@ type RealCampaign = {
   external_id: number;
   name: string | null;
   status: string | null;
+
   first_seen_active_at:
     | string
     | null;
+
   raw_data:
     | RawData
     | null;
+
   synced_at: string;
   integration_id: string;
+
   integrations:
     IntegrationRelation;
 };
@@ -48,94 +52,85 @@ type DisplayCampaign = {
   client: string;
   smartlead: string;
   status: string;
-  accounts: number | null;
+
+  accounts:
+    | number
+    | null;
+
   activeSince:
     | string
     | null;
+
   lastSynced:
     | string
     | null;
-  live: boolean;
 };
 
 export default function CampaignsPageClient({
   realCampaigns,
+  clientNamesById,
 }: {
-  realCampaigns: RealCampaign[];
+  realCampaigns:
+    RealCampaign[];
+
+  clientNamesById:
+    Record<string, string>;
 }) {
-  const [search, setSearch] =
+  const [
+    search,
+    setSearch,
+  ] =
     useState("");
 
   const [
     clientFilter,
     setClientFilter,
-  ] = useState("all");
+  ] =
+    useState("all");
 
   const [
     smartleadFilter,
     setSmartleadFilter,
-  ] = useState("all");
+  ] =
+    useState("all");
 
   const [
     statusFilter,
     setStatusFilter,
-  ] = useState("all");
+  ] =
+    useState("all");
 
-  const hasRealData =
-    realCampaigns.length > 0;
-
-  const campaigns:
-    DisplayCampaign[] =
-    useMemo(() => {
-      if (hasRealData) {
-        return realCampaigns.map(
-          convertRealCampaign
-        );
-      }
-
-      return campaignDemoData.map(
-        (campaign) => ({
-          id:
-            campaign.id,
-
-          name:
-            campaign.name,
-
-          client:
-            campaign.client,
-
-          smartlead:
-            campaign.smartlead,
-
-          status:
-            campaign.status,
-
-          accounts:
-            campaign.accounts,
-
-          activeSince:
-            campaign.activeSince,
-
-          lastSynced:
-            null,
-
-          live: false,
-        })
-      );
-    }, [
-      hasRealData,
-      realCampaigns,
-    ]);
+  const campaigns =
+    useMemo(
+      () =>
+        realCampaigns.map(
+          (campaign) =>
+            convertRealCampaign(
+              campaign,
+              clientNamesById
+            )
+        ),
+      [
+        realCampaigns,
+        clientNamesById,
+      ]
+    );
 
   const clients =
     useMemo(
       () =>
         Array.from(
           new Set(
-            campaigns.map(
-              (item) =>
-                item.client
-            )
+            campaigns
+              .map(
+                (campaign) =>
+                  campaign.client
+              )
+              .filter(
+                (client) =>
+                  client !==
+                  "Unassigned"
+              )
           )
         ).sort(),
       [campaigns]
@@ -147,8 +142,8 @@ export default function CampaignsPageClient({
         Array.from(
           new Set(
             campaigns.map(
-              (item) =>
-                item.smartlead
+              (campaign) =>
+                campaign.smartlead
             )
           )
         ).sort(),
@@ -161,8 +156,8 @@ export default function CampaignsPageClient({
         Array.from(
           new Set(
             campaigns.map(
-              (item) =>
-                item.status
+              (campaign) =>
+                campaign.status
             )
           )
         ).sort(),
@@ -182,10 +177,14 @@ export default function CampaignsPageClient({
             !value ||
             campaign.name
               .toLowerCase()
-              .includes(value) ||
+              .includes(
+                value
+              ) ||
             campaign.client
               .toLowerCase()
-              .includes(value);
+              .includes(
+                value
+              );
 
           const matchesClient =
             clientFilter ===
@@ -251,25 +250,33 @@ export default function CampaignsPageClient({
   return (
     <div
       style={{
-        width: "100%",
-        minWidth: 0,
-        color: "#111827",
+        width:
+          "100%",
+        minWidth:
+          0,
+        color:
+          "#111827",
       }}
     >
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
           alignItems:
             "flex-start",
-          marginBottom: 26,
+          marginBottom:
+            26,
         }}
       >
         <div>
           <h1
             style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 750,
+              margin:
+                0,
+              fontSize:
+                28,
+              fontWeight:
+                750,
             }}
           >
             Campaigns
@@ -277,10 +284,14 @@ export default function CampaignsPageClient({
 
           <p
             style={{
-              marginTop: 7,
-              marginBottom: 0,
-              color: "#6B7280",
-              fontSize: 14,
+              marginTop:
+                7,
+              marginBottom:
+                0,
+              color:
+                "#6B7280",
+              fontSize:
+                14,
             }}
           >
             Monitor Smartlead
@@ -291,35 +302,36 @@ export default function CampaignsPageClient({
 
         <div
           style={{
-            marginLeft: "auto",
+            marginLeft:
+              "auto",
             background:
-              hasRealData
-                ? "#ECFDF5"
-                : "#EFF6FF",
+              "#ECFDF5",
             color:
-              hasRealData
-                ? "#047857"
-                : "#2563EB",
-            borderRadius: 8,
+              "#047857",
+            borderRadius:
+              8,
             padding:
               "7px 10px",
-            fontSize: 11,
-            fontWeight: 700,
+            fontSize:
+              11,
+            fontWeight:
+              700,
           }}
         >
-          {hasRealData
-            ? "Live Data"
-            : "Demo Mode"}
+          Live Data
         </div>
       </div>
 
       <div
         style={{
-          display: "grid",
+          display:
+            "grid",
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
-          gap: 14,
-          marginBottom: 22,
+          gap:
+            14,
+          marginBottom:
+            22,
         }}
       >
         <SummaryCard
@@ -363,43 +375,59 @@ export default function CampaignsPageClient({
 
       <div
         style={{
-          background: "#FFFFFF",
+          background:
+            "#FFFFFF",
           border:
             "1px solid #E5E7EB",
-          borderRadius: 14,
-          padding: 18,
-          marginBottom: 20,
+          borderRadius:
+            14,
+          padding:
+            18,
+          marginBottom:
+            20,
         }}
       >
         <div
           style={{
-            display: "grid",
+            display:
+              "grid",
             gridTemplateColumns:
               "2fr 1fr 1fr 1fr",
-            gap: 10,
+            gap:
+              10,
           }}
         >
           <input
-            value={search}
-            onChange={(event) =>
+            value={
+              search
+            }
+            onChange={(
+              event
+            ) =>
               setSearch(
                 event.target.value
               )
             }
             placeholder="Search campaign or client"
-            style={inputStyle}
+            style={
+              inputStyle
+            }
           />
 
           <select
             value={
               clientFilter
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setClientFilter(
                 event.target.value
               )
             }
-            style={inputStyle}
+            style={
+              inputStyle
+            }
           >
             <option value="all">
               All Clients
@@ -408,8 +436,12 @@ export default function CampaignsPageClient({
             {clients.map(
               (client) => (
                 <option
-                  key={client}
-                  value={client}
+                  key={
+                    client
+                  }
+                  value={
+                    client
+                  }
                 >
                   {client}
                 </option>
@@ -421,12 +453,16 @@ export default function CampaignsPageClient({
             value={
               smartleadFilter
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setSmartleadFilter(
                 event.target.value
               )
             }
-            style={inputStyle}
+            style={
+              inputStyle
+            }
           >
             <option value="all">
               All Smartlead
@@ -452,12 +488,16 @@ export default function CampaignsPageClient({
             value={
               statusFilter
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               setStatusFilter(
                 event.target.value
               )
             }
-            style={inputStyle}
+            style={
+              inputStyle
+            }
           >
             <option value="all">
               All Status
@@ -466,8 +506,12 @@ export default function CampaignsPageClient({
             {statuses.map(
               (status) => (
                 <option
-                  key={status}
-                  value={status}
+                  key={
+                    status
+                  }
+                  value={
+                    status
+                  }
                 >
                   {status}
                 </option>
@@ -479,24 +523,30 @@ export default function CampaignsPageClient({
 
       <div
         style={{
-          background: "#FFFFFF",
+          background:
+            "#FFFFFF",
           border:
             "1px solid #E5E7EB",
-          borderRadius: 14,
-          overflow: "hidden",
+          borderRadius:
+            14,
+          overflow:
+            "hidden",
         }}
       >
         <div
           style={{
-            padding: 18,
+            padding:
+              18,
             borderBottom:
               "1px solid #E5E7EB",
           }}
         >
           <div
             style={{
-              fontSize: 17,
-              fontWeight: 700,
+              fontSize:
+                17,
+              fontWeight:
+                700,
             }}
           >
             Campaign Overview
@@ -504,9 +554,12 @@ export default function CampaignsPageClient({
 
           <div
             style={{
-              color: "#6B7280",
-              fontSize: 12,
-              marginTop: 4,
+              color:
+                "#6B7280",
+              fontSize:
+                12,
+              marginTop:
+                4,
             }}
           >
             {
@@ -516,146 +569,176 @@ export default function CampaignsPageClient({
           </div>
         </div>
 
-        <table
+        <div
           style={{
-            width: "100%",
-            borderCollapse:
-              "collapse",
-            tableLayout:
-              "fixed",
+            overflowX:
+              "auto",
           }}
         >
-          <thead>
-            <tr
-              style={{
-                background:
-                  "#F8FAFC",
-              }}
-            >
-              <TableHeader
-                text="Campaign"
-                width="24%"
-              />
+          <table
+            style={{
+              width:
+                "100%",
+              minWidth:
+                1050,
+              borderCollapse:
+                "collapse",
+              tableLayout:
+                "fixed",
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background:
+                    "#F8FAFC",
+                }}
+              >
+                <TableHeader
+                  text="Campaign"
+                  width="24%"
+                />
 
-              <TableHeader
-                text="Client"
-                width="14%"
-              />
+                <TableHeader
+                  text="Client"
+                  width="16%"
+                />
 
-              <TableHeader
-                text="Smartlead"
-                width="15%"
-              />
+                <TableHeader
+                  text="Smartlead"
+                  width="14%"
+                />
 
-              <TableHeader
-                text="Status"
-                width="10%"
-              />
+                <TableHeader
+                  text="Status"
+                  width="10%"
+                />
 
-              <TableHeader
-                text="Accounts"
-                width="10%"
-              />
+                <TableHeader
+                  text="Accounts"
+                  width="9%"
+                />
 
-              <TableHeader
-                text="Active Since"
-                width="14%"
-              />
+                <TableHeader
+                  text="Active Since"
+                  width="13%"
+                />
 
-              <TableHeader
-                text="Last Synced"
-                width="13%"
-              />
-            </tr>
-          </thead>
+                <TableHeader
+                  text="Last Synced"
+                  width="14%"
+                />
+              </tr>
+            </thead>
 
-          <tbody>
-            {filteredCampaigns.map(
-              (campaign) => (
-                <tr
-                  key={
-                    campaign.id
-                  }
-                  style={{
-                    borderTop:
-                      "1px solid #F1F5F9",
-                  }}
-                >
-                  <TableCell>
-                    <span
-                      style={{
-                        color:
-                          "#111827",
-                        fontWeight:
-                          700,
-                      }}
-                    >
+            <tbody>
+              {filteredCampaigns.map(
+                (
+                  campaign
+                ) => (
+                  <tr
+                    key={
+                      campaign.id
+                    }
+                    style={{
+                      borderTop:
+                        "1px solid #F1F5F9",
+                    }}
+                  >
+                    <TableCell>
+                      <span
+                        style={{
+                          color:
+                            "#111827",
+                          fontWeight:
+                            700,
+                        }}
+                      >
+                        {
+                          campaign.name
+                        }
+                      </span>
+                    </TableCell>
+
+                    <TableCell>
+                      <span
+                        style={{
+                          color:
+                            campaign.client ===
+                            "Unassigned"
+                              ? "#94A3B8"
+                              : "#111827",
+
+                          fontWeight:
+                            campaign.client ===
+                            "Unassigned"
+                              ? 500
+                              : 650,
+                        }}
+                      >
+                        {
+                          campaign.client
+                        }
+                      </span>
+                    </TableCell>
+
+                    <TableCell>
                       {
-                        campaign.name
+                        campaign.smartlead
                       }
-                    </span>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell>
-                    {
-                      campaign.client
-                    }
-                  </TableCell>
+                    <TableCell>
+                      <StatusBadge
+                        value={
+                          campaign.status
+                        }
+                      />
+                    </TableCell>
 
-                  <TableCell>
-                    {
-                      campaign.smartlead
-                    }
-                  </TableCell>
+                    <TableCell>
+                      {campaign.accounts !==
+                      null
+                        ? formatNumber(
+                            campaign.accounts
+                          )
+                        : "—"}
+                    </TableCell>
 
-                  <TableCell>
-                    <StatusBadge
-                      value={
-                        campaign.status
-                      }
-                    />
-                  </TableCell>
+                    <TableCell>
+                      {campaign.activeSince
+                        ? formatDate(
+                            campaign.activeSince
+                          )
+                        : "—"}
+                    </TableCell>
 
-                  <TableCell>
-                    {campaign.accounts !==
-                    null
-                      ? campaign.accounts
-                      : "—"}
-                  </TableCell>
-
-                  <TableCell>
-                    {campaign.activeSince
-                      ? formatDate(
-                          campaign.activeSince
-                        )
-                      : "—"}
-                  </TableCell>
-
-                  <TableCell>
-                    {campaign.lastSynced
-                      ? formatDateTime(
-                          campaign.lastSynced
-                        )
-                      : campaign.live
-                        ? "—"
-                        : "Demo"}
-                  </TableCell>
-                </tr>
-              )
-            )}
-          </tbody>
-        </table>
+                    <TableCell>
+                      {campaign.lastSynced
+                        ? formatDateTime(
+                            campaign.lastSynced
+                          )
+                        : "—"}
+                    </TableCell>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {filteredCampaigns.length ===
           0 && (
           <div
             style={{
-              padding: 34,
+              padding:
+                34,
               textAlign:
                 "center",
               color:
                 "#64748B",
-              fontSize: 13,
+              fontSize:
+                13,
             }}
           >
             No campaigns found.
@@ -667,10 +750,14 @@ export default function CampaignsPageClient({
 }
 
 function convertRealCampaign(
-  campaign: RealCampaign
+  campaign:
+    RealCampaign,
+  clientNamesById:
+    Record<string, string>
 ): DisplayCampaign {
   const raw =
-    campaign.raw_data || {};
+    campaign.raw_data ||
+    {};
 
   const integration =
     Array.isArray(
@@ -689,13 +776,10 @@ function convertRealCampaign(
       `Campaign ${campaign.external_id}`,
 
     client:
-      getText(
-        raw.client_name
-      ) ||
-      getText(
-        raw.client
-      ) ||
-      "Unassigned",
+      getCampaignClient(
+        raw,
+        clientNamesById
+      ),
 
     smartlead:
       integration?.name ||
@@ -716,9 +800,84 @@ function convertRealCampaign(
 
     lastSynced:
       campaign.synced_at,
-
-    live: true,
   };
+}
+
+function getCampaignClient(
+  raw: RawData,
+  clientNamesById:
+    Record<string, string>
+) {
+  const directName =
+    getText(
+      raw.client_name
+    ) ||
+    getText(
+      raw.clientName
+    );
+
+  if (
+    directName
+  ) {
+    return directName;
+  }
+
+  if (
+    typeof raw.client ===
+      "string"
+  ) {
+    const client =
+      getText(
+        raw.client
+      );
+
+    if (client) {
+      return client;
+    }
+  }
+
+  const clientObject =
+    asObject(
+      raw.client
+    );
+
+  const objectName =
+    getText(
+      clientObject.name
+    ) ||
+    getText(
+      clientObject.client_name
+    ) ||
+    getText(
+      clientObject.company_name
+    );
+
+  if (
+    objectName
+  ) {
+    return objectName;
+  }
+
+  const clientId =
+    getId(
+      raw.client_id
+    ) ||
+    getId(
+      raw.clientId
+    );
+
+  if (
+    clientId &&
+    clientNamesById[
+      clientId
+    ]
+  ) {
+    return clientNamesById[
+      clientId
+    ];
+  }
+
+  return "Unassigned";
 }
 
 function getCampaignAccountCount(
@@ -726,8 +885,12 @@ function getCampaignAccountCount(
 ) {
   const possibleArrays = [
     raw.email_account_ids,
+    raw.emailAccountIds,
     raw.email_accounts,
+    raw.emailAccounts,
     raw.sender_account_ids,
+    raw.sender_accounts,
+    raw.senderAccounts,
     raw.senders,
   ];
 
@@ -736,13 +899,17 @@ function getCampaignAccountCount(
     possibleArrays
   ) {
     if (
-      Array.isArray(value)
+      Array.isArray(
+        value
+      )
     ) {
       return value.length;
     }
   }
 
   const directValues = [
+    raw.email_account_count,
+    raw.email_accounts_count,
     raw.account_count,
     raw.accounts_count,
     raw.sender_count,
@@ -753,10 +920,13 @@ function getCampaignAccountCount(
     directValues
   ) {
     const number =
-      getNumber(value);
+      getNumber(
+        value
+      );
 
     if (
-      number !== null
+      number !==
+      null
     ) {
       return number;
     }
@@ -766,7 +936,9 @@ function getCampaignAccountCount(
 }
 
 function normalizeStatus(
-  value: string | null
+  value:
+    | string
+    | null
 ) {
   if (!value) {
     return "UNKNOWN";
@@ -775,6 +947,23 @@ function normalizeStatus(
   return value
     .trim()
     .toUpperCase();
+}
+
+function asObject(
+  value: unknown
+): RawData {
+  if (
+    value &&
+    typeof value ===
+      "object" &&
+    !Array.isArray(
+      value
+    )
+  ) {
+    return value as RawData;
+  }
+
+  return {};
 }
 
 function getText(
@@ -791,6 +980,24 @@ function getText(
     value.trim();
 
   return result || null;
+}
+
+function getId(
+  value: unknown
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const id =
+    String(value)
+      .trim();
+
+  return id || null;
 }
 
 function getNumber(
@@ -814,11 +1021,23 @@ function getNumber(
     : null;
 }
 
+function formatNumber(
+  value: number
+) {
+  return new Intl.NumberFormat(
+    "en-US"
+  ).format(
+    value
+  );
+}
+
 function formatDate(
   value: string
 ) {
   const date =
-    new Date(value);
+    new Date(
+      value
+    );
 
   if (
     Number.isNaN(
@@ -828,14 +1047,30 @@ function formatDate(
     return value;
   }
 
-  return date.toLocaleDateString();
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      timeZone:
+        "Asia/Karachi",
+      day:
+        "2-digit",
+      month:
+        "short",
+      year:
+        "numeric",
+    }
+  ).format(
+    date
+  );
 }
 
 function formatDateTime(
   value: string
 ) {
   const date =
-    new Date(value);
+    new Date(
+      value
+    );
 
   if (
     Number.isNaN(
@@ -845,7 +1080,36 @@ function formatDateTime(
     return value;
   }
 
-  return date.toLocaleString();
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      timeZone:
+        "Asia/Karachi",
+
+      day:
+        "2-digit",
+
+      month:
+        "2-digit",
+
+      year:
+        "numeric",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+
+      second:
+        "2-digit",
+
+      hourCycle:
+        "h23",
+    }
+  ).format(
+    date
+  );
 }
 
 function StatusBadge({
@@ -860,7 +1124,8 @@ function StatusBadge({
     "#475569";
 
   if (
-    value === "ACTIVE"
+    value ===
+    "ACTIVE"
   ) {
     background =
       "#ECFDF5";
@@ -870,7 +1135,8 @@ function StatusBadge({
   }
 
   if (
-    value === "PAUSED"
+    value ===
+    "PAUSED"
   ) {
     background =
       "#FEF3C7";
@@ -880,7 +1146,8 @@ function StatusBadge({
   }
 
   if (
-    value === "STOPPED"
+    value ===
+    "STOPPED"
   ) {
     background =
       "#FEF2F2";
@@ -890,13 +1157,27 @@ function StatusBadge({
   }
 
   if (
-    value === "DRAFT"
+    value ===
+      "DRAFT" ||
+    value ===
+      "DRAFTED"
   ) {
     background =
       "#EFF6FF";
 
     color =
       "#2563EB";
+  }
+
+  if (
+    value ===
+    "COMPLETED"
+  ) {
+    background =
+      "#F1F5F9";
+
+    color =
+      "#475569";
   }
 
   return (
@@ -908,9 +1189,12 @@ function StatusBadge({
         color,
         padding:
           "5px 8px",
-        borderRadius: 7,
-        fontSize: 9,
-        fontWeight: 700,
+        borderRadius:
+          7,
+        fontSize:
+          9,
+        fontWeight:
+          700,
       }}
     >
       {value}
@@ -956,15 +1240,18 @@ function SummaryCard({
           "#FFFFFF",
         border:
           "1px solid #E5E7EB",
-        borderRadius: 13,
-        padding: 18,
+        borderRadius:
+          13,
+        padding:
+          18,
       }}
     >
       <div
         style={{
           color:
             "#64748B",
-          fontSize: 12,
+          fontSize:
+            12,
         }}
       >
         {title}
@@ -972,13 +1259,18 @@ function SummaryCard({
 
       <div
         style={{
-          marginTop: 8,
-          fontSize: 25,
-          fontWeight: 750,
+          marginTop:
+            8,
+          fontSize:
+            25,
+          fontWeight:
+            750,
           color,
         }}
       >
-        {value}
+        {formatNumber(
+          value
+        )}
       </div>
     </div>
   );
@@ -997,11 +1289,14 @@ function TableHeader({
         width,
         padding:
           "11px 10px",
-        textAlign: "left",
+        textAlign:
+          "left",
         color:
           "#64748B",
-        fontSize: 10,
-        fontWeight: 650,
+        fontSize:
+          10,
+        fontWeight:
+          650,
         whiteSpace:
           "nowrap",
       }}
@@ -1015,7 +1310,7 @@ function TableCell({
   children,
 }: {
   children:
-    React.ReactNode;
+    ReactNode;
 }) {
   return (
     <td
@@ -1024,10 +1319,12 @@ function TableCell({
           "13px 10px",
         color:
           "#475569",
-        fontSize: 11,
+        fontSize:
+          11,
         verticalAlign:
           "middle",
-        overflow: "hidden",
+        overflow:
+          "hidden",
         textOverflow:
           "ellipsis",
         whiteSpace:
@@ -1040,20 +1337,26 @@ function TableCell({
 }
 
 const inputStyle = {
-  width: "100%",
-  minWidth: 0,
-  height: 42,
+  width:
+    "100%",
+  minWidth:
+    0,
+  height:
+    42,
   border:
     "1px solid #D1D5DB",
-  borderRadius: 9,
+  borderRadius:
+    9,
   padding:
     "0 11px",
   background:
     "#FFFFFF",
   color:
     "#111827",
-  fontSize: 13,
-  outline: "none",
+  fontSize:
+    13,
+  outline:
+    "none",
   boxSizing:
     "border-box" as const,
 };
