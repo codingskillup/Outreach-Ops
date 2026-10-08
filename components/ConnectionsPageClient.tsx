@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   Plus,
@@ -53,6 +54,7 @@ export default function ConnectionsPageClient({
   initialIntegrations,
 }: Props) {
   const supabase = createClient();
+  const router = useRouter();
 
   const [integrations, setIntegrations] = useState<Integration[]>(initialIntegrations);
   const [showModal, setShowModal] = useState(false);
@@ -70,6 +72,29 @@ export default function ConnectionsPageClient({
 
   // In-app Toast state
   const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  // Track auto-synced connection IDs to avoid repeat loops
+  const autoSyncedIdsRef = useRef<Set<string>>(new Set());
+
+  // Auto-sync any connection that has never been synced (e.g. freshly added or loaded without sync)
+  useEffect(() => {
+    const unsynced = integrations.find(
+      (item) =>
+        !item.last_synced_at &&
+        item.status === "connected" &&
+        !autoSyncedIdsRef.current.has(item.id)
+    );
+
+    if (unsynced && !syncingId) {
+      autoSyncedIdsRef.current.add(unsynced.id);
+      triggerToast({
+        type: "info",
+        title: "Auto-Sync Started",
+        message: `Automatically synchronizing "${unsynced.name}"...`,
+      });
+      handleSync(unsynced);
+    }
+  }, [integrations, syncingId]);
 
   const smartleadConnections = useMemo(
     () => integrations.filter((item) => item.provider === "smartlead"),
@@ -150,11 +175,13 @@ export default function ConnectionsPageClient({
 
       triggerToast({
         type: "success",
-        title: "Connection Added Successfully",
-        message: `Connected "${newIntegration.name}" to ${
-          provider === "smartlead" ? "Smartlead" : "EmailGuard"
-        }.`,
+        title: "Connection Added — Auto-Syncing Now",
+        message: `Connected "${newIntegration.name}". Automatically synchronizing mailboxes, campaigns, and stats...`,
       });
+
+      // Automatically trigger sync immediately for the newly added connection!
+      autoSyncedIdsRef.current.add(newIntegration.id);
+      handleSync(newIntegration);
     } catch {
       setError("Unable to connect. Please check your network and API key.");
     } finally {
@@ -190,6 +217,11 @@ export default function ConnectionsPageClient({
         title: "Connection Removed",
         message: `Removed "${integrationToRemove.name}".`,
       });
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("outreach:refresh"));
+      }
+      router.refresh();
     } catch {
       triggerToast({
         type: "error",
@@ -258,6 +290,12 @@ export default function ConnectionsPageClient({
           ],
         });
       }
+
+      // Notify header and server components to refresh
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("outreach:refresh"));
+      }
+      router.refresh();
     } catch {
       triggerToast({
         type: "error",

@@ -104,7 +104,26 @@ export default function PortalHeader() {
 
   useEffect(() => {
     loadSystemStatus();
-  }, []);
+
+    const handleAutoRefresh = () => {
+      setRefreshing(true);
+      router.refresh();
+      loadSystemStatus().finally(() => {
+        setLastRefresh(
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+        setTimeout(() => setRefreshing(false), 600);
+      });
+    };
+
+    window.addEventListener("outreach:refresh", handleAutoRefresh);
+    return () => {
+      window.removeEventListener("outreach:refresh", handleAutoRefresh);
+    };
+  }, [router]);
 
   async function loadSystemStatus() {
     try {
