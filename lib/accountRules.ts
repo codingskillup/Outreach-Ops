@@ -11,10 +11,7 @@ export type AccountRule = {
   replyRate: number;
 };
 
-export const accountRules: Record<
-  AccountType,
-  AccountRule
-> = {
+export const accountRules: Record<AccountType, AccountRule> = {
   "Hypertide Azure/Entra": {
     dailyLimit: 2,
     minimumGap: 60,
