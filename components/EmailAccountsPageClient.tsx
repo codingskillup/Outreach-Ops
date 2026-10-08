@@ -1,15 +1,43 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import {
+  Mail,
+  ShieldCheck,
+  AlertTriangle,
+  HelpCircle,
+  Search,
+  X,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Building2,
+  Copy,
+  Check,
+  ExternalLink,
+  Flame,
+  CheckCircle2,
+  AlertCircle,
+  Tag as TagIcon,
+  Filter,
+  Eye,
+  Info,
+  Layers,
+  Sparkles,
+} from "lucide-react";
 
 type RawData = Record<string, unknown>;
 
-type AccountTag = {
+export type AccountTag = {
   key: string;
   name: string;
 };
 
-type RealAccount = {
+export type RealAccount = {
   id: string;
   external_id: number;
   email: string | null;
@@ -46,10 +74,12 @@ export type EmailAccountRule = {
   reply_rate: number | null;
 };
 
-type DisplayAccount = {
+export type DisplayAccount = {
   id: string;
+  externalId: number;
   integrationId: string;
   email: string;
+  fromName: string | null;
   client: string;
   smartlead: string;
   tags: AccountTag[];
@@ -60,18 +90,19 @@ type DisplayAccount = {
   reputation: number | null;
   bounceRate: number | null;
   replyRate: number | null;
+  syncedAt: string;
 };
 
-type HealthStatus = "healthy" | "attention" | "not_evaluated";
+export type HealthStatus = "healthy" | "attention" | "not_evaluated";
 
-type FieldEvaluation<T> = {
+export type FieldEvaluation<T> = {
   configured: boolean;
   conflict: boolean;
   expected: T | null;
   wrong: boolean;
 };
 
-type AccountEvaluation = {
+export type AccountEvaluation = {
   status: HealthStatus;
   matchedRuleNames: string[];
   dailyLimit: FieldEvaluation<number>;
@@ -81,16 +112,33 @@ type AccountEvaluation = {
   replyRate: FieldEvaluation<number>;
 };
 
-type AccountStatusRow = {
+export type AccountStatusRow = {
   account: DisplayAccount;
   evaluation: AccountEvaluation;
 };
 
-function ruleMapKey(
-  integrationId: string,
-  tagKey: string
-) {
+type SortField =
+  | "email"
+  | "client"
+  | "dailyLimit"
+  | "minimumGap"
+  | "warmupDaily"
+  | "replyRate"
+  | "bounceRate"
+  | "status";
+type SortOrder = "asc" | "desc";
+
+function ruleMapKey(integrationId: string, tagKey: string) {
   return `${integrationId}::${tagKey}`;
+}
+
+function createClientId(value: string) {
+  const id = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return id || "unassigned";
 }
 
 export default function EmailAccountsPageClient({
@@ -101,141 +149,142 @@ export default function EmailAccountsPageClient({
   rules?: EmailAccountRule[];
 }) {
   const [search, setSearch] = useState("");
-  const [accountTypeFilter, setAccountTypeFilter] =
-    useState("all");
+  const [accountTypeFilter, setAccountTypeFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
-  const [smartleadFilter, setSmartleadFilter] =
-    useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [smartleadFilter, setSmartleadFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | HealthStatus>("all");
+  const [sortField, setSortField] = useState<SortField>("status");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [inspectedRow, setInspectedRow] = useState<AccountStatusRow | null>(null);
 
+  // Convert real accounts to display accounts
   const accounts = useMemo(
     () => realAccounts.map(convertRealAccount),
     [realAccounts]
   );
 
+  // Map enabled rules
   const enabledRuleMap = useMemo(() => {
     const map = new Map<string, EmailAccountRule>();
-
     for (const rule of rules) {
-      if (!rule.is_enabled) {
-        continue;
-      }
-
-      map.set(
-        ruleMapKey(rule.integration_id, rule.tag_key),
-        rule
-      );
+      if (!rule.is_enabled) continue;
+      map.set(ruleMapKey(rule.integration_id, rule.tag_key), rule);
     }
-
     return map;
   }, [rules]);
 
+  // Evaluate all accounts against rule engine
   const accountStatuses: AccountStatusRow[] = useMemo(
     () =>
       accounts.map((account) => ({
         account,
-        evaluation: evaluateAccount(
-          account,
-          enabledRuleMap
-        ),
+        evaluation: evaluateAccount(account, enabledRuleMap),
       })),
     [accounts, enabledRuleMap]
   );
 
+  // Distinct filter options
   const clients = useMemo(
-    () =>
-      Array.from(
-        new Set(accounts.map((item) => item.client))
-      ).sort(),
+    () => Array.from(new Set(accounts.map((item) => item.client))).sort(),
     [accounts]
   );
 
   const smartleads = useMemo(
-    () =>
-      Array.from(
-        new Set(accounts.map((item) => item.smartlead))
-      ).sort(),
+    () => Array.from(new Set(accounts.map((item) => item.smartlead))).sort(),
     [accounts]
   );
 
   const accountTypes = useMemo(() => {
     const names = new Set<string>();
-
     for (const account of accounts) {
       for (const tag of account.tags) {
         names.add(tag.name);
       }
     }
-
-    return Array.from(names).sort((a, b) =>
-      a.localeCompare(b)
-    );
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [accounts]);
 
+  // Tag distribution
   const tagDistribution = useMemo(() => {
     const counts = new Map<string, number>();
-
     for (const account of accounts) {
       const uniqueTagNames = new Set<string>(
         account.tags.map((tag) => tag.name)
       );
-
       for (const tagName of uniqueTagNames) {
-        counts.set(
-          tagName,
-          (counts.get(tagName) || 0) + 1
-        );
+        counts.set(tagName, (counts.get(tagName) || 0) + 1);
       }
     }
-
     return Array.from(counts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
   }, [accounts]);
 
+  // Overall metric counts
+  const healthyCount = useMemo(
+    () => accountStatuses.filter((item) => item.evaluation.status === "healthy").length,
+    [accountStatuses]
+  );
+
+  const attentionCount = useMemo(
+    () => accountStatuses.filter((item) => item.evaluation.status === "attention").length,
+    [accountStatuses]
+  );
+
+  const notEvaluatedCount = useMemo(
+    () => accountStatuses.filter((item) => item.evaluation.status === "not_evaluated").length,
+    [accountStatuses]
+  );
+
+  const configuredRulesCount = useMemo(
+    () => rules.filter((rule) => rule.is_enabled).length,
+    [rules]
+  );
+
+  const complianceRate = useMemo(() => {
+    const evaluatedTotal = healthyCount + attentionCount;
+    if (evaluatedTotal === 0) return 100;
+    return Math.round((healthyCount / evaluatedTotal) * 100);
+  }, [healthyCount, attentionCount]);
+
+  // Filter accounts
   const filteredAccounts = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
 
-    return accountStatuses.filter(
-      ({ account, evaluation }) => {
-        const tagText = account.tags
-          .map((tag) => tag.name)
-          .join(" ")
-          .toLowerCase();
+    return accountStatuses.filter(({ account, evaluation }) => {
+      const tagText = account.tags.map((tag) => tag.name).join(" ").toLowerCase();
 
-        const matchesSearch =
-          !searchValue ||
-          account.email.toLowerCase().includes(searchValue) ||
-          account.client.toLowerCase().includes(searchValue) ||
-          tagText.includes(searchValue);
+      const matchesSearch =
+        !searchValue ||
+        account.email.toLowerCase().includes(searchValue) ||
+        account.client.toLowerCase().includes(searchValue) ||
+        (account.fromName && account.fromName.toLowerCase().includes(searchValue)) ||
+        tagText.includes(searchValue);
 
-        const matchesType =
-          accountTypeFilter === "all" ||
-          account.tags.some(
-            (tag) => tag.name === accountTypeFilter
-          );
+      const matchesType =
+        accountTypeFilter === "all" ||
+        account.tags.some((tag) => tag.name === accountTypeFilter);
 
-        const matchesClient =
-          clientFilter === "all" ||
-          account.client === clientFilter;
+      const matchesClient =
+        clientFilter === "all" || account.client === clientFilter;
 
-        const matchesSmartlead =
-          smartleadFilter === "all" ||
-          account.smartlead === smartleadFilter;
+      const matchesSmartlead =
+        smartleadFilter === "all" || account.smartlead === smartleadFilter;
 
-        const matchesStatus =
-          statusFilter === "all" ||
-          evaluation.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || evaluation.status === statusFilter;
 
-        return (
-          matchesSearch &&
-          matchesType &&
-          matchesClient &&
-          matchesSmartlead &&
-          matchesStatus
-        );
-      }
-    );
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesClient &&
+        matchesSmartlead &&
+        matchesStatus
+      );
+    });
   }, [
     accountStatuses,
     search,
@@ -245,336 +294,1260 @@ export default function EmailAccountsPageClient({
     statusFilter,
   ]);
 
-  const healthyCount = accountStatuses.filter(
-    (item) => item.evaluation.status === "healthy"
-  ).length;
+  // Sort accounts
+  const sortedAccounts = useMemo(() => {
+    const sorted = [...filteredAccounts];
 
-  const attentionCount = accountStatuses.filter(
-    (item) => item.evaluation.status === "attention"
-  ).length;
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "email":
+          cmp = a.account.email.localeCompare(b.account.email);
+          break;
+        case "client":
+          cmp = a.account.client.localeCompare(b.account.client);
+          break;
+        case "dailyLimit":
+          cmp = (a.account.dailyLimit ?? -1) - (b.account.dailyLimit ?? -1);
+          break;
+        case "minimumGap":
+          cmp = (a.account.minimumGap ?? -1) - (b.account.minimumGap ?? -1);
+          break;
+        case "warmupDaily":
+          cmp = (a.account.warmupDaily ?? -1) - (b.account.warmupDaily ?? -1);
+          break;
+        case "replyRate":
+          cmp = (a.account.replyRate ?? -1) - (b.account.replyRate ?? -1);
+          break;
+        case "bounceRate":
+          cmp = (a.account.bounceRate ?? -1) - (b.account.bounceRate ?? -1);
+          break;
+        case "status": {
+          const rank = (s: HealthStatus) =>
+            s === "attention" ? 3 : s === "healthy" ? 2 : 1;
+          cmp = rank(a.evaluation.status) - rank(b.evaluation.status);
+          break;
+        }
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
 
-  const notEvaluatedCount = accountStatuses.filter(
-    (item) =>
-      item.evaluation.status === "not_evaluated"
-  ).length;
+    return sorted;
+  }, [filteredAccounts, sortField, sortOrder]);
 
-  const configuredRulesCount = rules.filter(
-    (rule) => rule.is_enabled
-  ).length;
+  // Paginated accounts
+  const totalPages = Math.ceil(sortedAccounts.length / pageSize) || 1;
+  const paginatedAccounts = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedAccounts.slice(startIndex, startIndex + pageSize);
+  }, [sortedAccounts, currentPage, pageSize]);
+
+  // Reset to page 1 on filter changes
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  const handleCopyEmail = (email: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(null), 2000);
+    }
+  };
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
+    }
+  };
+
+  const isFilterActive =
+    search !== "" ||
+    accountTypeFilter !== "all" ||
+    clientFilter !== "all" ||
+    smartleadFilter !== "all" ||
+    statusFilter !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setAccountTypeFilter("all");
+    setClientFilter("all");
+    setSmartleadFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
 
   return (
-    <div className="w-full min-w-0 text-slate-900">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto pb-16 space-y-6 text-slate-900">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
-          <h1 className="m-0 text-[28px] font-bold tracking-tight text-slate-900">
-            Email Accounts
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500">
-            Monitor sending settings against the dynamic rules configured in Settings.
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Email Accounts
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Sync
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Monitor mailbox thresholds, warmup rates, and tag alignment against your rule engine.
           </p>
         </div>
 
-        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">
-          Live Data
+        <div className="flex items-center gap-2">
+          {isFilterActive && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear Filters
+            </button>
+          )}
+          <Link
+            href="/settings?tab=rules"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/80 rounded-lg shadow-2xs transition"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+            Rule Engine Settings
+          </Link>
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <SummaryCard
-          title="Total Accounts"
-          value={accounts.length}
-        />
-        <SummaryCard
-          title="Healthy"
-          value={healthyCount}
-          tone="success"
-        />
-        <SummaryCard
-          title="Need Attention"
-          value={attentionCount}
-          tone="warning"
-        />
-        <SummaryCard
-          title="Not Evaluated"
-          value={notEvaluatedCount}
-          tone="neutral"
-        />
-        <SummaryCard
-          title="Configured Rules"
-          value={configuredRulesCount}
-        />
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              Account Type Distribution
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              Discovered automatically from Smartlead account tags.
-            </p>
-          </div>
-
-          <div className="text-xs font-medium text-slate-500">
-            {accountTypes.length} active {accountTypes.length === 1 ? "tag" : "tags"}
-          </div>
-        </div>
-
-        {tagDistribution.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
-            {tagDistribution.map((tag) => (
-              <button
-                key={tag.name}
-                type="button"
-                onClick={() => setAccountTypeFilter(tag.name)}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50/40"
-              >
-                <div className="truncate text-[11px] font-semibold text-slate-500">
-                  {tag.name}
-                </div>
-                <div className="mt-1 text-xl font-bold text-slate-900">
-                  {tag.count.toLocaleString()}
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="py-5 text-center text-sm text-slate-400">
-            No account tags detected.
-          </div>
-        )}
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search email, client or tag"
-            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-indigo-400 xl:col-span-1"
-          />
-
-          <select
-            value={accountTypeFilter}
-            onChange={(event) =>
-              setAccountTypeFilter(event.target.value)
-            }
-            className={selectClassName}
-          >
-            <option value="all">All Account Types</option>
-            {accountTypes.map((accountType) => (
-              <option key={accountType} value={accountType}>
-                {accountType}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={clientFilter}
-            onChange={(event) =>
-              setClientFilter(event.target.value)
-            }
-            className={selectClassName}
-          >
-            <option value="all">All Clients</option>
-            {clients.map((client) => (
-              <option key={client} value={client}>
-                {client}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={smartleadFilter}
-            onChange={(event) =>
-              setSmartleadFilter(event.target.value)
-            }
-            className={selectClassName}
-          >
-            <option value="all">All Smartlead</option>
-            {smartleads.map((smartlead) => (
-              <option key={smartlead} value={smartlead}>
-                {smartlead}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value)
-            }
-            className={selectClassName}
-          >
-            <option value="all">All Status</option>
-            <option value="healthy">Healthy</option>
-            <option value="attention">Need Attention</option>
-            <option value="not_evaluated">Not Evaluated</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-base font-bold text-slate-900">
-              Accounts
-            </div>
-            <div className="mt-0.5 text-xs text-slate-500">
-              {filteredAccounts.length.toLocaleString()} shown
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-medium tracking-wide text-slate-500">Total Accounts</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+              <Mail className="w-4 h-4" />
             </div>
           </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900">
+              {accounts.length.toLocaleString()}
+            </span>
+            <span className="text-xs text-slate-400">mailboxes</span>
+          </div>
+          <div className="mt-2 text-[11px] text-slate-400">
+            Across {clients.length} clients
+          </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2 text-[11px] font-bold">
-            <span className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-700">
-              {healthyCount.toLocaleString()} healthy
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-emerald-600">
+            <span className="text-xs font-medium tracking-wide text-slate-500">Healthy</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-emerald-600">
+              {healthyCount.toLocaleString()}
+            </span>
+            <span className="text-xs text-emerald-600 font-semibold">
+              {accounts.length > 0 ? Math.round((healthyCount / accounts.length) * 100) : 0}%
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] text-slate-400">
+            All rule parameters matched
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-amber-600">
+            <span className="text-xs font-medium tracking-wide text-slate-500">Needs Attention</span>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+              attentionCount > 0 ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-slate-100 text-slate-400"
+            }`}>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl font-bold tracking-tight ${
+              attentionCount > 0 ? "text-amber-600" : "text-slate-900"
+            }`}>
+              {attentionCount.toLocaleString()}
             </span>
             {attentionCount > 0 && (
-              <span className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-amber-700">
-                {attentionCount.toLocaleString()} attention
-              </span>
-            )}
-            {notEvaluatedCount > 0 && (
-              <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-slate-600">
-                {notEvaluatedCount.toLocaleString()} not evaluated
+              <span className="text-xs text-amber-600 font-semibold">
+                Action required
               </span>
             )}
           </div>
+          <div className="mt-2 text-[11px] text-slate-400">
+            Settings differ from rule
+          </div>
         </div>
 
-        <div className="w-full overflow-x-auto">
-          <table className="min-w-[1180px] w-full table-fixed border-collapse">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-medium tracking-wide text-slate-500">Not Evaluated</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+              <HelpCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-700">
+              {notEvaluatedCount.toLocaleString()}
+            </span>
+            <span className="text-xs text-slate-400">untargeted</span>
+          </div>
+          <div className="mt-2 text-[11px] text-slate-400">
+            No active tag rules apply
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden col-span-2 md:col-span-1">
+          <div className="flex items-center justify-between text-indigo-600">
+            <span className="text-xs font-medium tracking-wide text-slate-500">Compliance</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Sparkles className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-indigo-600">
+              {complianceRate}%
+            </span>
+            <span className="text-xs text-slate-500">of evaluated</span>
+          </div>
+          <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                complianceRate >= 90
+                  ? "bg-emerald-500"
+                  : complianceRate >= 70
+                  ? "bg-amber-500"
+                  : "bg-rose-500"
+              }`}
+              style={{ width: `${complianceRate}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Account Type Tags Quick Filter Bar */}
+      {tagDistribution.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <TagIcon className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Account Type Tags
+              </span>
+              <span className="text-[11px] text-slate-400">
+                ({accountTypes.length} detected)
+              </span>
+            </div>
+            {accountTypeFilter !== "all" && (
+              <button
+                onClick={() => {
+                  setAccountTypeFilter("all");
+                  handleFilterChange();
+                }}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+              >
+                Reset tag filter
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setAccountTypeFilter("all");
+                handleFilterChange();
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                accountTypeFilter === "all"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70"
+              }`}
+            >
+              All Types
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                accountTypeFilter === "all" ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-600"
+              }`}>
+                {accounts.length}
+              </span>
+            </button>
+
+            {tagDistribution.map((tag) => {
+              const isSelected = accountTypeFilter === tag.name;
+              return (
+                <button
+                  key={tag.name}
+                  onClick={() => {
+                    setAccountTypeFilter(isSelected ? "all" : tag.name);
+                    handleFilterChange();
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    isSelected
+                      ? "bg-indigo-600 text-white shadow-2xs"
+                      : "bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-200 text-slate-700 border border-slate-200/70"
+                  }`}
+                >
+                  <span className="truncate max-w-[160px]">{tag.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected
+                        ? "bg-indigo-500 text-indigo-100"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {tag.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Main Filter & Search Toolbar */}
+      <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5">
+          {/* Search Box */}
+          <div className="relative lg:col-span-4">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                handleFilterChange();
+              }}
+              placeholder="Search email, client, or tag..."
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  handleFilterChange();
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Client Filter */}
+          <div className="lg:col-span-3">
+            <select
+              value={clientFilter}
+              onChange={(e) => {
+                setClientFilter(e.target.value);
+                handleFilterChange();
+              }}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            >
+              <option value="all">All Clients ({clients.length})</option>
+              {clients.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Smartlead Integration Filter */}
+          <div className="lg:col-span-2">
+            <select
+              value={smartleadFilter}
+              onChange={(e) => {
+                setSmartleadFilter(e.target.value);
+                handleFilterChange();
+              }}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            >
+              <option value="all">All Integrations</option>
+              {smartleads.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Quick Filter Buttons */}
+          <div className="lg:col-span-3 flex items-center gap-1 bg-slate-100/80 p-0.5 rounded-lg border border-slate-200/60">
+            <button
+              onClick={() => {
+                setStatusFilter("all");
+                handleFilterChange();
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition cursor-pointer text-center ${
+                statusFilter === "all"
+                  ? "bg-white text-slate-900 shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter("healthy");
+                handleFilterChange();
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition cursor-pointer text-center ${
+                statusFilter === "healthy"
+                  ? "bg-emerald-600 text-white shadow-2xs"
+                  : "text-emerald-700 hover:bg-emerald-50/50"
+              }`}
+            >
+              Healthy
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter("attention");
+                handleFilterChange();
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition cursor-pointer text-center ${
+                statusFilter === "attention"
+                  ? "bg-amber-600 text-white shadow-2xs"
+                  : "text-amber-700 hover:bg-amber-50/50"
+              }`}
+            >
+              Attention
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter("not_evaluated");
+                handleFilterChange();
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition cursor-pointer text-center ${
+                statusFilter === "not_evaluated"
+                  ? "bg-slate-700 text-white shadow-2xs"
+                  : "text-slate-600 hover:bg-slate-200/50"
+              }`}
+            >
+              Untargeted
+            </button>
+          </div>
+        </div>
+
+        {/* Results count & page size selector */}
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+          <div>
+            Showing <span className="font-semibold text-slate-900">{filteredAccounts.length.toLocaleString()}</span> of{" "}
+            <span className="font-semibold text-slate-900">{accounts.length.toLocaleString()}</span> accounts
+            {isFilterActive && " (filtered)"}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span>Per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="py-0.5 px-2 text-xs rounded border border-slate-200 bg-white text-slate-700"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={250}>250</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Accounts Table Container */}
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
-              <tr className="bg-slate-50">
-                <TableHeader text="Email" width="18%" />
-                <TableHeader text="Client" width="11%" />
-                <TableHeader text="Account Type" width="16%" />
-                <TableHeader text="Smartlead" width="10%" />
-                <TableHeader text="Daily Limit" width="8%" />
-                <TableHeader text="Minimum Gap" width="8%" />
-                <TableHeader text="Warmup" width="7%" />
-                <TableHeader text="Warmup Daily" width="8%" />
-                <TableHeader text="Reply Rate" width="7%" />
-                <TableHeader text="Bounce" width="6%" />
-                <TableHeader text="Status" width="7%" />
+              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
+                <th
+                  onClick={() => toggleSort("email")}
+                  className="py-3 px-4 cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "22%" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    Email Account
+                    <SortIcon field="email" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort("client")}
+                  className="py-3 px-3 cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "13%" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    Client
+                    <SortIcon field="client" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th className="py-3 px-3" style={{ width: "14%" }}>
+                  Account Tags
+                </th>
+                <th
+                  onClick={() => toggleSort("dailyLimit")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "8%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Daily Limit
+                    <SortIcon field="dailyLimit" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort("minimumGap")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "8%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Min Gap
+                    <SortIcon field="minimumGap" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th className="py-3 px-3 text-center" style={{ width: "7%" }}>
+                  Warmup
+                </th>
+                <th
+                  onClick={() => toggleSort("warmupDaily")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "8%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Warmup Max
+                    <SortIcon field="warmupDaily" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort("replyRate")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "7%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Reply %
+                    <SortIcon field="replyRate" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort("bounceRate")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "6%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Bounce
+                    <SortIcon field="bounceRate" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort("status")}
+                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "9%" }}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Status
+                    <SortIcon field="status" currentField={sortField} order={sortOrder} />
+                  </div>
+                </th>
+                <th className="py-3 px-3 text-center" style={{ width: "6%" }}>
+                  Inspect
+                </th>
               </tr>
             </thead>
 
-            <tbody>
-              {filteredAccounts.map(({ account, evaluation }) => (
-                <AccountRow
-                  key={account.id}
-                  account={account}
-                  evaluation={evaluation}
-                />
-              ))}
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {paginatedAccounts.length > 0 ? (
+                paginatedAccounts.map((row) => (
+                  <AccountTableRow
+                    key={row.account.id}
+                    row={row}
+                    copiedEmail={copiedEmail}
+                    onCopyEmail={handleCopyEmail}
+                    onInspect={() => setInspectedRow(row)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={11} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                        <Mail className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-700">No email accounts found</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Try adjusting your search criteria, account type filter, or status selection.
+                      </p>
+                      {isFilterActive && (
+                        <button
+                          onClick={clearFilters}
+                          className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                        >
+                          Clear all filters
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        {filteredAccounts.length === 0 && (
-          <div className="p-10 text-center text-sm text-slate-500">
-            No email accounts found.
+        {/* Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-slate-50/60 border-t border-slate-200/80 gap-3">
+            <div className="text-xs text-slate-500">
+              Page <span className="font-semibold text-slate-800">{currentPage}</span> of{" "}
+              <span className="font-semibold text-slate-800">{totalPages}</span>
+              {" · "}
+              Showing {(currentPage - 1) * pageSize + 1} to{" "}
+              {Math.min(currentPage * pageSize, sortedAccounts.length)} of {sortedAccounts.length}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Previous
+              </button>
+
+              {/* Page numbers preview */}
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let p = i + 1;
+                  if (totalPages > 5 && currentPage > 3) {
+                    p = currentPage - 2 + i;
+                    if (p > totalPages) p = totalPages - (4 - i);
+                  }
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-7 h-7 rounded-lg text-xs font-medium transition cursor-pointer ${
+                        currentPage === p
+                          ? "bg-slate-900 text-white font-bold"
+                          : "text-slate-600 hover:bg-slate-200/70"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition"
+              >
+                Next
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* Inspect Drawer / Slide-Over Modal */}
+      {inspectedRow && (
+        <InspectAccountDrawer
+          row={inspectedRow}
+          onClose={() => setInspectedRow(null)}
+          onCopyEmail={handleCopyEmail}
+          copiedEmail={copiedEmail}
+        />
+      )}
+    </div>
+  );
+}
+
+/* Table Row Component */
+function AccountTableRow({
+  row,
+  copiedEmail,
+  onCopyEmail,
+  onInspect,
+}: {
+  row: AccountStatusRow;
+  copiedEmail: string | null;
+  onCopyEmail: (email: string) => void;
+  onInspect: () => void;
+}) {
+  const { account, evaluation } = row;
+  const isEvaluated = evaluation.status !== "not_evaluated";
+  const hasClient = account.client && account.client !== "Unassigned";
+
+  return (
+    <tr className="hover:bg-indigo-50/30 transition-colors group">
+      {/* Email column */}
+      <td className="py-2.5 px-4">
+        <div className="flex items-center gap-2">
+          <div className="truncate max-w-[220px] font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors" title={account.email}>
+            {account.email}
+          </div>
+          <button
+            onClick={() => onCopyEmail(account.email)}
+            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-600 rounded transition cursor-pointer"
+            title="Copy email"
+          >
+            {copiedEmail === account.email ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+        <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
+          {account.smartlead}
+        </div>
+      </td>
+
+      {/* Client column */}
+      <td className="py-2.5 px-3">
+        {hasClient ? (
+          <Link
+            href={`/clients/${createClientId(account.client)}`}
+            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-indigo-600 hover:underline max-w-[150px] truncate"
+            title={`View client ${account.client}`}
+          >
+            <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <span className="truncate">{account.client}</span>
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-slate-400 text-xs">
+            Unassigned
+          </span>
+        )}
+      </td>
+
+      {/* Account Tags */}
+      <td className="py-2.5 px-3">
+        <div className="flex flex-wrap gap-1 max-w-[180px]">
+          {account.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag.key}
+              title={tag.name}
+              className="inline-block max-w-[120px] truncate px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/60"
+            >
+              {tag.name}
+            </span>
+          ))}
+          {account.tags.length > 2 && (
+            <span
+              className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500"
+              title={account.tags.map((t) => t.name).join(", ")}
+            >
+              +{account.tags.length - 2}
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Daily Limit */}
+      <td className="py-2.5 px-3 text-center">
+        <ValueBadge
+          value={account.dailyLimit}
+          field={evaluation.dailyLimit}
+          evaluated={isEvaluated}
+        />
+      </td>
+
+      {/* Minimum Gap */}
+      <td className="py-2.5 px-3 text-center">
+        <ValueBadge
+          value={account.minimumGap}
+          field={evaluation.minimumGap}
+          evaluated={isEvaluated}
+          suffix="m"
+        />
+      </td>
+
+      {/* Warmup */}
+      <td className="py-2.5 px-3 text-center">
+        <WarmupStatusBadge
+          enabled={account.warmupEnabled}
+          field={evaluation.warmupEnabled}
+          evaluated={isEvaluated}
+        />
+      </td>
+
+      {/* Warmup Daily */}
+      <td className="py-2.5 px-3 text-center">
+        <ValueBadge
+          value={account.warmupDaily}
+          field={evaluation.warmupDaily}
+          evaluated={isEvaluated}
+        />
+      </td>
+
+      {/* Reply Rate */}
+      <td className="py-2.5 px-3 text-center">
+        <ValueBadge
+          value={account.replyRate}
+          field={evaluation.replyRate}
+          evaluated={isEvaluated}
+          suffix="%"
+        />
+      </td>
+
+      {/* Bounce Rate */}
+      <td className="py-2.5 px-3 text-center">
+        {account.bounceRate !== null ? (
+          <span
+            className={`font-semibold ${
+              account.bounceRate > 3
+                ? "text-rose-600 font-bold"
+                : account.bounceRate > 1
+                ? "text-amber-600"
+                : "text-slate-600"
+            }`}
+          >
+            {account.bounceRate}%
+          </span>
+        ) : (
+          <span className="text-slate-300">—</span>
+        )}
+      </td>
+
+      {/* Status Pill */}
+      <td className="py-2.5 px-3 text-center">
+        <HealthPill status={evaluation.status} />
+      </td>
+
+      {/* Inspect Action */}
+      <td className="py-2.5 px-3 text-center">
+        <button
+          onClick={onInspect}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+          title="Inspect account details"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+/* Sort Icon Indicator */
+function SortIcon({
+  field,
+  currentField,
+  order,
+}: {
+  field: SortField;
+  currentField: SortField;
+  order: SortOrder;
+}) {
+  if (field !== currentField) {
+    return <ArrowUpDown className="w-3 h-3 text-slate-300" />;
+  }
+  return order === "asc" ? (
+    <ArrowUp className="w-3 h-3 text-indigo-600 font-bold" />
+  ) : (
+    <ArrowDown className="w-3 h-3 text-indigo-600 font-bold" />
+  );
+}
+
+/* Metric Value Badge with Mismatch Indicator */
+function ValueBadge({
+  value,
+  field,
+  evaluated,
+  suffix = "",
+}: {
+  value: number | null;
+  field: FieldEvaluation<number>;
+  evaluated: boolean;
+  suffix?: string;
+}) {
+  if (value === null) {
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-slate-300 font-medium">—</span>
+        {field.configured && field.wrong && (
+          <span className="text-[9px] text-amber-600 font-medium mt-0.5">
+            Exp: {field.expected ?? "conf"}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const isWrong = evaluated && field.configured && field.wrong;
+
+  return (
+    <div className="flex flex-col items-center leading-tight">
+      <span
+        className={`font-semibold ${
+          isWrong
+            ? "text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80"
+            : evaluated && field.configured
+            ? "text-slate-800"
+            : "text-slate-600"
+        }`}
+      >
+        {value}
+        {suffix}
+      </span>
+      {isWrong && (
+        <span className="text-[9px] text-amber-600 font-bold tracking-tight mt-0.5">
+          exp {field.expected ?? "conf"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* Warmup Status Badge */
+function WarmupStatusBadge({
+  enabled,
+  field,
+  evaluated,
+}: {
+  enabled: boolean | null;
+  field: FieldEvaluation<boolean>;
+  evaluated: boolean;
+}) {
+  if (enabled === null) {
+    return <span className="text-slate-300">—</span>;
+  }
+
+  const isWrong = evaluated && field.configured && field.wrong;
+
+  return (
+    <div className="flex flex-col items-center leading-tight">
+      <span
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+          isWrong
+            ? "bg-amber-100 text-amber-800 border border-amber-300"
+            : enabled
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
+            : "bg-slate-100 text-slate-500 border border-slate-200"
+        }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            enabled ? "bg-emerald-500" : "bg-slate-400"
+          }`}
+        />
+        {enabled ? "ON" : "OFF"}
+      </span>
+      {isWrong && (
+        <span className="text-[9px] text-amber-600 font-bold mt-0.5">
+          exp {field.expected ? "ON" : "OFF"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* Status Pill */
+function HealthPill({ status }: { status: HealthStatus }) {
+  if (status === "healthy") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+        Healthy
+      </span>
+    );
+  }
+
+  if (status === "attention") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-300/80 shadow-2xs animate-pulse">
+        <AlertCircle className="w-3 h-3 text-amber-500" />
+        Attention
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+      Untargeted
+    </span>
+  );
+}
+
+/* Account Details Slide-Over Drawer */
+function InspectAccountDrawer({
+  row,
+  onClose,
+  onCopyEmail,
+  copiedEmail,
+}: {
+  row: AccountStatusRow;
+  onClose: () => void;
+  onCopyEmail: (email: string) => void;
+  copiedEmail: string | null;
+}) {
+  const { account, evaluation } = row;
+  const isEvaluated = evaluation.status !== "not_evaluated";
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+      <div
+        className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 overflow-y-auto animate-in slide-in-from-right duration-250"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 border-b border-slate-200 bg-slate-50/70 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 truncate max-w-[320px]">
+                {account.email}
+              </h2>
+              <button
+                onClick={() => onCopyEmail(account.email)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
+                title="Copy email"
+              >
+                {copiedEmail === account.email ? (
+                  <Check className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+              <span>{account.smartlead}</span>
+              <span>·</span>
+              <span>ID #{account.externalId}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6 flex-1">
+          {/* Status banner */}
+          <div
+            className={`p-4 rounded-xl border flex items-start gap-3.5 ${
+              evaluation.status === "healthy"
+                ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
+                : evaluation.status === "attention"
+                ? "bg-amber-50/70 border-amber-300 text-amber-900"
+                : "bg-slate-50 border-slate-200 text-slate-700"
+            }`}
+          >
+            {evaluation.status === "healthy" ? (
+              <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            ) : evaluation.status === "attention" ? (
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <HelpCircle className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+            )}
+
+            <div>
+              <div className="font-bold text-sm">
+                {evaluation.status === "healthy"
+                  ? "Settings Fully Compliant"
+                  : evaluation.status === "attention"
+                  ? "Rule Mismatch Detected"
+                  : "Not Evaluated by Active Rules"}
+              </div>
+              <p className="text-xs mt-0.5 opacity-90 leading-relaxed">
+                {evaluation.status === "healthy"
+                  ? "All daily volume and warmup settings strictly match your configured rules."
+                  : evaluation.status === "attention"
+                  ? "One or more sending thresholds differ from the active rules associated with this account's tags."
+                  : "No configured active rules in Settings match this account's assigned tags."}
+              </p>
+            </div>
+          </div>
+
+          {/* Matched Rules */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+              Matched Rules
+            </h3>
+            {evaluation.matchedRuleNames.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {evaluation.matchedRuleNames.map((name) => (
+                  <span
+                    key={name}
+                    className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic">
+                None. Assign matching tags in Smartlead or configure rules in Settings.
+              </p>
+            )}
+          </div>
+
+          {/* Threshold Comparison Table */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">
+              Parameter Evaluation Breakdown
+            </h3>
+            <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
+              <ParameterRow
+                label="Daily Sending Limit"
+                actual={`${account.dailyLimit ?? "—"} emails/day`}
+                field={evaluation.dailyLimit}
+                formatExpected={(val) => `${val} emails/day`}
+              />
+              <ParameterRow
+                label="Minimum Gap Between Emails"
+                actual={`${account.minimumGap ?? "—"} minutes`}
+                field={evaluation.minimumGap}
+                formatExpected={(val) => `${val} minutes`}
+              />
+              <ParameterRow
+                label="Warmup Status"
+                actual={account.warmupEnabled === null ? "—" : account.warmupEnabled ? "ON" : "OFF"}
+                field={evaluation.warmupEnabled}
+                formatExpected={(val) => (val ? "ON" : "OFF")}
+              />
+              <ParameterRow
+                label="Warmup Daily Limit"
+                actual={`${account.warmupDaily ?? "—"} emails/day`}
+                field={evaluation.warmupDaily}
+                formatExpected={(val) => `${val} emails/day`}
+              />
+              <ParameterRow
+                label="Warmup Reply Rate"
+                actual={`${account.replyRate ?? "—"}%`}
+                field={evaluation.replyRate}
+                formatExpected={(val) => `${val}%`}
+              />
+            </div>
+          </div>
+
+          {/* Account Metadata */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">
+              Account Overview
+            </h3>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Client:</span>
+                {account.client !== "Unassigned" ? (
+                  <Link
+                    href={`/clients/${createClientId(account.client)}`}
+                    className="font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                  >
+                    {account.client}
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <span className="text-slate-400 font-medium">Unassigned</span>
+                )}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Sender Name:</span>
+                <span className="text-slate-800 font-medium">
+                  {account.fromName || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Bounce Rate:</span>
+                <span className="text-slate-800 font-semibold">
+                  {account.bounceRate !== null ? `${account.bounceRate}%` : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Warmup Reputation:</span>
+                <span className="text-slate-800 font-semibold">
+                  {account.reputation !== null ? `${account.reputation}%` : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Parameter Comparison Row in Drawer */
+function ParameterRow<T extends number | boolean>({
+  label,
+  actual,
+  field,
+  formatExpected,
+}: {
+  label: string;
+  actual: string;
+  field: FieldEvaluation<T>;
+  formatExpected: (v: T) => string;
+}) {
+  return (
+    <div className="p-3 flex items-center justify-between">
+      <div>
+        <div className="font-medium text-slate-800">{label}</div>
+        {field.configured ? (
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            Expected:{" "}
+            <span className="font-semibold text-slate-600">
+              {field.conflict
+                ? "Conflicting tags"
+                : field.expected !== null
+                ? formatExpected(field.expected)
+                : "None"}
+            </span>
+          </div>
+        ) : (
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            Not configured in active rules
+          </div>
+        )}
+      </div>
+
+      <div className="text-right">
+        <div
+          className={`font-bold ${
+            field.wrong
+              ? "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+              : field.configured
+              ? "text-emerald-700 font-semibold"
+              : "text-slate-700"
+          }`}
+        >
+          {actual}
+        </div>
+        {field.wrong && (
+          <span className="text-[10px] text-amber-600 font-semibold block mt-0.5">
+            Mismatch
+          </span>
         )}
       </div>
     </div>
   );
 }
 
-function AccountRow({
-  account,
-  evaluation,
-}: {
-  account: DisplayAccount;
-  evaluation: AccountEvaluation;
-}) {
-  const evaluated = evaluation.status !== "not_evaluated";
-
-  return (
-    <tr className="border-t border-slate-100 hover:bg-slate-50/50">
-      <TableCell>
-        <div
-          className="truncate font-bold text-slate-900"
-          title={account.email}
-        >
-          {account.email}
-        </div>
-      </TableCell>
-
-      <TableCell>{account.client}</TableCell>
-
-      <TableCell>
-        <TagBadges tags={account.tags} />
-      </TableCell>
-
-      <TableCell>{account.smartlead}</TableCell>
-
-      <TableCell>
-        <ValueCheck
-          value={account.dailyLimit}
-          field={evaluation.dailyLimit}
-          evaluated={evaluated}
-        />
-      </TableCell>
-
-      <TableCell>
-        <ValueCheck
-          value={account.minimumGap}
-          field={evaluation.minimumGap}
-          evaluated={evaluated}
-        />
-      </TableCell>
-
-      <TableCell>
-        <WarmupBadge
-          enabled={account.warmupEnabled}
-          field={evaluation.warmupEnabled}
-          evaluated={evaluated}
-        />
-      </TableCell>
-
-      <TableCell>
-        <ValueCheck
-          value={account.warmupDaily}
-          field={evaluation.warmupDaily}
-          evaluated={evaluated}
-        />
-      </TableCell>
-
-      <TableCell>
-        <ValueCheck
-          value={account.replyRate}
-          field={evaluation.replyRate}
-          evaluated={evaluated}
-          suffix="%"
-        />
-      </TableCell>
-
-      <TableCell>
-        {account.bounceRate !== null
-          ? `${account.bounceRate}%`
-          : "—"}
-      </TableCell>
-
-      <TableCell>
-        <StatusBadge status={evaluation.status} />
-      </TableCell>
-    </tr>
-  );
-}
-
+/* Core Evaluation Logic */
 function evaluateAccount(
   account: DisplayAccount,
   enabledRuleMap: Map<string, EmailAccountRule>
 ): AccountEvaluation {
   const matchedRules = account.tags
-    .map((tag) =>
-      enabledRuleMap.get(
-        ruleMapKey(account.integrationId, tag.key)
-      )
-    )
+    .map((tag) => enabledRuleMap.get(ruleMapKey(account.integrationId, tag.key)))
     .filter((rule): rule is EmailAccountRule => Boolean(rule));
 
   if (matchedRules.length === 0) {
@@ -622,9 +1595,7 @@ function evaluateAccount(
     replyRate,
   ];
 
-  const hasConfiguredField = fields.some(
-    (field) => field.configured
-  );
+  const hasConfiguredField = fields.some((field) => field.configured);
 
   const status: HealthStatus = !hasConfiguredField
     ? "not_evaluated"
@@ -695,9 +1666,10 @@ function convertRealAccount(account: RealAccount): DisplayAccount {
 
   return {
     id: account.id,
+    externalId: account.external_id,
     integrationId: account.integration_id,
-    email:
-      account.email || account.username || "Unknown",
+    email: account.email || account.username || "Unknown",
+    fromName: getText(account.from_name) || getText(raw.from_name) || null,
     client:
       getText(raw.client_name) ||
       getText(raw.clientName) ||
@@ -716,6 +1688,7 @@ function convertRealAccount(account: RealAccount): DisplayAccount {
       getNumber(warmupDetails.warmup_reputation),
     bounceRate: getNumber(raw.bounce_rate),
     replyRate: getNumber(warmupDetails.reply_rate),
+    syncedAt: account.synced_at,
   };
 }
 
@@ -733,11 +1706,7 @@ function getAccountTags(raw: RawData): AccountTag[] {
     .map((item) => {
       if (typeof item === "string") {
         const name = item.trim();
-
-        if (!name) {
-          return null;
-        }
-
+        if (!name) return null;
         return {
           key: normalizeTagKey(name),
           name,
@@ -745,12 +1714,8 @@ function getAccountTags(raw: RawData): AccountTag[] {
       }
 
       const object = asObject(item);
-      const name =
-        getText(object.tag_name) || getText(object.name);
-
-      if (!name) {
-        return null;
-      }
+      const name = getText(object.tag_name) || getText(object.name);
+      if (!name) return null;
 
       return {
         key: normalizeTagKey(name),
@@ -769,7 +1734,6 @@ function getAccountTags(raw: RawData): AccountTag[] {
   }
 
   const unique = new Map<string, AccountTag>();
-
   for (const tag of tags) {
     unique.set(tag.key, tag);
   }
@@ -782,20 +1746,14 @@ function normalizeTagKey(value: string) {
 }
 
 function asObject(value: unknown): RawData {
-  if (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  ) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as RawData;
   }
-
   return {};
 }
 
 function getWarmupEnabled(value: unknown) {
   const directBoolean = getBoolean(value);
-
   if (directBoolean !== null) {
     return directBoolean;
   }
@@ -805,12 +1763,7 @@ function getWarmupEnabled(value: unknown) {
   }
 
   const status = value.trim().toUpperCase();
-
-  if (
-    status === "ACTIVE" ||
-    status === "ENABLED" ||
-    status === "ON"
-  ) {
+  if (status === "ACTIVE" || status === "ENABLED" || status === "ON") {
     return true;
   }
 
@@ -831,20 +1784,14 @@ function getText(value: unknown) {
   if (typeof value !== "string") {
     return null;
   }
-
   const result = value.trim();
   return result || null;
 }
 
 function getNumber(value: unknown) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
-
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -853,18 +1800,11 @@ function getBoolean(value: unknown) {
   if (typeof value === "boolean") {
     return value;
   }
-
-  if (value === 1) {
-    return true;
-  }
-
-  if (value === 0) {
-    return false;
-  }
+  if (value === 1) return true;
+  if (value === 0) return false;
 
   if (typeof value === "string") {
     const text = value.trim().toLowerCase();
-
     if (
       text === "true" ||
       text === "1" ||
@@ -888,228 +1828,3 @@ function getBoolean(value: unknown) {
 
   return null;
 }
-
-function SummaryCard({
-  title,
-  value,
-  tone = "default",
-}: {
-  title: string;
-  value: number;
-  tone?: "default" | "success" | "warning" | "neutral";
-}) {
-  const valueClass =
-    tone === "success"
-      ? "text-emerald-700"
-      : tone === "warning"
-      ? "text-amber-700"
-      : tone === "neutral"
-      ? "text-slate-600"
-      : "text-slate-900";
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className={`mt-2 text-2xl font-bold ${valueClass}`}>
-        {value.toLocaleString()}
-      </div>
-    </div>
-  );
-}
-
-function TableHeader({
-  text,
-  width,
-}: {
-  text: string;
-  width?: string;
-}) {
-  return (
-    <th
-      style={{ width }}
-      className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500"
-    >
-      {text}
-    </th>
-  );
-}
-
-function TableCell({ children }: { children: ReactNode }) {
-  return (
-    <td className="overflow-hidden whitespace-nowrap px-3 py-3 text-[11px] text-slate-600">
-      {children}
-    </td>
-  );
-}
-
-function TagBadges({ tags }: { tags: AccountTag[] }) {
-  const visible = tags.slice(0, 2);
-  const remaining = tags.length - visible.length;
-
-  return (
-    <div className="flex min-w-0 flex-wrap gap-1">
-      {visible.map((tag) => (
-        <span
-          key={tag.key}
-          title={tag.name}
-          className="max-w-[150px] truncate rounded-md bg-blue-50 px-2 py-1 text-[9px] font-bold text-slate-700"
-        >
-          {tag.name}
-        </span>
-      ))}
-
-      {remaining > 0 && (
-        <span className="rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600">
-          +{remaining}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function ValueCheck({
-  value,
-  field,
-  evaluated,
-  suffix = "",
-}: {
-  value: number | null;
-  field: FieldEvaluation<number>;
-  evaluated: boolean;
-  suffix?: string;
-}) {
-  if (value === null) {
-    return (
-      <div>
-        <EmptyValue />
-        {field.configured && (
-          <ExpectedValue
-            field={field}
-            suffix={suffix}
-          />
-        )}
-      </div>
-    );
-  }
-
-  const colorClass = !evaluated || !field.configured
-    ? "text-slate-700"
-    : field.wrong
-    ? "text-amber-700"
-    : "text-emerald-700";
-
-  return (
-    <div>
-      <div className={`font-bold ${colorClass}`}>
-        {value}
-        {suffix}
-      </div>
-      {field.wrong && (
-        <ExpectedValue
-          field={field}
-          suffix={suffix}
-        />
-      )}
-    </div>
-  );
-}
-
-function ExpectedValue({
-  field,
-  suffix = "",
-}: {
-  field: FieldEvaluation<number>;
-  suffix?: string;
-}) {
-  if (!field.configured) {
-    return null;
-  }
-
-  return (
-    <div className="mt-0.5 text-[9px] text-slate-400">
-      {field.conflict
-        ? "Conflicting rules"
-        : `Expected ${field.expected}${suffix}`}
-    </div>
-  );
-}
-
-function WarmupBadge({
-  enabled,
-  field,
-  evaluated,
-}: {
-  enabled: boolean | null;
-  field: FieldEvaluation<boolean>;
-  evaluated: boolean;
-}) {
-  if (enabled === null) {
-    return (
-      <div>
-        <EmptyValue />
-        {field.configured && field.expected !== null && (
-          <div className="mt-0.5 text-[9px] text-slate-400">
-            Expected {field.expected ? "ON" : "OFF"}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const className = !evaluated || !field.configured
-    ? "bg-slate-100 text-slate-700"
-    : field.wrong
-    ? "bg-amber-50 text-amber-700"
-    : "bg-emerald-50 text-emerald-700";
-
-  return (
-    <div>
-      <span
-        className={`inline-block rounded-md px-2 py-1 text-[9px] font-bold ${className}`}
-      >
-        {enabled ? "ON" : "OFF"}
-      </span>
-
-      {field.wrong && field.configured && (
-        <div className="mt-0.5 text-[9px] text-slate-400">
-          {field.conflict
-            ? "Conflicting rules"
-            : `Expected ${field.expected ? "ON" : "OFF"}`}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: HealthStatus }) {
-  if (status === "healthy") {
-    return (
-      <span className="rounded-md bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">
-        Healthy
-      </span>
-    );
-  }
-
-  if (status === "attention") {
-    return (
-      <span className="rounded-md bg-amber-50 px-2 py-1 text-[9px] font-bold text-amber-700">
-        Attention
-      </span>
-    );
-  }
-
-  return (
-    <span className="rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600">
-      Not Evaluated
-    </span>
-  );
-}
-
-function EmptyValue() {
-  return <span className="text-slate-400">—</span>;
-}
-
-const selectClassName =
-  "h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400";

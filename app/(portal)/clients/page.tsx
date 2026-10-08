@@ -445,6 +445,14 @@ function buildClientSummaries(
     const campaign of campaigns
   ) {
     if (
+      !isMainCampaign(
+        campaign.raw_data
+      )
+    ) {
+      continue;
+    }
+
+    if (
       normalizeStatus(
         campaign.status
       ) !== "ACTIVE"
@@ -676,6 +684,22 @@ function asObject(
   }
 
   return {};
+}
+
+function isMainCampaign(
+  rawData: unknown
+) {
+  const raw =
+    asObject(rawData);
+
+  const parentId =
+    raw.parent_campaign_id;
+
+  return (
+    parentId === null ||
+    parentId === undefined ||
+    parentId === ""
+  );
 }
 
 function getText(

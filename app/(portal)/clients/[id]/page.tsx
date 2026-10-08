@@ -431,6 +431,9 @@ export default async function ClientPage({
   const clientCampaigns =
     campaigns.filter(
       (campaign) =>
+        isMainCampaign(
+          campaign.raw_data
+        ) &&
         getClientName(
           campaign.raw_data
         )
@@ -862,6 +865,22 @@ function asObject(
   }
 
   return {};
+}
+
+function isMainCampaign(
+  rawData: unknown
+) {
+  const raw =
+    asObject(rawData);
+
+  const parentId =
+    raw.parent_campaign_id;
+
+  return (
+    parentId === null ||
+    parentId === undefined ||
+    parentId === ""
+  );
 }
 
 function getText(
