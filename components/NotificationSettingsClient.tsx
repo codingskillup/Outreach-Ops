@@ -17,6 +17,8 @@ import {
   Sparkles,
   CalendarCheck,
   Check,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -175,7 +177,6 @@ export default function NotificationSettingsClient({
           title: "Update Failed",
           message: updateError.message,
         });
-        // Refetch or revert
         const { data } = await supabase
           .from("notification_recipients")
           .select("*")
@@ -277,31 +278,37 @@ export default function NotificationSettingsClient({
   const dailySubscribers = recipients.filter((r) => r.daily_report && r.is_active).length;
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
-            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md flex items-start gap-3 ${
+            className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md flex items-start gap-3 ${
               toast.type === "success"
-                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                ? "bg-slate-900/95 text-white border-emerald-500/40"
                 : toast.type === "error"
-                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
-                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+                ? "bg-slate-900/95 text-white border-rose-500/40"
+                : "bg-slate-900/95 text-white border-slate-700/80"
             }`}
           >
             {toast.type === "success" && (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
             )}
             {toast.type === "error" && (
-              <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+              <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
             )}
             {toast.type === "info" && (
-              <Info className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                <Info className="w-4 h-4" />
+              </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">{toast.title}</p>
-              <p className="text-xs text-slate-300 mt-0.5">{toast.message}</p>
+              <p className="text-sm font-bold text-white">{toast.title}</p>
+              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{toast.message}</p>
             </div>
             <button
               type="button"
@@ -316,60 +323,81 @@ export default function NotificationSettingsClient({
 
       {/* KPI Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        {/* Total Email Recipients */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Total Email Recipients
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {recipients.length}
+            <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-600 group-hover:text-indigo-600 transition-colors">
+              <Mail className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Configured notification endpoints
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-            <Mail className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {recipients.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">
+              configured {recipients.length === 1 ? "inbox" : "inboxes"}
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Notification endpoints</span>
+            <span className="font-semibold text-slate-700">Transactional</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
+        {/* Instant Issue Alerts */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Instant Issue Alerts
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Instant Drift Alerts
               </span>
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {instantSubscribers}
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/60 flex items-center justify-center text-rose-600 group-hover:scale-105 transition-transform">
+              <Bell className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Active real-time alert subscribers
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-200 flex items-center justify-center text-rose-600">
-            <Bell className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {instantSubscribers}
+            </span>
+            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/60">
+              Real-time
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Critical anomaly dispatch</span>
+            <span className="font-semibold text-slate-700">&lt; 30s latency</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
+        {/* Daily 8 AM Digest */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Daily 8 AM Digest
               </span>
               <span className="w-2 h-2 rounded-full bg-indigo-500" />
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {dailySubscribers}
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200/60 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
+              <Clock className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Subscribers for morning briefing
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600">
-            <Clock className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {dailySubscribers}
+            </span>
+            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
+              Morning Brief
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Automated executive report</span>
+            <span className="font-semibold text-slate-700">08:00 AM Daily</span>
           </div>
         </div>
       </div>
@@ -379,21 +407,23 @@ export default function NotificationSettingsClient({
         {/* Header */}
         <div className="p-5 md:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <span>Subscribed Email Recipients</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                {recipients.length}
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                Subscribed Email Recipients
+              </h2>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+                {recipients.length} {recipients.length === 1 ? "recipient" : "recipients"}
               </span>
-            </h2>
+            </div>
             <p className="text-xs text-slate-500 mt-1 max-w-xl">
-              Manage team members who receive immediate system alert notifications and the automated morning executive briefing.
+              Manage operational stakeholders who receive instant system alerts and the automated morning executive briefing.
             </p>
           </div>
 
           <button
             type="button"
             onClick={openModal}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
           >
             <Plus className="w-4 h-4" />
             <span>Add Recipient</span>
@@ -436,7 +466,7 @@ export default function NotificationSettingsClient({
                 >
                   {/* Recipient Identity */}
                   <div className="flex items-center gap-3.5 min-w-[240px]">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-800 to-indigo-900 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-950 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
                       {initialLetter}
                     </div>
                     <div className="min-w-0">
@@ -446,22 +476,22 @@ export default function NotificationSettingsClient({
                         </span>
                         {!recipient.is_active && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
-                            Inactive
+                            Paused
                           </span>
                         )}
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
                         <Mail className="w-3 h-3 text-slate-400" />
-                        <span>Email Destination</span>
+                        <span>Notification Destination</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Notification Controls / Switches */}
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-slate-50/90 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
                     <ModernSwitch
                       icon={<Bell className="w-3.5 h-3.5" />}
-                      label="New Issue Alert"
+                      label="Drift Alerts"
                       checked={recipient.instant_issue_alert}
                       onChange={(checked) =>
                         updateRecipient(recipient.id, { instant_issue_alert: checked })
@@ -496,8 +526,8 @@ export default function NotificationSettingsClient({
                       type="button"
                       onClick={() => testRecipient(recipient)}
                       disabled={isSendingTest}
-                      title="Send test email to this address"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      title="Send test notification email to this address"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200/80 bg-indigo-50/80 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                     >
                       <Send
                         className={`w-3.5 h-3.5 ${
@@ -511,7 +541,7 @@ export default function NotificationSettingsClient({
                       type="button"
                       onClick={() => setRecipientToRemove(recipient)}
                       title="Remove recipient"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-sm"
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-xs"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Remove</span>
@@ -526,33 +556,33 @@ export default function NotificationSettingsClient({
 
       {/* Modern Information & Delivery Guide Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2 hover:border-slate-300 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
             <ShieldAlert className="w-5 h-5" />
           </div>
           <h4 className="text-sm font-bold text-slate-900">Instant Issue Alerts</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Real-time incident dispatch triggered when mailboxes drop connection, daily caps are exceeded, or DNS health degrades.
+            Real-time incident dispatch triggered when mailboxes drop connection, daily limits are breached, or DNS records degrade.
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2 hover:border-slate-300 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
             <CalendarCheck className="w-5 h-5" />
           </div>
           <h4 className="text-sm font-bold text-slate-900">Daily 8 AM Digest</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Executive summary delivered every morning covering total active mailboxes, warmup performance, resolved issues, and campaign velocity.
+            Consolidated morning briefing covering active mailbox fleet health, warmup progress, resolved drift issues, and campaign velocity.
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2 hover:border-slate-300 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <Sparkles className="w-5 h-5" />
           </div>
           <h4 className="text-sm font-bold text-slate-900">Verified Deliverability</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Emails are authenticated with DKIM, SPF, and DMARC alignment through resilient transactional infrastructure for high inbox placement.
+            Transactional notifications are delivered with DKIM, SPF, and DMARC alignment through resilient infrastructure for high inbox placement.
           </p>
         </div>
       </div>
@@ -569,7 +599,7 @@ export default function NotificationSettingsClient({
           >
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/70">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3.5">
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-md">
                   <Mail className="w-6 h-6" />
                 </div>
@@ -625,7 +655,7 @@ export default function NotificationSettingsClient({
                   onClick={() => setInstantIssueAlert(!instantIssueAlert)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
                     instantIssueAlert
-                      ? "bg-rose-50/60 border-rose-200"
+                      ? "bg-rose-50/60 border-rose-300"
                       : "bg-white border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -653,7 +683,7 @@ export default function NotificationSettingsClient({
                   onClick={() => setDailyReport(!dailyReport)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
                     dailyReport
-                      ? "bg-indigo-50/60 border-indigo-200"
+                      ? "bg-indigo-50/60 border-indigo-300"
                       : "bg-white border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -681,7 +711,7 @@ export default function NotificationSettingsClient({
                   onClick={() => setIsActive(!isActive)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
                     isActive
-                      ? "bg-emerald-50/60 border-emerald-200"
+                      ? "bg-emerald-50/60 border-emerald-300"
                       : "bg-white border-slate-200 hover:border-slate-300"
                   }`}
                 >

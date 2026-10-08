@@ -20,6 +20,9 @@ import {
   Clock,
   Sparkles,
   Info,
+  Check,
+  Layers,
+  ArrowUpRight,
 } from "lucide-react";
 
 export type Provider = "smartlead" | "emailguard";
@@ -148,7 +151,9 @@ export default function ConnectionsPageClient({
       triggerToast({
         type: "success",
         title: "Connection Added Successfully",
-        message: `Connected "${newIntegration.name}" to ${provider === "smartlead" ? "Smartlead" : "EmailGuard"}.`,
+        message: `Connected "${newIntegration.name}" to ${
+          provider === "smartlead" ? "Smartlead" : "EmailGuard"
+        }.`,
       });
     } catch {
       setError("Unable to connect. Please check your network and API key.");
@@ -265,38 +270,53 @@ export default function ConnectionsPageClient({
   }
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
-            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md ${
+            className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md ${
               toast.type === "success"
-                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                ? "bg-slate-900/95 text-white border-emerald-500/40"
                 : toast.type === "error"
-                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
-                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+                ? "bg-slate-900/95 text-white border-rose-500/40"
+                : "bg-slate-900/95 text-white border-slate-700/80"
             }`}
           >
             <div className="flex items-start gap-3">
               {toast.type === "success" && (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
               )}
               {toast.type === "error" && (
-                <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+                <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
               )}
               {toast.type === "info" && (
-                <Info className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Info className="w-4 h-4" />
+                </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">{toast.title}</p>
-                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{toast.message}</p>
+                <p className="text-sm font-bold text-white">{toast.title}</p>
+                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                  {toast.message}
+                </p>
                 {toast.details && toast.details.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-700/50">
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-800">
                     {toast.details.map((detail, idx) => (
-                      <div key={idx} className="text-center bg-slate-800/60 rounded-lg p-1.5">
-                        <span className="block text-[10px] text-slate-400">{detail.label}</span>
-                        <span className="text-xs font-bold text-white">{detail.value}</span>
+                      <div
+                        key={idx}
+                        className="text-center bg-slate-800/80 border border-slate-700/60 rounded-lg p-1.5"
+                      >
+                        <span className="block text-[10px] font-medium text-slate-400">
+                          {detail.label}
+                        </span>
+                        <span className="text-xs font-bold text-white">
+                          {detail.value}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -314,62 +334,83 @@ export default function ConnectionsPageClient({
         </div>
       )}
 
-      {/* Summary KPI Cards */}
+      {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        {/* Total Integrations */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Total Integrations
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {integrations.length}
+            <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-600 group-hover:text-indigo-600 transition-colors">
+              <Server className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Across Smartlead & EmailGuard
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-            <Server className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {integrations.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">
+              active sync {integrations.length === 1 ? "pipe" : "pipes"}
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Synchronized engines</span>
+            <span className="font-semibold text-slate-700">Live API</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
+        {/* Smartlead */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Smartlead Accounts
               </span>
-              <span className="w-2 h-2 rounded-full bg-orange-500" />
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {smartleadConnections.length}
+            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform">
+              <Zap className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Campaigns & mailboxes sync
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
-            <Zap className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {smartleadConnections.length}
+            </span>
+            <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60">
+              Cold Email
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Mailboxes & campaigns</span>
+            <span className="font-semibold text-slate-700">Auto Synced</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-200">
-          <div>
+        {/* EmailGuard */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 EmailGuard Accounts
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-1">
-              {emailguardConnections.length}
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Domain DNS & reputation monitors
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
-            <ShieldCheck className="w-6 h-6" />
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {emailguardConnections.length}
+            </span>
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+              DNS Security
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>SPF / DKIM / DMARC</span>
+            <span className="font-semibold text-slate-700">Continuous</span>
           </div>
         </div>
       </div>
@@ -380,7 +421,7 @@ export default function ConnectionsPageClient({
         title="Smartlead Connections"
         badge="Cold Email Engine"
         badgeColor="orange"
-        description="Sync mailboxes, track warmup health, daily sender limits, and monitor campaign performance."
+        description="Sync mailboxes, track warmup health, daily sender caps, and monitor campaign deliverability."
         count={smartleadConnections.length}
         connections={smartleadConnections}
         syncingId={syncingId}
@@ -416,7 +457,7 @@ export default function ConnectionsPageClient({
           >
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/70">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3.5">
                 <div
                   className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-md ${
                     provider === "smartlead"
@@ -435,7 +476,7 @@ export default function ConnectionsPageClient({
                     Connect {provider === "smartlead" ? "Smartlead" : "EmailGuard"}
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Enter your API credentials to synchronize your accounts
+                    Enter your workspace credentials to synchronize infrastructure
                   </p>
                 </div>
               </div>
@@ -482,7 +523,8 @@ export default function ConnectionsPageClient({
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     API Key
                   </label>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] font-medium text-indigo-600 flex items-center gap-1">
+                    <KeyRound className="w-3 h-3" />
                     {provider === "smartlead"
                       ? "Smartlead > Settings > Profile > API"
                       : "EmailGuard > Settings > API"}
@@ -534,13 +576,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={handleAddConnection}
                 disabled={saving}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm flex items-center gap-2 transition-all ${
-                  saving
-                    ? "bg-slate-400 cursor-not-allowed"
-                    : provider === "smartlead"
-                    ? "bg-slate-900 hover:bg-slate-800"
-                    : "bg-slate-900 hover:bg-slate-800"
-                }`}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -665,14 +701,14 @@ function ConnectionSection({
           </div>
 
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 {title}
               </h2>
               <span
                 className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                   badgeColor === "orange"
-                    ? "bg-orange-100 text-orange-800 border border-orange-200"
+                    ? "bg-amber-100 text-amber-800 border border-amber-200"
                     : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                 }`}
               >
@@ -691,7 +727,7 @@ function ConnectionSection({
         <button
           type="button"
           onClick={onAdd}
-          className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
+          className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
         >
           <Plus className="w-4 h-4" />
           <span>Add {provider === "smartlead" ? "Smartlead" : "EmailGuard"}</span>
@@ -719,7 +755,7 @@ function ConnectionSection({
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Connect First Account</span>
@@ -778,7 +814,7 @@ function ConnectionSection({
                     type="button"
                     onClick={() => onSync(integration)}
                     disabled={isSyncing}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-xs font-semibold text-slate-700 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-xs font-semibold text-slate-700 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <RefreshCw
                       className={`w-3.5 h-3.5 ${
@@ -792,7 +828,7 @@ function ConnectionSection({
                     type="button"
                     onClick={() => onRemove(integration)}
                     title="Remove connection"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-sm"
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors shadow-sm"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Remove</span>

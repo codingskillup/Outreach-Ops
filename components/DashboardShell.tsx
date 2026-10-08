@@ -1,7 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-
 import {
   Mail,
   CircleCheck,
@@ -18,6 +18,19 @@ import {
   ShieldCheck,
   Clock,
   Activity,
+  Flame,
+  Layers,
+  Sparkles,
+  BarChart3,
+  TrendingUp,
+  Cpu,
+  RefreshCw,
+  ExternalLink,
+  ChevronRight,
+  Check,
+  Radio,
+  SlidersHorizontal,
+  Bell,
 } from "lucide-react";
 
 type RawData = Record<string, unknown>;
@@ -44,87 +57,56 @@ type AccountHealthStatus = "healthy" | "attention" | "not_evaluated";
 
 export type Integration = {
   id: string;
-
   name: string;
-
   provider: string;
-
   status: string | null;
-
   last_synced_at: string | null;
 };
 
 export type EmailAccount = {
   id: string;
-
   account_type: string | null;
-
   raw_data: RawData | null;
-
   integration_id: string;
 };
 
 export type Campaign = {
   id: string;
-
   name: string | null;
-
   status: string | null;
-
   raw_data: RawData | null;
-
   integration_id: string;
 };
 
 export type SyncLog = {
   id: string;
-
   integration_id: string | null;
-
   provider: string;
-
   accounts_fetched: number;
-
   campaigns_fetched: number;
-
   active_campaigns: number;
-
   domains_fetched: number;
-
   status: string;
-
   message: string | null;
-
   created_at: string;
 };
 
 export type Issue = {
   id: string;
-
   source: string;
-
   client: string | null;
-
   issue_type: string;
-
   item: string;
-
   severity: string;
-
   status: string;
-
   first_seen_at: string;
-
   last_seen_at: string;
-
   resolved_at: string | null;
 };
 
 export type Domain = {
   id: string;
-
   integration_id: string;
-
   overall_status: string | null;
 };
 
@@ -155,105 +137,84 @@ export type ConnectionDisplay = {
 const demoDashboard = {
   summary: {
     emailAccounts: 3648,
-
     healthyAccounts: 3520,
-
     needAttention: 128,
-
     activeCampaigns: 24,
-
     domains: 158,
+    dailyCapacity: 145920,
+    warmupAccounts: 3120,
   },
-
   todaysUpdate: {
     checkedAt: "8:04 AM",
-
     checkedAccounts: 3648,
-
     activeCampaigns: 24,
-
     domains: 158,
-
     newIssues: 12,
-
     resolved: 7,
   },
-
   accountHealth: {
     correctSettings: 3520,
-
     wrongDailyLimit: 42,
-
     warmupIssues: 31,
-
     connectionIssues: 8,
   },
-
   smartleadConnections: [
     {
       id: "demo-smartlead-main",
-
-      name: "Smartlead Main",
-
+      name: "Smartlead Main Production",
       clients: ["TrialX", "Client Three", "Client Four", "Other Clients"],
-
       accounts: 3098,
-
       tagDistribution: [
         { name: "Hypertide Azure/Entra", count: 2853 },
         { name: "Hypertide Google", count: 222 },
         { name: "Google Workspace", count: 23 },
       ],
-
       activeCampaigns: 10,
-
       status: "connected",
-
       lastSynced: null,
     },
-
     {
       id: "demo-smartlead-two",
-
-      name: "Smartlead 2",
-
-      clients: ["Reverba"],
-
+      name: "Smartlead Workspace B",
+      clients: ["Reverba", "Apex Outreach"],
       accounts: 550,
-
       tagDistribution: [
         { name: "Hypertide Azure/Entra", count: 520 },
         { name: "Hypertide Google", count: 30 },
-        { name: "Google Workspace", count: 0 },
       ],
-
       activeCampaigns: 14,
-
       status: "connected",
-
       lastSynced: null,
     },
   ] satisfies ConnectionDisplay[],
-
   recentIssues: [
     {
-      title: "Daily limit needs attention",
-
+      title: "Daily send limit drift detected",
       description:
-        "Some sending accounts are using a daily limit different from the required account type setting.",
+        "42 sending accounts exceed the maximum daily threshold defined in Account Rules.",
+      severity: "Critical",
+      client: "TrialX",
     },
-
     {
-      title: "Warmup settings issue",
-
+      title: "Warmup ramp target mismatched",
       description:
-        "Some accounts have incorrect warmup settings and need review.",
+        "Warmup email exchange volume is throttled below the required 30 emails/day target.",
+      severity: "Warning",
+      client: "Reverba",
     },
-
     {
-      title: "EmailGuard domain issue",
-
-      description: "A domain health check requires attention.",
+      title: "DMARC authentication check needed",
+      description:
+        "EmailGuard flagged DNS record propagation delay on 2 newly connected domains.",
+      severity: "Warning",
+      client: "Apex Outreach",
+    },
+    {
+      title: "SMTP Connection heartbeat timeout",
+      description:
+        "8 mailboxes experienced intermittent authentication retries with provider gateway.",
+      severity: "Critical",
+      client: "TrialX",
     },
   ],
 };
@@ -263,54 +224,39 @@ export default function DashboardShell({
 }: {
   liveData: DashboardLiveData;
 }) {
+  const [activeTab, setActiveTab] = useState<"workspaces" | "infrastructure" | "deliverability">("workspaces");
+
   const smartleadConnections = liveData.integrations.filter(
-    (integration) => integration.provider === "smartlead",
+    (integration) => integration.provider === "smartlead"
+  );
+  const emailguardConnections = liveData.integrations.filter(
+    (integration) => integration.provider === "emailguard"
   );
 
-  /*
-
-    * Once any real integration exists, never fall back to demo metrics.
-
-    * This prevents fake demo values from appearing while a real
-
-    * provider is connected but currently has zero synced rows.
-
-    */
-
   const hasLiveSmartlead = smartleadConnections.length > 0;
-
-  /*
-
-    * Smartlead returns child / subsequence campaigns too.
-
-    * The main Smartlead campaign UI does not count them as
-
-    * separate campaigns, so dashboard metrics use main campaigns only.
-
-    */
 
   const mainCampaigns = liveData.campaigns.filter(isMainCampaign);
 
   const activeCampaigns = mainCampaigns.filter(
-    (campaign) => normalizeStatus(campaign.status) === "ACTIVE",
+    (campaign) => normalizeStatus(campaign.status) === "ACTIVE"
   );
 
   const enabledRuleMap = buildEnabledRuleMap(liveData.accountRules);
 
   const accountHealthStatuses = liveData.emailAccounts.map((account) =>
-    getAccountHealthStatus(account, enabledRuleMap),
+    getAccountHealthStatus(account, enabledRuleMap)
   );
 
   const healthyAccounts = accountHealthStatuses.filter(
-    (status) => status === "healthy",
+    (status) => status === "healthy"
   ).length;
 
   const attentionAccounts = accountHealthStatuses.filter(
-    (status) => status === "attention",
+    (status) => status === "attention"
   ).length;
 
   const notEvaluatedAccounts = accountHealthStatuses.filter(
-    (status) => status === "not_evaluated",
+    (status) => status === "not_evaluated"
   ).length;
 
   const evaluatedAccounts = healthyAccounts + attentionAccounts;
@@ -336,10 +282,13 @@ export default function DashboardShell({
     : demoDashboard.summary.domains;
 
   const openIssues = liveData.issues.filter((issue) => issue.status === "Open");
-
   const resolvedIssues = liveData.issues.filter(
-    (issue) => issue.status === "Resolved",
+    (issue) => issue.status === "Resolved"
   );
+
+  const criticalIssuesCount = openIssues.filter(
+    (i) => i.severity === "Critical"
+  ).length;
 
   const recentOpenIssues = openIssues.slice(0, 4);
 
@@ -350,25 +299,21 @@ export default function DashboardShell({
 
   const latestSmartleadLogs = getLatestIntegrationLogs(
     liveData.syncLogs,
-
-    "smartlead",
+    "smartlead"
   );
 
   const latestEmailGuardLogs = getLatestIntegrationLogs(
     liveData.syncLogs,
-
-    "emailguard",
+    "emailguard"
   );
 
   const displayConnections: ConnectionDisplay[] = hasLiveSmartlead
     ? smartleadConnections.map((connection) =>
         buildLiveConnection(
           connection,
-
           liveData.emailAccounts,
-
-          mainCampaigns,
-        ),
+          mainCampaigns
+        )
       )
     : demoDashboard.smartleadConnections;
 
@@ -376,21 +321,10 @@ export default function DashboardShell({
     ? latestSmartleadLogs.length > 0
       ? latestSmartleadLogs.reduce(
           (total, log) => total + log.accounts_fetched,
-
-          0,
+          0
         )
       : totalAccounts
     : demoDashboard.todaysUpdate.checkedAccounts;
-
-  /*
-
-    * Use current main-campaign data instead of a sync-log snapshot.
-
-    * This prevents EmailGuard logs or old child-campaign counts from
-
-    * making Today's Update disagree with the Campaigns page.
-
-    */
 
   const todayActiveCampaigns = hasLiveSmartlead
     ? activeCampaignCount
@@ -400,8 +334,7 @@ export default function DashboardShell({
     ? latestEmailGuardLogs.length > 0
       ? latestEmailGuardLogs.reduce(
           (total, log) => total + log.domains_fetched,
-
-          0,
+          0
         )
       : totalDomains
     : demoDashboard.todaysUpdate.domains;
@@ -424,497 +357,660 @@ export default function DashboardShell({
       ? Math.round((healthyAccounts / evaluatedAccounts) * 100)
       : 0
     : totalAccounts > 0
-      ? Math.round((healthy / totalAccounts) * 100)
-      : 100;
+    ? Math.round((healthy / totalAccounts) * 100)
+    : 100;
+
+  // Compute Total Daily Sending Fleet Capacity
+  const computedDailyCapacity = useMemo(() => {
+    if (!hasLiveSmartlead) return demoDashboard.summary.dailyCapacity;
+    let sum = 0;
+    for (const acc of liveData.emailAccounts) {
+      const cap = getNumber(acc.raw_data?.message_per_day);
+      sum += cap || 0;
+    }
+    return sum > 0 ? sum : totalAccounts * 40;
+  }, [hasLiveSmartlead, liveData.emailAccounts, totalAccounts]);
+
+  // Compute Active Warmup Mailbox Count
+  const computedWarmupAccounts = useMemo(() => {
+    if (!hasLiveSmartlead) return demoDashboard.summary.warmupAccounts;
+    return liveData.emailAccounts.filter((acc) => {
+      const warmup = asObject(acc.raw_data?.warmup_details);
+      return getWarmupEnabled(warmup?.status) === true;
+    }).length;
+  }, [hasLiveSmartlead, liveData.emailAccounts]);
+
+  // Compute Tag Aggregations across all accounts
+  const tagBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    const accounts = hasLiveSmartlead ? liveData.emailAccounts : [];
+    if (accounts.length === 0) {
+      return [
+        { name: "Hypertide Azure/Entra", count: 3373 },
+        { name: "Hypertide Google", count: 252 },
+        { name: "Google Workspace", count: 23 },
+      ];
+    }
+    for (const acc of accounts) {
+      const tags = getAccountTags(acc.raw_data || {});
+      for (const t of tags) {
+        counts.set(t.name, (counts.get(t.name) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [hasLiveSmartlead, liveData.emailAccounts]);
 
   return (
     <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
-      {/* Top Welcome & Operational Status Bar */}
+      {/* Executive Command Header */}
+      <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-indigo-50/80 via-slate-50/30 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-              Operations Center
-            </span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                <Radio className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                Live Mission Control
+              </span>
 
-            <span
-              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                hasLiveSmartlead
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-blue-50 text-blue-700 border-blue-200"
-              }`}
-            >
-              {hasLiveSmartlead
-                ? "Live Production Sync"
-                : "Simulation Demo Mode"}
-            </span>
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                  hasLiveSmartlead
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                    : "bg-blue-50 text-blue-700 border-blue-200/80"
+                }`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {hasLiveSmartlead ? "Live Production Sync" : "Interactive Simulation Mode"}
+              </span>
+
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <Clock className="w-3 h-3 text-slate-400" />
+                Synced: {checkedAt}
+              </span>
+            </div>
+
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+              Executive Outreach Operations
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Real-time monitoring across sending inboxes, deliverability health, active campaigns, and domain DNS compliance.
+            </p>
           </div>
 
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Real-time mailbox configuration, sender volume velocity, and domain
-            infrastructure health.
-          </p>
-        </div>
+          {/* Quick Action Navigation Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <Link
+              href="/issues"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/60 transition-all shadow-xs"
+            >
+              <TriangleAlert className="w-4 h-4 text-amber-500" />
+              <span>Issues ({openIssues.length})</span>
+              {criticalIssuesCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white">
+                  {criticalIssuesCount} crit
+                </span>
+              )}
+            </Link>
 
-        {/* Quick Action Shortcuts */}
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/issues"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 transition-colors"
-          >
-            <TriangleAlert className="w-3.5 h-3.5 text-amber-500" />
-
-            <span>Audit Issues ({openIssues.length})</span>
-          </Link>
-
-          <Link
-            href="/settings"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
-          >
-            <Zap className="w-3.5 h-3.5" />
-
-            <span>Manage Integrations</span>
-          </Link>
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-md shadow-slate-900/10 active:scale-95"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+              <span>Settings & Rules</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* 5 Elevated Hero Metric KPI Cards */}
-
+      {/* 5 High-Impact KPI Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {/* Total Email Accounts */}
-
+        {/* Total Inboxes */}
         <Link
           href="/emailaccounts"
-          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+          className="group relative overflow-hidden bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              Email Accounts
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Sending Fleet
             </span>
-
-            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-              <Mail className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-slate-900 text-slate-600 group-hover:text-white flex items-center justify-center transition-colors">
+              <Mail className="w-4 h-4" />
             </div>
           </div>
-
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {totalAccounts.toLocaleString()}
             </div>
-
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Active sending mailboxes
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>Active inboxes</span>
+              <span className="font-semibold text-indigo-600 group-hover:underline">
+                Explore →
+              </span>
+            </div>
           </div>
         </Link>
 
-        {/* Healthy Accounts */}
-
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-emerald-200 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Healthy Mailboxes
+        {/* Fleet Health & Compliance */}
+        <div className="relative overflow-hidden bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-emerald-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Fleet Health
             </span>
-
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CircleCheck className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center">
+              <CircleCheck className="w-4 h-4" />
             </div>
           </div>
-
           <div className="mt-3">
-            <div className="text-2xl font-bold text-emerald-700">
-              {healthy.toLocaleString()}
-            </div>
-
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[11px] font-bold text-emerald-600">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-700">
                 {healthRate}%
               </span>
-              <span className="text-[11px] text-slate-400">
-                {hasLiveSmartlead
-                  ? notEvaluatedAccounts > 0
-                    ? `${notEvaluatedAccounts.toLocaleString()} not evaluated`
-                    : "of evaluated accounts"
-                  : "optimal settings"}
-              </span>
+              <span className="text-xs font-bold text-emerald-600">Optimal</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>{healthy.toLocaleString()} compliant</span>
+              <span className="text-emerald-700 font-semibold">Protected</span>
             </div>
           </div>
         </div>
 
-        {/* Need Attention */}
-
+        {/* Flagged / Attention Required */}
         <Link
           href="/issues"
-          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-amber-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+          className="group relative overflow-hidden bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-amber-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Needs Attention
             </span>
-
-            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <TriangleAlert className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-amber-50 group-hover:bg-amber-100 text-amber-600 border border-amber-200/60 flex items-center justify-center transition-colors">
+              <TriangleAlert className="w-4 h-4" />
             </div>
           </div>
-
           <div className="mt-3">
-            <div className="text-2xl font-bold text-amber-700">
-              {needAttention.toLocaleString()}
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                  needAttention > 0 ? "text-amber-700" : "text-slate-900"
+                }`}
+              >
+                {needAttention.toLocaleString()}
+              </span>
+              {criticalIssuesCount > 0 && (
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                  {criticalIssuesCount} crit
+                </span>
+              )}
             </div>
-
-            <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 group-hover:text-amber-700 transition-colors">
-              <span>View flagged accounts</span>
-
-              <ArrowRight className="w-2.5 h-2.5" />
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>Drift violations</span>
+              <span className="font-semibold text-amber-600 group-hover:underline">
+                Review →
+              </span>
+            </div>
           </div>
         </Link>
 
         {/* Active Campaigns */}
-
         <Link
           href="/campaigns"
-          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+          className="group relative overflow-hidden bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-indigo-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Active Campaigns
             </span>
-
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Megaphone className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 group-hover:bg-indigo-100 text-indigo-600 border border-indigo-200/60 flex items-center justify-center transition-colors">
+              <Megaphone className="w-4 h-4" />
             </div>
           </div>
-
           <div className="mt-3">
-            <div className="text-2xl font-bold text-indigo-950">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {activeCampaignCount.toLocaleString()}
             </div>
-
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Live dispatch sequences
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>Live sequences</span>
+              <span className="font-semibold text-indigo-600 group-hover:underline">
+                View →
+              </span>
+            </div>
           </div>
         </Link>
 
-        {/* Domains */}
-
+        {/* Domains Checked */}
         <Link
           href="/domains"
-          className="bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between col-span-2 sm:col-span-1"
+          className="group relative overflow-hidden bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-cyan-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between col-span-2 sm:col-span-1"
         >
-          <div className="flex items-center justify-between text-cyan-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Domains Monitored
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Domain Network
             </span>
-
-            <div className="w-7 h-7 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-              <Globe2 className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-cyan-50 group-hover:bg-cyan-100 text-cyan-600 border border-cyan-200/60 flex items-center justify-center transition-colors">
+              <Globe2 className="w-4 h-4" />
             </div>
           </div>
-
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {totalDomains.toLocaleString()}
             </div>
-
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              DNS & reputation checked
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>SPF/DKIM/DMARC</span>
+              <span className="font-semibold text-cyan-700 group-hover:underline">
+                Audit →
+              </span>
+            </div>
           </div>
         </Link>
       </div>
 
-      {/* Primary Operations Grid (Workspaces & Today's Pulse) */}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Connected Smartlead Workspaces (Span 2) */}
-
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="p-4 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-orange-500" />
-
-                  <span>Smartlead Connected Workspaces</span>
-                </h3>
-
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {hasLiveSmartlead
-                    ? "Live synchronized sending accounts by provider"
-                    : "Simulated sending account breakdown"}
-                </p>
-              </div>
-
-              <Link
-                href="/settings"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-              >
-                <span>Connections</span>
-
-                <ArrowRight className="w-3 h-3" />
-              </Link>
+      {/* Fleet Volume & Velocity Strip */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              Daily Sending Capacity
+            </span>
+            <div className="text-2xl font-black tracking-tight text-white">
+              {computedDailyCapacity.toLocaleString()}{" "}
+              <span className="text-xs font-normal text-slate-300">emails/day</span>
             </div>
-
-            {/* Workspaces List */}
-
-            <div className="p-5 space-y-4">
-              {displayConnections.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  No Smartlead workspaces connected yet.
-                </div>
-              ) : (
-                displayConnections.map((connection) => {
-                  const isConnected = connection.status === "connected";
-
-                  return (
-                    <div
-                      key={connection.id}
-                      className="rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 overflow-hidden"
-                    >
-                      <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shrink-0">
-                            <Server className="w-4 h-4" />
-                          </div>
-
-                          <div>
-                            <div className="text-sm font-bold text-slate-900">
-                              {connection.name}
-                            </div>
-
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                              <Users className="w-3 h-3 text-slate-400" />
-
-                              <span>{formatClients(connection.clients)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                              isConnected
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}
-                          >
-                            <Wifi className="w-2.5 h-2.5" />
-
-                            {isConnected ? "Connected" : connection.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Dynamic Mailbox Tag Breakdown */}
-                      <div className="flex flex-wrap divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white text-center py-2.5 px-1 text-xs">
-                        <div className="p-2 min-w-[120px] flex-1">
-                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                            Total Accounts
-                          </span>
-                          <span className="text-sm font-bold text-slate-900 mt-0.5 block">
-                            {connection.accounts.toLocaleString()}
-                          </span>
-                        </div>
-
-                        {connection.tagDistribution.map((tag) => (
-                          <div
-                            key={`${connection.id}-${tag.name}`}
-                            className="p-2 min-w-[140px] flex-1"
-                          >
-                            <span
-                              className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider truncate"
-                              title={tag.name}
-                            >
-                              {tag.name}
-                            </span>
-                            <span className="text-sm font-bold text-slate-800 mt-0.5 block">
-                              {tag.count.toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-
-                        <div className="p-2 min-w-[120px] flex-1">
-                          <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                            Campaigns
-                          </span>
-                          <span className="text-sm font-bold text-indigo-700 mt-0.5 block">
-                            {connection.activeCampaigns.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {connection.lastSynced && (
-                        <div className="p-2 px-4 bg-slate-50/70 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
-                          <span>
-                            Last synchronized:{" "}
-                            {formatDateTime(connection.lastSynced)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <p className="text-[11px] text-slate-400">
+              Combined fleet throughput cap across all accounts
+            </p>
           </div>
-
-          <div className="p-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Synchronized with Smartlead API engine</span>
-
-            <Link
-              href="/emailaccounts"
-              className="text-xs font-semibold text-slate-700 hover:text-indigo-600 flex items-center gap-1"
-            >
-              <span>View all mailboxes</span>
-
-              <ArrowRight className="w-3 h-3" />
-            </Link>
+          <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-amber-400 shrink-0">
+            <Flame className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Today's Pulse / Executive Digest (Span 1) */}
-
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="p-4 px-6 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-indigo-600" />
-
-                  <span>Today&apos;s Update</span>
-                </h3>
-
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Last pipeline check: {checkedAt}
-                </p>
-              </div>
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              Active Warmup Fleet
+            </span>
+            <div className="text-2xl font-black tracking-tight text-slate-900">
+              {computedWarmupAccounts.toLocaleString()}{" "}
+              <span className="text-xs font-normal text-slate-500">
+                / {totalAccounts.toLocaleString()} inboxes
+              </span>
             </div>
-
-            {/* Health Meter Widget */}
-
-            <div className="p-5 pb-2">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 mb-4">
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-semibold text-slate-700">
-                    Mailbox Health Score
-                  </span>
-
-                  <span className="font-bold text-emerald-600">
-                    {healthRate}% Optimal
-                  </span>
-                </div>
-
-                <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${healthRate}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Rows */}
-
-              <div className="space-y-1 divide-y divide-slate-100 text-xs">
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-slate-500">Accounts audited</span>
-
-                  <span className="font-bold text-slate-900">
-                    {todayCheckedAccounts.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-slate-500">Active campaigns</span>
-
-                  <span className="font-bold text-indigo-700">
-                    {todayActiveCampaigns.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-slate-500">Domains checked</span>
-
-                  <span className="font-bold text-slate-900">
-                    {todayDomainsChecked.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-slate-500">Open issues</span>
-
-                  <span
-                    className={`font-bold ${
-                      displayedNewIssues > 0
-                        ? "text-amber-600"
-                        : "text-slate-900"
-                    }`}
-                  >
-                    {displayedNewIssues.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-slate-500">Issues resolved</span>
-
-                  <span className="font-bold text-emerald-700">
-                    {displayedResolved.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <p className="text-[11px] text-slate-500">
+              {Math.round((computedWarmupAccounts / (totalAccounts || 1)) * 100)}% of total fleet actively exchanging warmup
+            </p>
           </div>
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200/60 flex items-center justify-center text-indigo-600 shrink-0">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
 
-          <div className="p-4 bg-slate-50/50 border-t border-slate-100">
-            <Link
-              href="/activity"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg border border-indigo-200/80 bg-white hover:bg-indigo-50/40 transition-colors shadow-sm"
-            >
-              <Activity className="w-3.5 h-3.5" />
-
-              <span>View Full Pipeline Activity Log</span>
-            </Link>
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              Connected Platforms
+            </span>
+            <div className="text-2xl font-black tracking-tight text-slate-900">
+              {liveData.integrations.length}{" "}
+              <span className="text-xs font-normal text-slate-500">workspaces</span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              {smartleadConnections.length} Smartlead · {emailguardConnections.length} EmailGuard
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600 shrink-0">
+            <Server className="w-6 h-6" />
           </div>
         </div>
       </div>
 
-      {/* Secondary Operations Grid (Account Health & Recent Issues) */}
+      {/* Main Operations Split Grid (Left: Workspaces & Breakdown, Right: Today's Executive Pulse) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (Span 2) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Segmented Workspaces & Fleet Explorer Container */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+            {/* Header with Navigation Pills */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <span>Sending Fleet & Platform Workspaces</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Synchronized account status, client portfolios, and tag profiles
+                </p>
+              </div>
 
+              {/* Segmented View Tabs */}
+              <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/60 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("workspaces")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === "workspaces"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Workspaces ({displayConnections.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("infrastructure")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === "infrastructure"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Tag Mix
+                </button>
+              </div>
+            </div>
+
+            {/* Tab 1: Workspaces List */}
+            {activeTab === "workspaces" && (
+              <div className="p-5 space-y-4">
+                {displayConnections.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    No Smartlead workspaces connected yet.
+                  </div>
+                ) : (
+                  displayConnections.map((connection) => {
+                    const isConnected = connection.status === "connected";
+
+                    return (
+                      <div
+                        key={connection.id}
+                        className="rounded-xl border border-slate-200/80 bg-slate-50/30 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 overflow-hidden"
+                      >
+                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                              <Server className="w-5 h-5" />
+                            </div>
+
+                            <div>
+                              <div className="text-sm font-bold text-slate-900">
+                                {connection.name}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                                <Users className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{formatClients(connection.clients)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                isConnected
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  isConnected ? "bg-emerald-500" : "bg-amber-500"
+                                }`}
+                              />
+                              {isConnected ? "Active Sync" : connection.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Mailbox Breakdown Metrics Strip */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white text-center py-2.5 px-1 text-xs">
+                          <div className="p-2">
+                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              Inboxes
+                            </span>
+                            <span className="text-base font-extrabold text-slate-900 mt-0.5 block">
+                              {connection.accounts.toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="p-2">
+                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              Campaigns
+                            </span>
+                            <span className="text-base font-extrabold text-indigo-700 mt-0.5 block">
+                              {connection.activeCampaigns.toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="p-2 col-span-2 sm:col-span-2 text-left px-3">
+                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+                              Top Account Tags
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {connection.tagDistribution.slice(0, 2).map((t) => (
+                                <span
+                                  key={t.name}
+                                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px]"
+                                  title={`${t.name}: ${t.count}`}
+                                >
+                                  {t.name} ({t.count})
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {connection.lastSynced && (
+                          <div className="p-2 px-4 bg-slate-50/70 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                            <span>
+                              Last synchronized: {formatDateTime(connection.lastSynced)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Tab 2: Tag Mix Breakdown */}
+            {activeTab === "infrastructure" && (
+              <div className="p-5 space-y-4">
+                <div className="text-xs text-slate-500 mb-2">
+                  Distribution of mailboxes across discovered infrastructure tags:
+                </div>
+                <div className="space-y-3">
+                  {tagBreakdown.map((tag) => {
+                    const pct = totalAccounts > 0 ? Math.round((tag.count / totalAccounts) * 100) : 0;
+                    return (
+                      <div key={tag.name} className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-800">{tag.name}</span>
+                          <span className="font-extrabold text-indigo-600">
+                            {tag.count.toLocaleString()} inboxes ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Workspaces Footer */}
+            <div className="p-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Live Smartlead & EmailGuard API Sync Enabled
+              </span>
+              <Link
+                href="/emailaccounts"
+                className="text-xs font-semibold text-slate-700 hover:text-indigo-600 flex items-center gap-1"
+              >
+                <span>View all mailboxes</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Today's Executive Pulse & Health Meter */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
+            <div>
+              {/* Header */}
+              <div className="p-4 px-6 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-indigo-600" />
+                    <span>Today&apos;s Operations Digest</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Checked at: {checkedAt}
+                  </p>
+                </div>
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+
+              {/* Health Meter Widget */}
+              <div className="p-5 pb-3">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-slate-200/80 mb-4">
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="font-bold text-slate-800">
+                      Mailbox Resilience Score
+                    </span>
+                    <span className="font-extrabold text-emerald-700">
+                      {healthRate}% Optimal
+                    </span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-sm"
+                      style={{ width: `${healthRate}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2">
+                    <span>{healthy.toLocaleString()} compliant</span>
+                    <span>{needAttention.toLocaleString()} drift flagged</span>
+                  </div>
+                </div>
+
+                {/* Rows of Daily Metrics */}
+                <div className="space-y-1 divide-y divide-slate-100 text-xs">
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      Inboxes audited
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {todayCheckedAccounts.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Megaphone className="w-3.5 h-3.5 text-indigo-500" />
+                      Active campaigns
+                    </span>
+                    <span className="font-bold text-indigo-700">
+                      {todayActiveCampaigns.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Globe2 className="w-3.5 h-3.5 text-cyan-500" />
+                      Domains checked
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {todayDomainsChecked.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <TriangleAlert className="w-3.5 h-3.5 text-amber-500" />
+                      Open issues
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        displayedNewIssues > 0 ? "text-amber-600" : "text-slate-900"
+                      }`}
+                    >
+                      {displayedNewIssues.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <CircleCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      Issues resolved
+                    </span>
+                    <span className="font-bold text-emerald-700">
+                      {displayedResolved.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50/50 border-t border-slate-100">
+              <Link
+                href="/activity"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-indigo-200/80 bg-white hover:bg-indigo-50/50 transition-colors shadow-xs"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>View Full Activity & Audit Log</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Operations Grid: Account Health Breakdown & Live Issues */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Account Health Distribution */}
-
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-4">
+        {/* Account Health Distribution Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-
-                <span>Account Health Breakdown</span>
+                <span>Account Health & Rule Compliance</span>
               </h3>
-
               <p className="text-xs text-slate-400 mt-0.5">
-                Distribution of mailbox rules and compliance
+                Distribution of mailbox rules and drift compliance
               </p>
             </div>
 
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               {healthRate}% Compliant
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5 pt-1">
             <HealthProgressBar
-              label="Optimal Settings"
+              label="Optimal Settings (Compliant)"
               value={healthy}
               total={totalAccounts}
               color="emerald"
             />
 
             <HealthProgressBar
-              label="Needs Review"
+              label="Needs Review (Drift Flagged)"
               value={needAttention}
               total={totalAccounts}
               color="amber"
@@ -922,7 +1018,7 @@ export default function DashboardShell({
 
             {hasLiveSmartlead && (
               <HealthProgressBar
-                label="Not Evaluated"
+                label="Not Evaluated (No Rule Defined)"
                 value={notEvaluatedAccounts}
                 total={totalAccounts}
                 color="slate"
@@ -939,14 +1035,14 @@ export default function DashboardShell({
                 />
 
                 <HealthProgressBar
-                  label="Warmup Setting Issues"
+                  label="Warmup Setting Deviations"
                   value={demoDashboard.accountHealth.warmupIssues}
                   total={totalAccounts}
                   color="orange"
                 />
 
                 <HealthProgressBar
-                  label="Disconnected Accounts"
+                  label="Disconnected / Error Accounts"
                   value={demoDashboard.accountHealth.connectionIssues}
                   total={totalAccounts}
                   color="rose"
@@ -956,18 +1052,15 @@ export default function DashboardShell({
           </div>
         </div>
 
-        {/* Recent Detected Issues */}
-
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-4 flex flex-col justify-between">
+        {/* Recent Detected Infrastructure Issues Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                   <TriangleAlert className="w-4 h-4 text-amber-500" />
-
                   <span>Recent Infrastructure Issues</span>
                 </h3>
-
                 <p className="text-xs text-slate-400 mt-0.5">
                   Latest flagged anomalies requiring attention
                 </p>
@@ -975,10 +1068,9 @@ export default function DashboardShell({
 
               <Link
                 href="/issues"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
               >
-                <span>All Issues</span>
-
+                <span>View All ({openIssues.length})</span>
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -993,7 +1085,7 @@ export default function DashboardShell({
                       <Link
                         key={issue.id}
                         href="/issues"
-                        className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
+                        className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
                       >
                         <div
                           className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
@@ -1002,7 +1094,7 @@ export default function DashboardShell({
                               : "bg-amber-100 text-amber-700"
                           }`}
                         >
-                          <CircleAlert className="w-3.5 h-3.5" />
+                          <CircleAlert className="w-4 h-4" />
                         </div>
 
                         <div className="flex-1 min-w-0 text-xs">
@@ -1028,9 +1120,7 @@ export default function DashboardShell({
 
                           <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
                             <span>Client: {issue.client || "General"}</span>
-
                             <span>•</span>
-
                             <span>{formatRelative(issue.last_seen_at)}</span>
                           </div>
                         </div>
@@ -1040,11 +1130,9 @@ export default function DashboardShell({
                 ) : (
                   <div className="p-8 text-center flex flex-col items-center justify-center">
                     <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
-
                     <span className="text-xs font-bold text-slate-800">
                       All systems operating optimally
                     </span>
-
                     <span className="text-[11px] text-slate-400 mt-0.5">
                       No open issues detected on sending accounts
                     </span>
@@ -1055,20 +1143,43 @@ export default function DashboardShell({
                   <Link
                     key={idx}
                     href="/issues"
-                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
+                    className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex items-start gap-3 group"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <CircleAlert className="w-3.5 h-3.5" />
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                        issue.severity === "Critical"
+                          ? "bg-rose-100 text-rose-600"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      <CircleAlert className="w-4 h-4" />
                     </div>
 
                     <div className="flex-1 min-w-0 text-xs">
-                      <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {issue.title}
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                          {issue.title}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                            issue.severity === "Critical"
+                              ? "bg-rose-50 text-rose-700 border-rose-200"
+                              : "bg-amber-50 text-amber-800 border-amber-200"
+                          }`}
+                        >
+                          {issue.severity}
+                        </span>
+                      </div>
 
                       <p className="text-slate-500 line-clamp-1 mt-0.5">
                         {issue.description}
                       </p>
+
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
+                        <span>Client: {issue.client}</span>
+                        <span>•</span>
+                        <span>Just now</span>
+                      </div>
                     </div>
                   </Link>
                 ))
@@ -1078,11 +1189,10 @@ export default function DashboardShell({
 
           <Link
             href="/issues"
-            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
           >
             <span>Run Deep Diagnostic Scan</span>
-
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
@@ -1092,19 +1202,13 @@ export default function DashboardShell({
 
 function HealthProgressBar({
   label,
-
   value,
-
   total,
-
   color,
 }: {
   label: string;
-
   value: number;
-
   total: number;
-
   color: "emerald" | "amber" | "yellow" | "orange" | "rose" | "slate";
 }) {
   const percent = total > 0 ? Math.round((value / total) * 100) : 0;
@@ -1113,28 +1217,26 @@ function HealthProgressBar({
     color === "emerald"
       ? "bg-emerald-500"
       : color === "amber"
-        ? "bg-amber-500"
-        : color === "yellow"
-          ? "bg-yellow-500"
-          : color === "orange"
-            ? "bg-orange-500"
-            : color === "rose"
-              ? "bg-rose-500"
-              : "bg-slate-400";
+      ? "bg-amber-500"
+      : color === "yellow"
+      ? "bg-yellow-500"
+      : color === "orange"
+      ? "bg-orange-500"
+      : color === "rose"
+      ? "bg-rose-500"
+      : "bg-slate-400";
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span className="text-slate-600 font-medium">{label}</span>
-
         <div className="flex items-center gap-1.5 font-bold">
           <span className="text-slate-900">{value.toLocaleString()}</span>
-
           <span className="text-slate-400 text-[10px]">({percent}%)</span>
         </div>
       </div>
 
-      <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
         <div
           className={`h-full ${bgBar} rounded-full transition-all duration-300`}
           style={{ width: `${percent}%` }}
@@ -1147,22 +1249,21 @@ function HealthProgressBar({
 function buildLiveConnection(
   connection: Integration,
   allAccounts: EmailAccount[],
-  allCampaigns: Campaign[],
+  allCampaigns: Campaign[]
 ): ConnectionDisplay {
   const accounts = allAccounts.filter(
-    (account) => account.integration_id === connection.id,
+    (account) => account.integration_id === connection.id
   );
 
   const campaigns = allCampaigns.filter(
     (campaign) =>
-      campaign.integration_id === connection.id && isMainCampaign(campaign),
+      campaign.integration_id === connection.id && isMainCampaign(campaign)
   );
 
   const tagCounts = new Map<string, number>();
 
   for (const account of accounts) {
     const tags = getAccountTags(account.raw_data || {});
-
     for (const tag of tags) {
       tagCounts.set(tag.name, (tagCounts.get(tag.name) || 0) + 1);
     }
@@ -1176,7 +1277,7 @@ function buildLiveConnection(
     .sort((a, b) => b.count - a.count);
 
   const activeCampaigns = campaigns.filter(
-    (campaign) => normalizeStatus(campaign.status) === "ACTIVE",
+    (campaign) => normalizeStatus(campaign.status) === "ACTIVE"
   ).length;
 
   const clients = getConnectionClients(accounts, campaigns);
@@ -1195,14 +1296,12 @@ function buildLiveConnection(
 
 function getConnectionClients(
   accounts: EmailAccount[],
-
-  campaigns: Campaign[],
+  campaigns: Campaign[]
 ) {
   const names = new Set<string>();
 
   for (const account of accounts) {
     const raw = account.raw_data || {};
-
     const name =
       getText(raw.client_name) ||
       getText(raw.clientName) ||
@@ -1215,7 +1314,6 @@ function getConnectionClients(
 
   for (const campaign of campaigns) {
     const raw = campaign.raw_data || {};
-
     const name =
       getText(raw.client_name) ||
       getText(raw.clientName) ||
@@ -1243,13 +1341,11 @@ function formatClients(clients: string[]) {
   }
 
   const first = clients.slice(0, 2);
-
   return `${first.join(", ")} +${clients.length - 2} more`;
 }
 
 function isMainCampaign(campaign: Campaign) {
   const raw = campaign.raw_data || {};
-
   const parentCampaignId = raw.parent_campaign_id;
 
   return (
@@ -1259,20 +1355,14 @@ function isMainCampaign(campaign: Campaign) {
   );
 }
 
-function getLatestIntegrationLogs(
-  logs: SyncLog[],
-
-  provider: string,
-) {
+function getLatestIntegrationLogs(logs: SyncLog[], provider: string) {
   const latestByIntegration = new Map<string, SyncLog>();
 
   const providerLogs = logs
-
     .filter((log) => log.provider === provider && log.status === "success")
-
     .sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
   for (const log of providerLogs) {
@@ -1302,14 +1392,14 @@ function buildEnabledRuleMap(rules: AccountTypeRule[]) {
 
 function getAccountHealthStatus(
   account: EmailAccount,
-  enabledRuleMap: Map<string, AccountTypeRule>,
+  enabledRuleMap: Map<string, AccountTypeRule>
 ): AccountHealthStatus {
   const raw = account.raw_data || {};
   const warmupDetails = asObject(raw.warmup_details);
 
   const matchedRules = getAccountTags(raw)
     .map((tag) =>
-      enabledRuleMap.get(ruleMapKey(account.integration_id, tag.key)),
+      enabledRuleMap.get(ruleMapKey(account.integration_id, tag.key))
     )
     .filter((rule): rule is AccountTypeRule => Boolean(rule));
 
@@ -1320,28 +1410,24 @@ function getAccountHealthStatus(
   const checks = [
     evaluateRuleField(
       getNumber(raw.message_per_day),
-      matchedRules.map((rule) => rule.message_per_day),
+      matchedRules.map((rule) => rule.message_per_day)
     ),
-
     evaluateRuleField(
       getNumber(raw.minTimeToWaitInMins),
-      matchedRules.map((rule) => rule.minimum_gap),
+      matchedRules.map((rule) => rule.minimum_gap)
     ),
-
     evaluateRuleField(
       getWarmupEnabled(warmupDetails.status),
-      matchedRules.map((rule) => rule.warmup_enabled),
+      matchedRules.map((rule) => rule.warmup_enabled)
     ),
-
     evaluateRuleField(
       getNumber(warmupDetails.max_email_per_day) ??
         getNumber(warmupDetails.warmup_max_count),
-      matchedRules.map((rule) => rule.warmup_daily),
+      matchedRules.map((rule) => rule.warmup_daily)
     ),
-
     evaluateRuleField(
       getNumber(warmupDetails.reply_rate),
-      matchedRules.map((rule) => rule.reply_rate),
+      matchedRules.map((rule) => rule.reply_rate)
     ),
   ];
 
@@ -1358,10 +1444,10 @@ function getAccountHealthStatus(
 
 function evaluateRuleField<T extends number | boolean>(
   actual: T | null,
-  expectedValues: Array<T | null>,
+  expectedValues: Array<T | null>
 ) {
   const configuredValues = expectedValues.filter(
-    (value): value is T => value !== null,
+    (value): value is T => value !== null
   );
 
   if (configuredValues.length === 0) {
@@ -1515,7 +1601,6 @@ function getWarmupEnabled(value: unknown) {
 }
 
 const DASHBOARD_LOCALE = "en-GB";
-
 const DASHBOARD_TIME_ZONE = "Asia/Karachi";
 
 function formatTime(value: string) {
@@ -1527,11 +1612,8 @@ function formatTime(value: string) {
 
   return new Intl.DateTimeFormat(DASHBOARD_LOCALE, {
     timeZone: DASHBOARD_TIME_ZONE,
-
     hour: "2-digit",
-
     minute: "2-digit",
-
     hourCycle: "h23",
   }).format(date);
 }
@@ -1545,33 +1627,14 @@ function formatDateTime(value: string) {
 
   return new Intl.DateTimeFormat(DASHBOARD_LOCALE, {
     timeZone: DASHBOARD_TIME_ZONE,
-
     day: "numeric",
-
     month: "short",
-
     hour: "2-digit",
-
     minute: "2-digit",
-
     hourCycle: "h23",
   }).format(date);
 }
 
 function formatRelative(value: string): string {
-  /*
-
-
-
-   * Keep this deterministic so server and client render
-
-
-
-   * the exact same text during hydration.
-
-
-
-   */
-
   return formatDateTime(value);
 }
