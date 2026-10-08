@@ -80,12 +80,9 @@ async function fetchAccountsPage(
       .from(
         "email_accounts"
       )
-      .select(`
-        id,
-        account_type,
-        raw_data,
-        integration_id
-      `)
+      .select(
+        "id,account_type,raw_data,integration_id"
+      )
       .eq(
         "user_id",
         userId
@@ -128,13 +125,9 @@ async function fetchCampaignsPage(
       .from(
         "campaigns"
       )
-      .select(`
-        id,
-        name,
-        status,
-        raw_data,
-        integration_id
-      `)
+      .select(
+        "id,name,status,raw_data,integration_id"
+      )
       .eq(
         "user_id",
         userId
@@ -177,11 +170,9 @@ async function fetchDomainsPage(
       .from(
         "domains"
       )
-      .select(`
-        id,
-        integration_id,
-        overall_status
-      `)
+      .select(
+        "id,integration_id,overall_status"
+      )
       .eq(
         "user_id",
         userId
@@ -224,18 +215,9 @@ async function fetchIssuesPage(
       .from(
         "issues"
       )
-      .select(`
-        id,
-        source,
-        client,
-        issue_type,
-        item,
-        severity,
-        status,
-        first_seen_at,
-        last_seen_at,
-        resolved_at
-      `)
+      .select(
+        "id,source,client,issue_type,item,severity,status,first_seen_at,last_seen_at,resolved_at"
+      )
       .eq(
         "user_id",
         userId
@@ -243,8 +225,7 @@ async function fetchIssuesPage(
       .order(
         "last_seen_at",
         {
-          ascending:
-            false,
+          ascending: false,
         }
       )
       .range(
@@ -278,59 +259,30 @@ export default async function DashboardPage() {
     return null;
   }
 
-  const {
-    data:
-      integrations,
-    error:
-      integrationsError,
-  } =
-    await supabase
+  const [
+    integrationsResult,
+    syncLogsResult,
+    accountRulesResult,
+  ] = await Promise.all([
+    supabase
       .from(
         "integrations"
       )
-      .select(`
-        id,
-        name,
-        provider,
-        status,
-        last_synced_at
-      `)
+      .select(
+        "id,name,provider,status,last_synced_at"
+      )
       .eq(
         "user_id",
         user.id
-      );
+      ),
 
-  if (
-    integrationsError
-  ) {
-    console.error(
-      "Dashboard integrations error:",
-      integrationsError
-    );
-  }
-
-  const {
-    data:
-      syncLogs,
-    error:
-      syncLogsError,
-  } =
-    await supabase
+    supabase
       .from(
         "sync_logs"
       )
-      .select(`
-        id,
-        integration_id,
-        provider,
-        accounts_fetched,
-        campaigns_fetched,
-        active_campaigns,
-        domains_fetched,
-        status,
-        message,
-        created_at
-      `)
+      .select(
+        "id,integration_id,provider,accounts_fetched,campaigns_fetched,active_campaigns,domains_fetched,status,message,created_at"
+      )
       .eq(
         "user_id",
         user.id
@@ -338,18 +290,54 @@ export default async function DashboardPage() {
       .order(
         "created_at",
         {
-          ascending:
-            false,
+          ascending: false,
         }
       )
-      .limit(100);
+      .limit(100),
+
+    supabase
+      .from(
+        "account_type_rules"
+      )
+      .select(
+        "id,integration_id,tag_key,tag_name,is_enabled,message_per_day,minimum_gap,warmup_enabled,warmup_daily,reply_rate"
+      )
+      .eq(
+        "user_id",
+        user.id
+      )
+      .order(
+        "tag_name",
+        {
+          ascending: true,
+        }
+      ),
+  ]);
 
   if (
-    syncLogsError
+    integrationsResult.error
+  ) {
+    console.error(
+      "Dashboard integrations error:",
+      integrationsResult.error
+    );
+  }
+
+  if (
+    syncLogsResult.error
   ) {
     console.error(
       "Dashboard sync logs error:",
-      syncLogsError
+      syncLogsResult.error
+    );
+  }
+
+  if (
+    accountRulesResult.error
+  ) {
+    console.error(
+      "Dashboard account rules error:",
+      accountRulesResult.error
     );
   }
 
@@ -440,7 +428,7 @@ export default async function DashboardPage() {
     <DashboardShell
       liveData={{
         integrations:
-          integrations || [],
+          integrationsResult.data || [],
 
         emailAccounts,
 
@@ -449,9 +437,12 @@ export default async function DashboardPage() {
         domains,
 
         syncLogs:
-          syncLogs || [],
+          syncLogsResult.data || [],
 
         issues,
+
+        accountRules:
+          accountRulesResult.data || [],
       }}
     />
   );
