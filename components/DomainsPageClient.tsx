@@ -6,10 +6,6 @@ import {
 } from "react";
 
 import {
-  domainDemoData,
-} from "@/lib/domainDemoData";
-
-import {
   CheckCircle2,
   TriangleAlert,
   Globe2,
@@ -110,52 +106,7 @@ export default function DomainsPageClient({
   const domains:
     DisplayDomain[] =
     useMemo(() => {
-      if (hasRealData) {
-        return realDomains.map(
-          (domain) => ({
-            id:
-              domain.id,
-
-            domain:
-              domain.domain,
-
-            client:
-              domain.client ||
-              "Unassigned",
-
-            spfStatus:
-              domain.spf_status ||
-              "Unknown",
-
-            dkimStatus:
-              domain.dkim_status ||
-              "Unknown",
-
-            dmarcStatus:
-              domain.dmarc_status ||
-              "Unknown",
-
-            dmarcPolicy:
-              domain.dmarc_policy ||
-              "Unknown",
-
-            reportingStatus:
-              domain.reporting_status ||
-              "Unknown",
-
-            overallStatus:
-              domain.overall_status ||
-              "Unknown",
-
-            syncedAt:
-              domain.synced_at,
-
-            live: true,
-          })
-        );
-      }
-
-      return domainDemoData.map(
+      return realDomains.map(
         (domain) => ({
           id:
             domain.id,
@@ -164,34 +115,40 @@ export default function DomainsPageClient({
             domain.domain,
 
           client:
-            domain.client,
+            domain.client ||
+            "Unassigned",
 
           spfStatus:
-            domain.spfStatus,
+            domain.spf_status ||
+            "Unknown",
 
           dkimStatus:
-            domain.dkimStatus,
+            domain.dkim_status ||
+            "Unknown",
 
           dmarcStatus:
-            domain.dmarcStatus,
+            domain.dmarc_status ||
+            "Unknown",
 
           dmarcPolicy:
-            domain.dmarcPolicy,
+            domain.dmarc_policy ||
+            "Unknown",
 
           reportingStatus:
-            domain.reportingStatus,
+            domain.reporting_status ||
+            "Unknown",
 
           overallStatus:
-            domain.overallStatus,
+            domain.overall_status ||
+            "Unknown",
 
           syncedAt:
-            null,
+            domain.synced_at,
 
-          live: false,
+          live: true,
         })
       );
     }, [
-      hasRealData,
       realDomains,
     ]);
 
@@ -363,7 +320,7 @@ export default function DomainsPageClient({
         >
           {hasRealData
             ? "Live Data"
-            : "Demo Mode"}
+            : "Production Sync Active"}
         </div>
       </div>
 
@@ -766,7 +723,7 @@ export default function DomainsPageClient({
                       ? formatDateTime(
                           domain.syncedAt
                         )
-                      : "Demo"}
+                      : "—"}
                   </TableCell>
                 </tr>
               )

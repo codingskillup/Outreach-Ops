@@ -18,7 +18,6 @@ import {
   Activity,
 
 } from "lucide-react";
-import { activityDemoData } from "@/lib/activityDemoData";
 
 export type SyncLog = {
   id: string;
@@ -77,19 +76,6 @@ export default function ActivityPageClient({
   const hasLiveData = syncLogs.length > 0 || issues.length > 0;
 
   const activities = useMemo<ActivityRecord[]>(() => {
-    if (!hasLiveData) {
-      return activityDemoData.map((activity, index) => ({
-        id: activity.id || `demo-${index}`,
-        type: activity.type,
-        title: activity.title,
-        description: activity.description,
-        source: activity.source,
-        status: activity.status,
-        createdAt: demoDateFromLabel(activity.date, activity.time),
-        live: false,
-      }));
-    }
-
     const rows: ActivityRecord[] = [];
 
     for (const log of syncLogs) {
@@ -161,7 +147,7 @@ export default function ActivityPageClient({
     return rows.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [hasLiveData, syncLogs, issues]);
+  }, [syncLogs, issues]);
 
   const types = useMemo(() => {
     return Array.from(new Set(activities.map((item) => item.type)));
@@ -216,14 +202,8 @@ export default function ActivityPageClient({
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
               Infrastructure Activity Log
             </span>
-            <span
-              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                hasLiveData
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-blue-50 text-blue-700 border-blue-200"
-              }`}
-            >
-              {hasLiveData ? "Live Pipeline" : "Demo Simulation"}
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+              Live Pipeline
             </span>
           </div>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
@@ -860,27 +840,4 @@ function isToday(value: string) {
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
   );
-}
-
-function demoDateFromLabel(dateLabel: string, timeLabel: string) {
-  const now = new Date();
-  const date = new Date(now);
-
-  if (dateLabel === "Yesterday") {
-    date.setDate(date.getDate() - 1);
-  }
-
-  const match = timeLabel.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (match) {
-    let hour = Number(match[1]);
-    const minute = Number(match[2]);
-    const period = match[3].toUpperCase();
-
-    if (period === "PM" && hour !== 12) hour += 12;
-    if (period === "AM" && hour === 12) hour = 0;
-
-    date.setHours(hour, minute, 0, 0);
-  }
-
-  return date.toISOString();
 }

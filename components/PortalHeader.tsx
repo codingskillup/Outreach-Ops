@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   RefreshCw,
   TriangleAlert,
-  FlaskConical,
   Clock,
   ChevronRight,
   Bell,
@@ -18,7 +17,6 @@ import {
 
 type SystemStatus =
   | "loading"
-  | "demo"
   | "operational"
   | "warning"
   | "critical";
@@ -264,13 +262,7 @@ function getStatusUI(status: SystemStatus, openIssues: number) {
     };
   }
 
-  if (status === "demo") {
-    return {
-      label: "Demo Simulation",
-      badgeClasses: "bg-blue-50 text-blue-700 border-blue-200/80",
-      icon: <FlaskConical className="w-3.5 h-3.5 text-blue-600" />,
-    };
-  }
+
 
   if (status === "operational") {
     return {

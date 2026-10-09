@@ -76,15 +76,12 @@ export async function GET() {
       ).length;
 
     let status:
-      | "demo"
       | "operational"
       | "warning"
       | "critical" =
       "operational";
 
-    if (!hasLiveData) {
-      status = "demo";
-    } else if (critical > 0) {
+    if (critical > 0) {
       status = "critical";
     } else if (warnings > 0) {
       status = "warning";

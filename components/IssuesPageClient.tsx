@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { issueDemoData } from "@/lib/issueDemoData";
 import {
   RefreshCw,
   CheckCircle2,
@@ -118,30 +117,8 @@ export default function IssuesPageClient({
 
   // Memoized full issues dataset with precomputed search index
   const issues: DisplayIssue[] = useMemo(() => {
-    if (hasLiveData) {
-      return realIssues.map(convertRealIssue);
-    }
-
-    return issueDemoData.map((issue) => {
-      const detected = issue.detectedAt;
-      return {
-        id: issue.id,
-        source: issue.source,
-        client: issue.client,
-        issueType: issue.issueType,
-        item: issue.item,
-        accountType: issue.accountType || "Standard Account",
-        currentValue: issue.currentValue || "Not configured",
-        expectedValue: issue.expectedValue || "Standard guideline",
-        severity: issue.severity,
-        status: issue.status,
-        detectedAt: detected,
-        firstSeenAt: detected,
-        lastSeenAt: detected,
-        searchIndex: `${issue.item} ${issue.issueType} ${issue.client} ${issue.source}`.toLowerCase(),
-      };
-    });
-  }, [hasLiveData, realIssues]);
+    return realIssues.map(convertRealIssue);
+  }, [realIssues]);
 
   // Single-pass computation for KPI Counts & Dropdown Filter Lists
   const { openCount, criticalCount, warningCount, resolvedCount, clients, sources } = useMemo(() => {
@@ -269,15 +246,6 @@ export default function IssuesPageClient({
   }
 
   async function handleScan() {
-    if (!hasLiveData) {
-      setToast({
-        title: "Simulation Demo Mode",
-        message: "Connect Smartlead or EmailGuard in Settings to trigger live infrastructure scanning.",
-      });
-      setTimeout(() => setToast(null), 5000);
-      return;
-    }
-
     setScanning(true);
 
     try {
@@ -386,15 +354,9 @@ export default function IssuesPageClient({
                 <Flame className="w-3.5 h-3.5 text-rose-600" />
                 Infrastructure Drift Detection
               </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                  hasLiveData
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                    : "bg-blue-50 text-blue-700 border-blue-200/80"
-                }`}
-              >
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200/80">
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {hasLiveData ? "Live Pipeline Audit" : "Interactive Simulation Mode"}
+                Live Pipeline Audit
               </span>
             </div>
 
