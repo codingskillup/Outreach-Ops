@@ -296,15 +296,15 @@ export default function AccountRulesSettingsClient({
             <div className="space-y-1 max-w-2xl">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                  Smartlead Account Rules & Drift Policy
+                  Mailbox Safety Rules & Sending Limits
                 </h2>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  Continuous Enforcement
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Domain Protection
                 </span>
               </div>
 
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                Tags are discovered automatically from your connected Smartlead workspaces. Define target sending velocity and warmup limits. If an inbox drifts from these parameters, the diagnostic scanner flags an issue.
+                Set safe daily sending caps (e.g., 30 emails/day) and warmup targets for your Smartlead mailboxes. If any inbox violates these rules, the system flags an issue immediately so your domain reputation remains safe.
               </p>
             </div>
           </div>

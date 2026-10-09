@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { clientDemoData } from "@/lib/clientDemoData";
 
 import {
   Plus,
@@ -22,6 +22,11 @@ import {
   Building2,
   Sparkles,
   Info,
+  Copy,
+  ArrowUpDown,
+  SlidersHorizontal,
+  ExternalLink,
+  Tag,
 } from "lucide-react";
 
 export type Priority = "Normal" | "Important" | "Follow Up";
@@ -45,12 +50,48 @@ type ToastNotification = {
   message: string;
 };
 
+type SortMode =
+  | "pinnedFirst"
+  | "dueDate"
+  | "updatedNewest"
+  | "createdNewest"
+  | "titleAsc"
+  | "priorityDesc";
+
+function createClientId(value: string) {
+  const id = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return id || "unassigned";
+}
+
+function getTodayDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getOffsetDate(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function NotesPageClient({
   userId,
   initialNotes,
+  availableClients = [],
 }: {
   userId: string;
   initialNotes: Note[];
+  availableClients?: string[];
 }) {
   const supabase = createClient();
 
@@ -59,6 +100,7 @@ export default function NotesPageClient({
   const [clientFilter, setClientFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [activeKpiFilter, setActiveKpiFilter] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("pinnedFirst");
 
   const [showModal, setShowModal] = useState(false);
   const [viewNote, setViewNote] = useState<Note | null>(null);
@@ -78,6 +120,9 @@ export default function NotesPageClient({
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Copy feedback state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   // In-app Toast state
   const [toast, setToast] = useState<ToastNotification | null>(null);
 
@@ -88,16 +133,25 @@ export default function NotesPageClient({
     }, 4500);
   }
 
-  const clients = clientDemoData.map((item) => item.name);
+  // Combine available clients with any client from existing notes
+  const clients = useMemo(() => {
+    const set = new Set<string>(availableClients);
+    for (const n of notes) {
+      if (n.client && n.client.trim()) {
+        set.add(n.client.trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [availableClients, notes]);
 
-  const pinnedCount = notes.filter((note) => note.is_pinned).length;
-  const importantCount = notes.filter((note) => note.priority === "Important").length;
-  const followUpCount = notes.filter((note) => note.priority === "Follow Up").length;
-  const overdueCount = notes.filter((note) => {
-    if (!note.due_date) return false;
-    return note.due_date < getTodayDate();
-  }).length;
+  const today = getTodayDate();
+  const pinnedCount = useMemo(() => notes.filter((n) => n.is_pinned).length, [notes]);
+  const importantCount = useMemo(() => notes.filter((n) => n.priority === "Important").length, [notes]);
+  const followUpCount = useMemo(() => notes.filter((n) => n.priority === "Follow Up").length, [notes]);
+  const overdueCount = useMemo(() => notes.filter((n) => n.due_date && n.due_date < today).length, [notes, today]);
+  const dueTodayCount = useMemo(() => notes.filter((n) => n.due_date && n.due_date === today).length, [notes, today]);
 
+  // Filter and sort notes
   const filteredNotes = useMemo(() => {
     const value = search.trim().toLowerCase();
 
@@ -108,14 +162,14 @@ export default function NotesPageClient({
         if (activeKpiFilter === "important" && note.priority !== "Important") return false;
         if (activeKpiFilter === "followup" && note.priority !== "Follow Up") return false;
         if (activeKpiFilter === "overdue") {
-          if (!note.due_date || note.due_date >= getTodayDate()) return false;
+          if (!note.due_date || note.due_date >= today) return false;
         }
 
         const matchesSearch =
           !value ||
           note.title.toLowerCase().includes(value) ||
           note.content.toLowerCase().includes(value) ||
-          note.client?.toLowerCase().includes(value);
+          (note.client && note.client.toLowerCase().includes(value));
 
         const matchesClient = clientFilter === "all" || note.client === clientFilter;
         const matchesPriority =
@@ -124,17 +178,41 @@ export default function NotesPageClient({
         return matchesSearch && matchesClient && matchesPriority;
       })
       .sort((a, b) => {
-        if (a.is_pinned !== b.is_pinned) {
-          return Number(b.is_pinned) - Number(a.is_pinned);
-        }
+        switch (sortMode) {
+          case "pinnedFirst":
+            if (a.is_pinned !== b.is_pinned) {
+              return Number(b.is_pinned) - Number(a.is_pinned);
+            }
+            if (a.due_date && b.due_date) {
+              return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+            }
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
 
-        if (a.due_date && b.due_date) {
-          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-        }
+          case "dueDate":
+            if (!a.due_date && !b.due_date) return 0;
+            if (!a.due_date) return 1;
+            if (!b.due_date) return -1;
+            return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
 
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+          case "updatedNewest":
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+
+          case "createdNewest":
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+          case "titleAsc":
+            return a.title.localeCompare(b.title);
+
+          case "priorityDesc": {
+            const rank = (p: Priority) => (p === "Important" ? 3 : p === "Follow Up" ? 2 : 1);
+            return rank(b.priority) - rank(a.priority);
+          }
+
+          default:
+            return 0;
+        }
       });
-  }, [notes, search, clientFilter, priorityFilter, activeKpiFilter]);
+  }, [notes, search, clientFilter, priorityFilter, activeKpiFilter, sortMode, today]);
 
   function resetForm() {
     setEditingId(null);
@@ -170,6 +248,14 @@ export default function NotesPageClient({
     setShowModal(false);
     resetForm();
   }
+
+  const handleCopyContent = (note: Note) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
+      setCopiedId(note.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
 
   async function handleSave() {
     if (!title.trim()) {
@@ -351,18 +437,31 @@ export default function NotesPageClient({
     setActiveKpiFilter((curr) => (curr === filterName ? null : filterName));
   }
 
+  const isFilterActive =
+    search !== "" ||
+    clientFilter !== "all" ||
+    priorityFilter !== "all" ||
+    activeKpiFilter !== null;
+
+  const clearFilters = () => {
+    setSearch("");
+    setClientFilter("all");
+    setPriorityFilter("all");
+    setActiveKpiFilter(null);
+  };
+
   return (
-    <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
+    <div className="w-full max-w-[1440px] mx-auto pb-16 space-y-6 text-slate-900">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
-            className={`p-4 rounded-xl shadow-xl border backdrop-blur-md flex items-start gap-3 ${
+            className={`p-4 rounded-xl shadow-2xl border backdrop-blur-md flex items-start gap-3 ${
               toast.type === "success"
-                ? "bg-emerald-950/90 text-emerald-100 border-emerald-700/60"
+                ? "bg-slate-900/95 text-white border-emerald-500/50"
                 : toast.type === "error"
-                ? "bg-rose-950/90 text-rose-100 border-rose-700/60"
-                : "bg-slate-900/90 text-slate-100 border-slate-700/60"
+                ? "bg-slate-900/95 text-white border-rose-500/50"
+                : "bg-slate-900/95 text-white border-slate-700/60"
             }`}
           >
             {toast.type === "success" && (
@@ -389,47 +488,62 @@ export default function NotesPageClient({
         </div>
       )}
 
-      {/* Top Action Bar (Header with prominent Add Note button) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+      {/* Top Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-              Workspace Workspace & Client Memo
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Notes & Operational Memos
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              Workspace Memos
             </span>
           </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Organize action items, account follow-ups, and client commitments in one centralized place.
+          <p className="mt-1 text-sm text-slate-500">
+            Track client action items, deliverability reminders, inbox warmup deadlines, and operational memos.
           </p>
         </div>
 
-        {/* HIGH-VISIBILITY ADD NOTE BUTTON */}
-        <button
-          type="button"
-          onClick={openNewNote}
-          className="inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-md shadow-slate-900/10 hover:shadow-lg transition-all duration-150 shrink-0"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Add New Note</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          {isFilterActive && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear Filters
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={openNewNote}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Add New Note</span>
+          </button>
+        </div>
       </div>
 
-      {/* Interactive KPI Summary Cards */}
+      {/* KPI Cards Filter Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div
           onClick={() => setActiveKpiFilter(null)}
-          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+          className={`cursor-pointer bg-white rounded-xl p-4 border transition-all duration-150 shadow-2xs hover:shadow-xs ${
             activeKpiFilter === null
-              ? "border-slate-800 ring-2 ring-slate-800/10 shadow-sm"
+              ? "border-slate-800 ring-2 ring-slate-800/10"
               : "border-slate-200/90 hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              Total Notes
-            </span>
-            <StickyNote className="w-4 h-4 text-slate-600" />
+            <span className="text-xs font-medium text-slate-500">Total Notes</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+              <StickyNote className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+          <div className="text-2xl font-bold text-slate-900 mt-2">
             {notes.length}
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">All active memos</p>
@@ -437,39 +551,39 @@ export default function NotesPageClient({
 
         <div
           onClick={() => toggleKpiFilter("pinned")}
-          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+          className={`cursor-pointer bg-white rounded-xl p-4 border transition-all duration-150 shadow-2xs hover:shadow-xs ${
             activeKpiFilter === "pinned"
-              ? "border-amber-500 ring-2 ring-amber-500/20 shadow-sm"
+              ? "border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20"
               : "border-slate-200/90 hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Pinned
-            </span>
-            <Pin className="w-4 h-4 fill-amber-500 text-amber-500" />
+            <span className="text-xs font-medium text-slate-500">Pinned</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <Pin className="w-4 h-4 fill-amber-500" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+          <div className="text-2xl font-bold text-slate-900 mt-2">
             {pinnedCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Kept at top</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Stickied to top</p>
         </div>
 
         <div
           onClick={() => toggleKpiFilter("important")}
-          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+          className={`cursor-pointer bg-white rounded-xl p-4 border transition-all duration-150 shadow-2xs hover:shadow-xs ${
             activeKpiFilter === "important"
-              ? "border-rose-500 ring-2 ring-rose-500/20 shadow-sm"
+              ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
               : "border-slate-200/90 hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-rose-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Important
-            </span>
-            <Flame className="w-4 h-4 text-rose-500" />
+            <span className="text-xs font-medium text-slate-500">Important</span>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+              <Flame className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+          <div className="text-2xl font-bold text-rose-600 mt-2">
             {importantCount}
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">High priority</p>
@@ -477,19 +591,19 @@ export default function NotesPageClient({
 
         <div
           onClick={() => toggleKpiFilter("followup")}
-          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md ${
+          className={`cursor-pointer bg-white rounded-xl p-4 border transition-all duration-150 shadow-2xs hover:shadow-xs ${
             activeKpiFilter === "followup"
-              ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm"
+              ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20"
               : "border-slate-200/90 hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-indigo-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Follow Up
-            </span>
-            <Clock className="w-4 h-4 text-indigo-500" />
+            <span className="text-xs font-medium text-slate-500">Follow Up</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+          <div className="text-2xl font-bold text-slate-900 mt-2">
             {followUpCount}
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">Pending action</p>
@@ -497,19 +611,21 @@ export default function NotesPageClient({
 
         <div
           onClick={() => toggleKpiFilter("overdue")}
-          className={`cursor-pointer bg-white rounded-2xl p-4 border transition-all duration-200 hover:shadow-md col-span-2 sm:col-span-1 ${
+          className={`cursor-pointer bg-white rounded-xl p-4 border transition-all duration-150 shadow-2xs hover:shadow-xs col-span-2 sm:col-span-1 ${
             activeKpiFilter === "overdue"
-              ? "border-red-500 ring-2 ring-red-500/20 shadow-sm"
+              ? "border-red-500 ring-2 ring-red-500/20 bg-red-50/20"
               : "border-slate-200/90 hover:border-slate-300"
           }`}
         >
           <div className="flex items-center justify-between text-red-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Overdue
-            </span>
-            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <span className="text-xs font-medium text-slate-500">Overdue</span>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+              overdueCount > 0 ? "bg-red-100 text-red-700 animate-pulse" : "bg-slate-100 text-slate-400"
+            }`}>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-red-600 mt-1.5">
+          <div className="text-2xl font-bold text-red-600 mt-2">
             {overdueCount}
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">Past due date</p>
@@ -517,81 +633,97 @@ export default function NotesPageClient({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-sm flex flex-col md:flex-row md:items-center gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes by title, description, or client..."
-            className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+      <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5">
+          {/* Search Box */}
+          <div className="relative lg:col-span-5">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search notes by title, content, or client..."
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-        {/* Client Filter Dropdown */}
-        <div className="flex items-center gap-2">
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
-          >
-            <option value="all">All Clients</option>
-            {clients.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          {/* Client Filter Dropdown */}
+          <div className="lg:col-span-3">
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition font-medium"
+            >
+              <option value="all">All Clients ({clients.length})</option>
+              {clients.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Priority Filter Dropdown */}
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
-          >
-            <option value="all">All Priorities</option>
-            <option value="Normal">Normal</option>
-            <option value="Important">Important</option>
-            <option value="Follow Up">Follow Up</option>
-          </select>
-
-          {/* Clear Filters Button if any active */}
-          {(search ||
-            clientFilter !== "all" ||
-            priorityFilter !== "all" ||
-            activeKpiFilter !== null) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setClientFilter("all");
-                setPriorityFilter("all");
-                setActiveKpiFilter(null);
-              }}
-              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors whitespace-nowrap"
+          <div className="lg:col-span-2">
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition font-medium"
             >
-              Clear Filters
-            </button>
+              <option value="all">All Priorities</option>
+              <option value="Important">Important</option>
+              <option value="Follow Up">Follow Up</option>
+              <option value="Normal">Normal</option>
+            </select>
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="lg:col-span-2">
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition font-medium"
+            >
+              <option value="pinnedFirst">Sort: Pinned & Due</option>
+              <option value="dueDate">Sort: Due Date</option>
+              <option value="updatedNewest">Sort: Updated</option>
+              <option value="createdNewest">Sort: Created</option>
+              <option value="priorityDesc">Sort: Priority</option>
+              <option value="titleAsc">Sort: Title (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Quick status count footer */}
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+          <div>
+            Showing <span className="font-semibold text-slate-900">{filteredNotes.length}</span> of{" "}
+            <span className="font-semibold text-slate-900">{notes.length}</span> notes
+            {isFilterActive && " (filtered)"}
+          </div>
+
+          {dueTodayCount > 0 && (
+            <div className="flex items-center gap-1.5 text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>{dueTodayCount} due today</span>
+            </div>
           )}
         </div>
       </div>
 
       {/* Notes Grid or Empty State */}
       {filteredNotes.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center flex flex-col items-center justify-center shadow-sm">
+        <div className="bg-white rounded-xl border border-slate-200/90 p-12 text-center flex flex-col items-center justify-center shadow-2xs">
           <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
-            <StickyNote className="w-8 h-8 text-slate-300" />
+            <StickyNote className="w-8 h-8 text-slate-400" />
           </div>
           <h3 className="text-sm font-bold text-slate-900">
             {notes.length === 0 ? "No notes added yet" : "No matching notes found"}
@@ -601,29 +733,38 @@ export default function NotesPageClient({
               ? "Create your first memo to track client deliverables, inbox warmup reminders, and urgent action items."
               : "Try adjusting your search keywords or filter criteria to view more notes."}
           </p>
-          <button
-            type="button"
-            onClick={openNewNote}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create First Note</span>
-          </button>
+          {isFilterActive ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear Filters</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={openNewNote}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Create First Note</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredNotes.map((note) => {
-            const isOverdue =
-              note.due_date && note.due_date < getTodayDate();
-            const isDueToday =
-              note.due_date && note.due_date === getTodayDate();
+            const isOverdue = note.due_date && note.due_date < today;
+            const isDueToday = note.due_date && note.due_date === today;
 
             return (
               <div
                 key={note.id}
-                className={`group bg-white rounded-2xl border transition-all duration-200 hover:shadow-md flex flex-col justify-between overflow-hidden ${
+                className={`group bg-white rounded-xl border transition-all duration-150 hover:shadow-sm flex flex-col justify-between overflow-hidden relative ${
                   note.is_pinned
-                    ? "border-amber-300/80 bg-gradient-to-b from-amber-50/20 to-white"
+                    ? "border-amber-300 bg-gradient-to-b from-amber-50/20 to-white"
                     : "border-slate-200/90 hover:border-slate-300"
                 }`}
               >
@@ -632,13 +773,18 @@ export default function NotesPageClient({
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <PriorityBadge priority={note.priority} />
+
                       {note.client && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        <Link
+                          href={`/clients/${createClientId(note.client)}`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200/80 transition-colors"
+                          title={`View client ${note.client}`}
+                        >
                           <Building2 className="w-2.5 h-2.5 text-slate-500" />
                           <span className="truncate max-w-[120px]">
                             {note.client}
                           </span>
-                        </span>
+                        </Link>
                       )}
                     </div>
 
@@ -647,7 +793,7 @@ export default function NotesPageClient({
                       type="button"
                       onClick={() => handleTogglePin(note)}
                       title={note.is_pinned ? "Unpin note" : "Pin note to top"}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                         note.is_pinned
                           ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
                           : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
@@ -665,11 +811,12 @@ export default function NotesPageClient({
                   <h3
                     onClick={() => setViewNote(note)}
                     className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer line-clamp-1"
+                    title={note.title}
                   >
                     {note.title}
                   </h3>
 
-                  {/* Note Description preview */}
+                  {/* Note Content preview */}
                   <p
                     onClick={() => setViewNote(note)}
                     className="text-xs text-slate-600 mt-2 line-clamp-3 leading-relaxed cursor-pointer"
@@ -679,7 +826,7 @@ export default function NotesPageClient({
                 </div>
 
                 {/* Note Bottom Details & Actions */}
-                <div className="p-4 pt-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2 text-xs">
+                <div className="p-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2 text-xs">
                   {/* Due Date Indicator */}
                   {note.due_date ? (
                     <div
@@ -696,7 +843,7 @@ export default function NotesPageClient({
                     </div>
                   ) : (
                     <span className="text-[11px] text-slate-400">
-                      No due date
+                      No deadline
                     </span>
                   )}
 
@@ -704,9 +851,21 @@ export default function NotesPageClient({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
+                      onClick={() => handleCopyContent(note)}
+                      title="Copy note text"
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      {copiedId === note.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setViewNote(note)}
                       title="View full note"
-                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
@@ -714,7 +873,7 @@ export default function NotesPageClient({
                       type="button"
                       onClick={() => openEditNote(note)}
                       title="Edit note"
-                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -722,7 +881,7 @@ export default function NotesPageClient({
                       type="button"
                       onClick={() => setNoteToDelete(note)}
                       title="Delete note"
-                      className="w-7 h-7 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -738,7 +897,7 @@ export default function NotesPageClient({
       {showModal && (
         <div
           onClick={closeModal}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -747,7 +906,7 @@ export default function NotesPageClient({
             {/* Modal Header */}
             <div className="p-5 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
                   {editingId ? (
                     <Pencil className="w-4 h-4" />
                   ) : (
@@ -760,8 +919,8 @@ export default function NotesPageClient({
                   </h2>
                   <p className="text-xs text-slate-500">
                     {editingId
-                      ? "Update task details, priority, or client association"
-                      : "Add a memo, follow-up deadline, or client action item"}
+                      ? "Update action item details, priority, or client association"
+                      : "Add a memo, client action item, or deliverability reminder"}
                   </p>
                 </div>
               </div>
@@ -770,7 +929,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -787,7 +946,7 @@ export default function NotesPageClient({
                   autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Follow up with Acme Corp on DNS warmup caps"
+                  placeholder="e.g., Follow up on DNS DKIM warmup thresholds"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all"
                 />
               </div>
@@ -822,6 +981,39 @@ export default function NotesPageClient({
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
+                  {/* Date Quick Shortcuts */}
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setDueDate(getTodayDate())}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDueDate(getOffsetDate(1))}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium"
+                    >
+                      Tomorrow
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDueDate(getOffsetDate(7))}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium"
+                    >
+                      +1 Week
+                    </button>
+                    {dueDate && (
+                      <button
+                        type="button"
+                        onClick={() => setDueDate("")}
+                        className="text-[10px] text-rose-600 hover:underline ml-auto"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -838,13 +1030,13 @@ export default function NotesPageClient({
                         key={p}
                         type="button"
                         onClick={() => setPriority(p)}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           isSelected
                             ? p === "Important"
-                              ? "bg-rose-50 border-rose-400 text-rose-700 shadow-sm"
+                              ? "bg-rose-50 border-rose-400 text-rose-700 shadow-xs"
                               : p === "Follow Up"
-                              ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-sm"
-                              : "bg-slate-100 border-slate-400 text-slate-800 shadow-sm"
+                              ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-xs"
+                              : "bg-slate-100 border-slate-400 text-slate-800 shadow-xs"
                             : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                         }`}
                       >
@@ -865,7 +1057,7 @@ export default function NotesPageClient({
                   rows={5}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write task details, context, key metrics, or meeting notes..."
+                  placeholder="Write task details, client decisions, numbers, or meeting action items..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all resize-y"
                 />
               </div>
@@ -890,7 +1082,7 @@ export default function NotesPageClient({
                       Pin to Top
                     </span>
                     <p className="text-[11px] text-slate-500">
-                      Keep this note pinned above normal notes
+                      Keep this note pinned prominently above normal memos
                     </p>
                   </div>
                 </div>
@@ -920,7 +1112,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -928,7 +1120,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-xs flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {saving ? (
                   <span>Saving...</span>
@@ -948,7 +1140,7 @@ export default function NotesPageClient({
       {viewNote && (
         <div
           onClick={() => setViewNote(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -960,10 +1152,13 @@ export default function NotesPageClient({
                 <div className="flex items-center gap-2 flex-wrap">
                   <PriorityBadge priority={viewNote.priority} />
                   {viewNote.client && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <Link
+                      href={`/clients/${createClientId(viewNote.client)}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 hover:underline border border-indigo-200"
+                    >
                       <Building2 className="w-3 h-3" />
                       {viewNote.client}
-                    </span>
+                    </Link>
                   )}
                   {viewNote.is_pinned && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
@@ -980,7 +1175,7 @@ export default function NotesPageClient({
               <button
                 type="button"
                 onClick={() => setViewNote(null)}
-                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -991,7 +1186,7 @@ export default function NotesPageClient({
               {viewNote.due_date && (
                 <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                   <Calendar className="w-4 h-4 text-indigo-600" />
-                  <span>Due Date: {formatDueDate(viewNote.due_date)}</span>
+                  <span>Deadline: {formatDueDate(viewNote.due_date)}</span>
                 </div>
               )}
 
@@ -1014,8 +1209,25 @@ export default function NotesPageClient({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => handleCopyContent(viewNote)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+                >
+                  {copiedId === viewNote.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={() => openEditNote(viewNote)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   <span>Edit Note</span>
@@ -1030,7 +1242,7 @@ export default function NotesPageClient({
       {noteToDelete && (
         <div
           onClick={() => !deleting && setNoteToDelete(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1057,7 +1269,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={() => setNoteToDelete(null)}
                 disabled={deleting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1065,7 +1277,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {deleting ? (
                   <span>Deleting...</span>
@@ -1115,12 +1327,4 @@ function formatDueDate(dateStr: string): string {
   if (dateStr === today) return "Due Today";
   if (dateStr < today) return `Overdue (${dateStr})`;
   return `Due ${dateStr}`;
-}
-
-function getTodayDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }

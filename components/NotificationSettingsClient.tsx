@@ -321,113 +321,45 @@ export default function NotificationSettingsClient({
         </div>
       )}
 
-      {/* KPI Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Email Recipients */}
-        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Total Email Recipients
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-600 group-hover:text-indigo-600 transition-colors">
-              <Mail className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
-              {recipients.length}
-            </span>
-            <span className="text-xs font-semibold text-slate-500">
-              configured {recipients.length === 1 ? "inbox" : "inboxes"}
-            </span>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Notification endpoints</span>
-            <span className="font-semibold text-slate-700">Transactional</span>
-          </div>
-        </div>
-
-        {/* Instant Issue Alerts */}
-        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Instant Drift Alerts
-              </span>
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/60 flex items-center justify-center text-rose-600 group-hover:scale-105 transition-transform">
-              <Bell className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
-              {instantSubscribers}
-            </span>
-            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/60">
-              Real-time
-            </span>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Critical anomaly dispatch</span>
-            <span className="font-semibold text-slate-700">&lt; 30s latency</span>
-          </div>
-        </div>
-
-        {/* Daily 8 AM Digest */}
-        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Daily 8 AM Digest
-              </span>
-              <span className="w-2 h-2 rounded-full bg-indigo-500" />
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200/60 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
-              {dailySubscribers}
-            </span>
-            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
-              Morning Brief
-            </span>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Automated executive report</span>
-            <span className="font-semibold text-slate-700">08:00 AM Daily</span>
-          </div>
-        </div>
-      </div>
-
       {/* Main Notification Card Container */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="p-5 md:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        {/* Unified Clean Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                Subscribed Email Recipients
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                Alert Recipients
               </h2>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
-                {recipients.length} {recipients.length === 1 ? "recipient" : "recipients"}
+              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
+                {recipients.length}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1 max-w-xl">
-              Manage operational stakeholders who receive instant system alerts and the automated morning executive briefing.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Team members receiving real-time drift alerts and the 8:00 AM executive brief.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openModal}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Recipient</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden md:flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                {instantSubscribers} Instant
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                <Clock className="w-3 h-3 text-indigo-500" />
+                {dailySubscribers} 8 AM Brief
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={openModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Recipient</span>
+            </button>
+          </div>
         </div>
 
         {/* Recipients List */}
