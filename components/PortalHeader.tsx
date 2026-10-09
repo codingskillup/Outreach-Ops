@@ -13,6 +13,7 @@ import {
   Plus,
   ShieldCheck,
   Zap,
+  Menu,
 } from "lucide-react";
 
 type SystemStatus =
@@ -77,7 +78,11 @@ const pageCategories: Record<
   },
 };
 
-export default function PortalHeader() {
+export default function PortalHeader({
+  onToggleMobileMenu,
+}: {
+  onToggleMobileMenu?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -162,33 +167,45 @@ export default function PortalHeader() {
   const statusUI = getStatusUI(systemStatus, openIssues);
 
   return (
-    <header className="fixed top-0 left-[250px] right-0 h-20 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 z-40 px-6 lg:px-8 flex items-center justify-between shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] select-none">
-      {/* Left: Breadcrumbs & Page Heading */}
-      <div className="flex flex-col min-w-0 pr-4">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase text-slate-400">
-          <Link
-            href="/dashboard"
-            className="hover:text-indigo-600 transition-colors"
-          >
-            Outreach Ops
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-300" />
-          <span className="text-indigo-600 font-bold lowercase first-letter:uppercase">
-            {pageInfo.category}
-          </span>
-          <span className="hidden md:inline-block w-1 h-1 rounded-full bg-slate-300 mx-1" />
-          <span className="hidden md:inline text-slate-400 font-normal lowercase first-letter:uppercase truncate max-w-[240px]">
-            {pageInfo.description}
-          </span>
-        </div>
+    <header className="fixed top-0 left-0 lg:left-[250px] right-0 h-16 sm:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 z-40 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] select-none">
+      {/* Left: Mobile Toggle + Breadcrumbs & Page Heading */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
+        {/* Mobile Hamburger Drawer Trigger */}
+        <button
+          type="button"
+          onClick={onToggleMobileMenu}
+          className="lg:hidden p-2 -ml-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
-        <h1 className="text-lg md:text-[21px] font-extrabold tracking-tight text-slate-900 mt-0.5 truncate">
-          {pageInfo.title}
-        </h1>
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold tracking-wide uppercase text-slate-400">
+            <Link
+              href="/dashboard"
+              className="hover:text-indigo-600 transition-colors truncate hidden xs:inline"
+            >
+              Outreach Ops
+            </Link>
+            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden xs:inline" />
+            <span className="text-indigo-600 font-bold lowercase first-letter:uppercase truncate">
+              {pageInfo.category}
+            </span>
+            <span className="hidden md:inline-block w-1 h-1 rounded-full bg-slate-300 mx-1" />
+            <span className="hidden md:inline text-slate-400 font-normal lowercase first-letter:uppercase truncate max-w-[240px]">
+              {pageInfo.description}
+            </span>
+          </div>
+
+          <h1 className="text-base sm:text-lg md:text-[21px] font-extrabold tracking-tight text-slate-900 mt-0.5 truncate">
+            {pageInfo.title}
+          </h1>
+        </div>
       </div>
 
       {/* Right: Status, Refresh & Controls */}
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Last Refresh Timestamp */}
         {lastRefresh && (
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-[11px] text-slate-500 font-medium border border-slate-200/60">
@@ -201,17 +218,18 @@ export default function PortalHeader() {
         {openIssues > 0 && pathname !== "/issues" && (
           <Link
             href="/issues"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-xs transition-all active:scale-95"
+            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-xs transition-all active:scale-95"
             title="View detected issues"
           >
             <Bell className="w-3.5 h-3.5 text-amber-600 animate-bounce" />
-            <span>{openIssues} Issues</span>
+            <span className="hidden sm:inline">{openIssues} Issues</span>
+            <span className="sm:hidden">{openIssues}</span>
           </Link>
         )}
 
         {/* System Status Badge */}
         <div
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-xs ${statusUI.badgeClasses}`}
+          className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-xs ${statusUI.badgeClasses}`}
           title="Overall Pipeline & API Connection Health"
         >
           {statusUI.icon}
@@ -223,7 +241,7 @@ export default function PortalHeader() {
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group"
+          className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group"
           title="Sync latest data from database and APIs"
         >
           <RefreshCw

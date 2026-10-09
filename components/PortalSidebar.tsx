@@ -17,6 +17,7 @@ import {
   LogOut,
   Zap,
   Sparkles,
+  X,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -94,7 +95,13 @@ const navigationGroups: NavGroup[] = [
   },
 ];
 
-export default function PortalSidebar() {
+export default function PortalSidebar({
+  isOpen = false,
+  onClose,
+}: {
+  isOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -110,6 +117,7 @@ export default function PortalSidebar() {
   }, [supabase]);
 
   async function handleLogout() {
+    onClose?.();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
@@ -118,32 +126,49 @@ export default function PortalSidebar() {
   const userInitial = userEmail ? userEmail.charAt(0).toUpperCase() : "U";
 
   return (
-    <aside className="w-[250px] h-screen fixed left-0 top-0 bg-slate-950 border-r border-slate-800/80 p-4 flex flex-col justify-between z-50 text-slate-200 select-none">
+    <aside
+      className={`w-[260px] h-screen fixed left-0 top-0 bg-slate-950 border-r border-slate-800/80 p-4 flex flex-col justify-between z-50 text-slate-200 select-none transition-transform duration-300 ease-in-out ${
+        isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+      }`}
+    >
       {/* Top Header / Branding */}
       <div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-900/60 transition-colors group mb-5"
-        >
-          {/* Logo Badge */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-white">
-              <Zap className="w-5 h-5 text-indigo-400 fill-indigo-400/20" />
+        <div className="flex items-center justify-between mb-5">
+          <Link
+            href="/dashboard"
+            onClick={onClose}
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-900/60 transition-colors group flex-1 min-w-0"
+          >
+            {/* Logo Badge */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-white">
+                <Zap className="w-5 h-5 text-indigo-400 fill-indigo-400/20" />
+              </div>
             </div>
-          </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm tracking-tight text-white group-hover:text-indigo-300 transition-colors truncate">
-                Outreach Ops
-              </span>
-              <Sparkles className="w-3 h-3 text-indigo-400" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm tracking-tight text-white group-hover:text-indigo-300 transition-colors truncate">
+                  Outreach Ops
+                </span>
+                <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+              </div>
+              <div className="text-[11px] text-slate-400 truncate">
+                Cold Email Monitor
+              </div>
             </div>
-            <div className="text-[11px] text-slate-400 truncate">
-              Cold Email Monitor
-            </div>
-          </div>
-        </Link>
+          </Link>
+
+          {/* Close button for mobile screen */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors shrink-0"
+            aria-label="Close navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Navigation Groups */}
         <nav className="space-y-5 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 -mr-1">
@@ -164,6 +189,7 @@ export default function PortalSidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={onClose}
                       className={`relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                         active
                           ? "bg-indigo-600/15 text-white border border-indigo-500/30 shadow-sm"

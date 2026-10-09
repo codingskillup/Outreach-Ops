@@ -324,18 +324,7 @@ export default function DomainsPageClient({
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-
-          gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
-
-          gap: 14,
-
-          marginBottom: 22,
-        }}
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-6">
         <SummaryCard
           title="Total Domains"
           value={
@@ -408,16 +397,7 @@ export default function DomainsPageClient({
           marginBottom: 20,
         }}
       >
-        <div
-          style={{
-            display: "grid",
-
-            gridTemplateColumns:
-              "2fr 1fr 1fr 1fr",
-
-            gap: 10,
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <input
             value={search}
             onChange={(event) =>
@@ -576,9 +556,12 @@ export default function DomainsPageClient({
           </div>
         </div>
 
+        <div style={{ overflowX: "auto", width: "100%" }}>
         <table
           style={{
             width: "100%",
+
+            minWidth: 800,
 
             borderCollapse:
               "collapse",
@@ -730,6 +713,7 @@ export default function DomainsPageClient({
             )}
           </tbody>
         </table>
+        </div>
 
         {filteredDomains.length ===
           0 && (
