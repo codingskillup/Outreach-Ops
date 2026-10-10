@@ -197,6 +197,18 @@ export default function EmailAccountsPageClient({
     [accounts]
   );
 
+  const smartleadDistribution = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const account of accounts) {
+      if (account.smartlead) {
+        counts.set(account.smartlead, (counts.get(account.smartlead) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [accounts]);
+
   const accountTypes = useMemo(() => {
     const names = new Set<string>();
     for (const account of accounts) {
@@ -531,28 +543,28 @@ export default function EmailAccountsPageClient({
         </div>
       </div>
 
-      {/* Account Type Tags Quick Filter Bar */}
-      {tagDistribution.length > 0 && (
+      {/* Smartlead Connections Quick Filter Bar */}
+      {smartleadDistribution.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <TagIcon className="w-4 h-4 text-slate-400" />
+              <Layers className="w-4 h-4 text-slate-400" />
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Account Type Tags
+                Smartlead Accounts
               </span>
               <span className="text-[11px] text-slate-400">
-                ({accountTypes.length} detected)
+                ({smartleads.length} connected)
               </span>
             </div>
-            {accountTypeFilter !== "all" && (
+            {smartleadFilter !== "all" && (
               <button
                 onClick={() => {
-                  setAccountTypeFilter("all");
+                  setSmartleadFilter("all");
                   handleFilterChange();
                 }}
                 className="text-xs text-[#2563EB] hover:text-blue-800 font-semibold cursor-pointer"
               >
-                Reset tag filter
+                Reset integration filter
               </button>
             )}
           </div>
@@ -560,30 +572,34 @@ export default function EmailAccountsPageClient({
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
-                setAccountTypeFilter("all");
+                setSmartleadFilter("all");
                 handleFilterChange();
               }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                accountTypeFilter === "all"
+                smartleadFilter === "all"
                   ? "bg-slate-900 text-white shadow-2xs"
                   : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70"
               }`}
             >
-              All Types
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                accountTypeFilter === "all" ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-600"
-              }`}>
-                {accounts.length}
+              All Smartlead
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  smartleadFilter === "all"
+                    ? "bg-slate-800 text-slate-300"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {accounts.length.toLocaleString()}
               </span>
             </button>
 
-            {tagDistribution.map((tag) => {
-              const isSelected = accountTypeFilter === tag.name;
+            {smartleadDistribution.map((item) => {
+              const isSelected = smartleadFilter === item.name;
               return (
                 <button
-                  key={tag.name}
+                  key={item.name}
                   onClick={() => {
-                    setAccountTypeFilter(isSelected ? "all" : tag.name);
+                    setSmartleadFilter(isSelected ? "all" : item.name);
                     handleFilterChange();
                   }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -592,7 +608,7 @@ export default function EmailAccountsPageClient({
                       : "bg-slate-50 hover:bg-blue-50/60 hover:border-blue-200 text-slate-700 border border-slate-200/70"
                   }`}
                 >
-                  <span className="truncate max-w-[160px]">{tag.name}</span>
+                  <span className="truncate max-w-[200px]">{item.name}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       isSelected
@@ -600,7 +616,7 @@ export default function EmailAccountsPageClient({
                         : "bg-slate-200 text-slate-600"
                     }`}
                   >
-                    {tag.count}
+                    {item.count.toLocaleString()}
                   </span>
                 </button>
               );
@@ -639,7 +655,7 @@ export default function EmailAccountsPageClient({
           </div>
 
           {/* Client Filter */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <select
               value={clientFilter}
               onChange={(e) => {
@@ -657,20 +673,20 @@ export default function EmailAccountsPageClient({
             </select>
           </div>
 
-          {/* Smartlead Integration Filter */}
-          <div className="lg:col-span-2">
+          {/* Account Type / Provider Tag Filter */}
+          <div className="lg:col-span-3">
             <select
-              value={smartleadFilter}
+              value={accountTypeFilter}
               onChange={(e) => {
-                setSmartleadFilter(e.target.value);
+                setAccountTypeFilter(e.target.value);
                 handleFilterChange();
               }}
               className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             >
-              <option value="all">All Integrations</option>
-              {smartleads.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+              <option value="all">All Account Types ({accountTypes.length})</option>
+              {tagDistribution.map((tag) => (
+                <option key={tag.name} value={tag.name}>
+                  {tag.name} ({tag.count.toLocaleString()})
                 </option>
               ))}
             </select>
@@ -735,10 +751,20 @@ export default function EmailAccountsPageClient({
 
         {/* Results count & page size selector */}
         <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
-          <div>
-            Showing <span className="font-semibold text-slate-900">{filteredAccounts.length.toLocaleString()}</span> of{" "}
-            <span className="font-semibold text-slate-900">{accounts.length.toLocaleString()}</span> accounts
-            {isFilterActive && " (filtered)"}
+          <div className="flex items-center gap-2">
+            <span>
+              Showing <span className="font-semibold text-slate-900">{filteredAccounts.length.toLocaleString()}</span> of{" "}
+              <span className="font-semibold text-slate-900">{accounts.length.toLocaleString()}</span> accounts
+              {isFilterActive && " (filtered)"}
+            </span>
+            {isFilterActive && (
+              <button
+                onClick={clearFilters}
+                className="text-[11px] text-[#2563EB] hover:text-blue-800 font-semibold cursor-pointer underline ml-1"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
