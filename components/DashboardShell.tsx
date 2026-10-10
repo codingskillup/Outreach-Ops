@@ -158,7 +158,7 @@ export default function DashboardShell({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "workspaces" | "clients" | "infrastructure" | "issues"
-  >("workspaces");
+  >("clients");
 
   // Selected Scope: "ALL" for all combined, or a specific workspace/client name
   const [selectedScope, setSelectedScope] = useState<string>("ALL");
@@ -747,6 +747,236 @@ export default function DashboardShell({
         </div>
       </div>
 
+      {/* ── 5 Primary Executive Metric Cards (Unique, High-Impact, Zero Duplication) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        {/* Card 1: Sending Inboxes with Workspace Breakdown */}
+        <Link
+          href="/emailaccounts"
+          className="group bg-gradient-to-br from-indigo-50/70 via-white to-white rounded-2xl border-2 border-indigo-100/90 hover:border-indigo-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform">
+              <Mail className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/80">
+              Fleet Scale
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+              Total Inboxes
+            </div>
+            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+              {totalAccounts.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+              <span className="truncate">
+                {displayConnections.length >= 2
+                  ? `${displayConnections[0].name}: ${displayConnections[0].accounts.toLocaleString()} · ${displayConnections[1].name}: ${displayConnections[1].accounts.toLocaleString()}`
+                  : `${healthy.toLocaleString()} compliant`}
+              </span>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-indigo-100 flex items-center justify-between text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
+              <span>Inspect inboxes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 2: Daily Sending Capacity */}
+        <Link
+          href="/emailaccounts"
+          className="group bg-gradient-to-br from-amber-50/70 via-white to-white rounded-2xl border-2 border-amber-100/90 hover:border-amber-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-600/20 group-hover:scale-105 transition-transform">
+              <Flame className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200/80">
+              Active Cap
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+              Daily Send Bandwidth
+            </div>
+            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+              {computedDailyCapacity.toLocaleString()}{" "}
+              <span className="text-xs font-semibold text-slate-400">emails/day</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+              <span className="truncate">Rule-enforced daily outreach limit</span>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-amber-100 flex items-center justify-between text-[11px] font-bold text-amber-700 group-hover:text-amber-900">
+              <span>View daily limits</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 3: Warmup Operations */}
+        <Link
+          href="/emailaccounts"
+          className="group bg-gradient-to-br from-emerald-50/70 via-white to-white rounded-2xl border-2 border-emerald-100/90 hover:border-emerald-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80">
+              {warmupRate}% Guarded
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+              Warmup Mailboxes
+            </div>
+            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+              {computedWarmupAccounts.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="truncate">Automated ramp pacing · 0 blocked</span>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between text-[11px] font-bold text-emerald-700 group-hover:text-emerald-900">
+              <span>Deliverability health</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 4: Active Sequences */}
+        <Link
+          href="/campaigns"
+          className="group bg-gradient-to-br from-purple-50/70 via-white to-white rounded-2xl border-2 border-purple-100/90 hover:border-purple-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 group-hover:scale-105 transition-transform">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/80">
+              Sequences
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-purple-700">
+              Live Sequences
+            </div>
+            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+              {activeCampaignCount.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shrink-0" />
+              <span className="truncate">Out of {filteredCampaigns.length} total sequences</span>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-purple-100 flex items-center justify-between text-[11px] font-bold text-purple-700 group-hover:text-purple-900">
+              <span>View sequences</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Card 5: Diagnostic Issues */}
+        <Link
+          href="/issues"
+          className={`group rounded-2xl border-2 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between ${
+            criticalIssuesCount > 0
+              ? "bg-gradient-to-br from-rose-50/70 via-white to-white border-rose-200 hover:border-rose-400"
+              : openIssues.length > 0
+              ? "bg-gradient-to-br from-amber-50/70 via-white to-white border-amber-200 hover:border-amber-400"
+              : "bg-gradient-to-br from-emerald-50/70 via-white to-white border-emerald-100 hover:border-emerald-400"
+          }`}
+        >
+          <div className="flex items-start justify-between">
+            <div
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform ${
+                criticalIssuesCount > 0
+                  ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-600/20"
+                  : openIssues.length > 0
+                  ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-600/20"
+                  : "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-600/20"
+              }`}
+            >
+              <TriangleAlert className="w-5 h-5" />
+            </div>
+            <span
+              className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                criticalIssuesCount > 0
+                  ? "bg-rose-100 text-rose-800 border-rose-200 animate-pulse"
+                  : openIssues.length > 0
+                  ? "bg-amber-100 text-amber-800 border-amber-200"
+                  : "bg-emerald-100 text-emerald-800 border-emerald-200"
+              }`}
+            >
+              {criticalIssuesCount > 0
+                ? `${criticalIssuesCount} Critical`
+                : openIssues.length > 0
+                ? "Drift Flagged"
+                : "Optimal"}
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div
+              className={`text-[11px] font-bold uppercase tracking-wider ${
+                criticalIssuesCount > 0
+                  ? "text-rose-700"
+                  : openIssues.length > 0
+                  ? "text-amber-700"
+                  : "text-emerald-700"
+              }`}
+            >
+              Diagnostic Issues
+            </div>
+            <div
+              className={`text-3xl font-black tracking-tight mt-0.5 tabular-nums ${
+                criticalIssuesCount > 0
+                  ? "text-rose-900"
+                  : openIssues.length > 0
+                  ? "text-amber-900"
+                  : "text-slate-900"
+              }`}
+            >
+              {openIssues.length.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+              <span
+                className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                  criticalIssuesCount > 0
+                    ? "bg-rose-500"
+                    : openIssues.length > 0
+                    ? "bg-amber-500"
+                    : "bg-emerald-500"
+                }`}
+              />
+              <span className="truncate">
+                {openIssues.length > 0
+                  ? `${criticalIssuesCount} Critical · ${openIssues.length - criticalIssuesCount} Warnings`
+                  : "Zero drift · All accounts compliant"}
+              </span>
+            </div>
+            <div
+              className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-bold ${
+                criticalIssuesCount > 0
+                  ? "border-rose-100 text-rose-700 group-hover:text-rose-900"
+                  : openIssues.length > 0
+                  ? "border-amber-100 text-amber-700 group-hover:text-amber-900"
+                  : "border-emerald-100 text-emerald-700 group-hover:text-emerald-900"
+              }`}
+            >
+              <span>{openIssues.length > 0 ? "Resolve open issues" : "Audit pipeline"}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+      </div>
+
       {/* ── Dedicated Connected Smartlead Workspaces Cards (Both Smartleads Visible Side-by-Side) ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -944,340 +1174,7 @@ export default function DashboardShell({
         )}
       </div>
 
-      {/* ── Deliverability Defense & Fleet Capacity Shield (Hero Banner v3) ── */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-2xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden">
-        {/* Subtle decorative background blur mesh */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-white/10">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-400/30 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-2">
-                  <span>Deliverability Defense & Fleet Capacity Shield</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Grade A+ Rating
-                  </span>
-                </h2>
-                <p className="text-[11px] sm:text-xs text-slate-300">
-                  {selectedScope === "ALL"
-                    ? `Continuous deliverability protection across all ${displayConnections.length} Smartleads (${totalAccounts.toLocaleString()} inboxes)`
-                    : `Deliverability protection for ${selectedScope} (${totalAccounts.toLocaleString()} inboxes)`}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-300 self-start sm:self-auto">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Real-Time Deliverability Shield Enforced</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {/* Metric Block 1: Radial Compliance Gauge */}
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 flex items-center gap-4">
-              <RadialComplianceGauge score={healthRate} />
-              <div className="space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Fleet Compliance
-                </div>
-                <div className="text-lg font-black text-white tabular-nums">
-                  {healthy.toLocaleString()}{" "}
-                  <span className="text-xs font-normal text-slate-400">/ {totalAccounts.toLocaleString()}</span>
-                </div>
-                <div className="text-[11px] text-slate-300">
-                  {needAttention > 0 ? (
-                    <span className="text-amber-400 font-semibold">
-                      {needAttention} drift flagged
-                    </span>
-                  ) : (
-                    <span className="text-emerald-400 font-semibold">
-                      Zero drift detected
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Metric Block 2: Daily Sending Fleet Bandwidth */}
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-amber-300 font-bold flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-amber-400" />
-                  Daily Send Bandwidth
-                </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  Active Cap
-                </span>
-              </div>
-              <div className="text-2xl font-black text-white tracking-tight tabular-nums">
-                {computedDailyCapacity.toLocaleString()}{" "}
-                <span className="text-xs font-semibold text-slate-400">emails/day</span>
-              </div>
-              <div className="space-y-1">
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: "84%" }} />
-                </div>
-                <div className="flex items-between text-[10px] text-slate-400">
-                  <span>Safe Outreach Cap</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Metric Block 3: Warmup Shield Index */}
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-emerald-300 font-bold flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                  Warmup Shield Index
-                </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                  {warmupRate}% Guarded
-                </span>
-              </div>
-              <div className="text-2xl font-black text-white tracking-tight tabular-nums">
-                {computedWarmupAccounts.toLocaleString()}{" "}
-                <span className="text-xs font-semibold text-slate-400">inboxes active</span>
-              </div>
-              <div className="space-y-1">
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                    style={{ width: `${warmupRate}%` }}
-                  />
-                </div>
-                <div className="flex items-between text-[10px] text-slate-400">
-                  <span>
-                    {selectedRule?.warmup_daily
-                      ? `Target ${selectedRule.warmup_daily} / day ramping safely`
-                      : "Automated warmup ramping"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Metric Block 4: DNS & Authentication Matrix */}
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-cyan-300 font-bold flex items-center gap-1.5">
-                  <Globe2 className="w-3.5 h-3.5 text-cyan-400" />
-                  DNS Security Shield
-                </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">
-                  {totalDomains > 0 ? "100% Passed" : "No Domains"}
-                </span>
-              </div>
-              <div className="text-2xl font-black text-white tracking-tight tabular-nums">
-                {totalDomains}{" "}
-                <span className="text-xs font-semibold text-slate-400">domains valid</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1 pt-0.5 text-center text-[10px] font-bold">
-                <div className="bg-white/5 rounded px-1.5 py-1 text-emerald-300 border border-white/10">
-                  SPF ✓
-                </div>
-                <div className="bg-white/5 rounded px-1.5 py-1 text-emerald-300 border border-white/10">
-                  DKIM ✓
-                </div>
-                <div className="bg-white/5 rounded px-1.5 py-1 text-emerald-300 border border-white/10">
-                  DMARC ✓
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 5 Primary Metric Cards (Glassmorphic, Vibrant, Interactive) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-        {/* Card 1: Sending Inboxes */}
-        <Link
-          href="/emailaccounts"
-          className="group bg-gradient-to-br from-indigo-50/70 via-white to-white rounded-2xl border-2 border-indigo-100/90 hover:border-indigo-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform">
-              <Mail className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/80">
-              Fleet
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
-              Total Inboxes
-            </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
-              {totalAccounts.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span>{healthy.toLocaleString()} compliant ({healthRate}%)</span>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-indigo-100 flex items-center justify-between text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
-              <span>Inspect inboxes</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Card 2: Mailbox Health Rate */}
-        <Link
-          href="/emailaccounts"
-          className="group bg-gradient-to-br from-emerald-50/70 via-white to-white rounded-2xl border-2 border-emerald-100/90 hover:border-emerald-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80">
-              Health
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-              Compliance Rate
-            </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 flex items-baseline gap-1 tabular-nums">
-              <span>{healthRate}</span>
-              <span className="text-xl text-emerald-600 font-black">%</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span>{healthy.toLocaleString()} optimal status</span>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between text-[11px] font-bold text-emerald-700 group-hover:text-emerald-900">
-              <span>Audit compliance</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Card 3: Drift Deviations */}
-        <Link
-          href="/issues"
-          className="group bg-gradient-to-br from-amber-50/70 via-white to-white rounded-2xl border-2 border-amber-100/90 hover:border-amber-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform ${
-                criticalIssuesCount > 0
-                  ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-600/20"
-                  : "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-600/20"
-              }`}
-            >
-              <TriangleAlert className="w-5 h-5" />
-            </div>
-            {criticalIssuesCount > 0 ? (
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
-                {criticalIssuesCount} Critical
-              </span>
-            ) : (
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200/80">
-                Drift
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
-              Drift Deviations
-            </div>
-            <div
-              className={`text-3xl font-black tracking-tight mt-0.5 tabular-nums ${
-                needAttention > 0 ? "text-amber-800" : "text-slate-900"
-              }`}
-            >
-              {needAttention.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  needAttention > 0 ? "bg-amber-500" : "bg-emerald-500"
-                }`}
-              />
-              <span>
-                {needAttention > 0
-                  ? "Limits or warmup drift"
-                  : "Zero drift detected"}
-              </span>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-amber-100 flex items-center justify-between text-[11px] font-bold text-amber-700 group-hover:text-amber-900">
-              <span>Remediate drift</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Card 4: Active Sequences */}
-        <Link
-          href="/campaigns"
-          className="group bg-gradient-to-br from-purple-50/70 via-white to-white rounded-2xl border-2 border-purple-100/90 hover:border-purple-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 group-hover:scale-105 transition-transform">
-              <Megaphone className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/80">
-              Active
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-purple-700">
-              Live Sequences
-            </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
-              {activeCampaignCount.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-              <span>Smartlead campaigns active</span>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-purple-100 flex items-center justify-between text-[11px] font-bold text-purple-700 group-hover:text-purple-900">
-              <span>View sequences</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Card 5: Sending Domains */}
-        <Link
-          href="/domains"
-          className="group bg-gradient-to-br from-cyan-50/70 via-white to-white rounded-2xl border-2 border-cyan-100/90 hover:border-cyan-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between sm:col-span-2 lg:col-span-1"
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-white flex items-center justify-center shadow-md shadow-cyan-600/20 group-hover:scale-105 transition-transform">
-              <Globe2 className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200/80">
-              DNS
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-700">
-              Sending Domains
-            </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
-              {totalDomains.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" />
-              <span>SPF · DKIM · DMARC active</span>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-cyan-100 flex items-center justify-between text-[11px] font-bold text-cyan-700 group-hover:text-cyan-900">
-              <span>Inspect DNS hygiene</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-      </div>
 
       {/* ── Main Operations Split Grid (Left: Tabbed Operations Hub, Right: Operations Pulse) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
