@@ -295,23 +295,51 @@ export default function DashboardShell({
     });
   }, [selectedScope, activeIntegration, enabledRules, integrationNameMap]);
 
-  const [activeRuleTagKey, setActiveRuleTagKey] = useState<string | null>(null);
+  const [workspaceRuleTab, setWorkspaceRuleTab] = useState<string>("ALL");
 
-  // The active rule to show in the Enforced Deliverability Rules card
-  const selectedRule = useMemo(() => {
-    if (scopedRules.length === 0) return null;
-    if (activeRuleTagKey) {
-      const found = scopedRules.find((r) => r.id === activeRuleTagKey || r.tag_key === activeRuleTagKey);
-      if (found) return found;
+  // Distinct workspaces represented in scopedRules
+  const ruleWorkspaces = useMemo(() => {
+    const wsMap = new Map<string, { id: string; name: string; count: number }>();
+    for (const rule of scopedRules) {
+      const wsName = integrationNameMap.get(rule.integration_id) || "Smartlead";
+      const existing = wsMap.get(rule.integration_id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        wsMap.set(rule.integration_id, {
+          id: rule.integration_id,
+          name: wsName,
+          count: 1,
+        });
+      }
     }
-    return scopedRules[0];
-  }, [scopedRules, activeRuleTagKey]);
+    return Array.from(wsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [scopedRules, integrationNameMap]);
 
-  // Active rule's Smartlead account name
-  const selectedRuleAccountName = useMemo(() => {
-    if (!selectedRule) return "";
-    return integrationNameMap.get(selectedRule.integration_id) || "Smartlead";
-  }, [selectedRule, integrationNameMap]);
+  // Helper to count accounts matching a specific rule's workspace and tag
+  const getRuleMatchedCount = useMemo(() => {
+    const cache = new Map<string, number>();
+    for (const rule of scopedRules) {
+      const count = safeEmailAccounts.filter((acc) => {
+        if (acc.integration_id && acc.integration_id !== rule.integration_id) return false;
+        const raw = acc.raw_data || {};
+        const tags = getAccountTags(raw);
+        const ruleTagLower = (rule.tag_name || "").trim().toLowerCase();
+        const matchesTag = tags.some(
+          (t) =>
+            t.key === rule.tag_key ||
+            t.name.trim().toLowerCase() === ruleTagLower
+        );
+        if (matchesTag) return true;
+        const accType = getText(acc.account_type) || getText(raw.account_type);
+        if (accType && accType.trim().toLowerCase() === ruleTagLower) return true;
+        return false;
+      }).length;
+      cache.set(rule.id, count);
+    }
+    return (ruleId: string) => cache.get(ruleId) ?? 0;
+  }, [scopedRules, safeEmailAccounts]);
+
 
   // Filtered Accounts
   const filteredAccounts = useMemo(() => {
@@ -449,6 +477,187 @@ export default function DashboardShell({
 
   const displayedNewIssues = filteredIssues.length;
   const displayedResolved = resolvedIssues.length;
+
+  const renderRuleCard = (rule: AccountTypeRule, workspaceName: string) => {
+    const isGoogle =
+      (rule.tag_name || "").toLowerCase().includes("google") ||
+      (rule.tag_name || "").toLowerCase().includes("gmail");
+    const isAzure =
+      (rule.tag_name || "").toLowerCase().includes("azure") ||
+      (rule.tag_name || "").toLowerCase().includes("entra") ||
+      (rule.tag_name || "").toLowerCase().includes("microsoft") ||
+      (rule.tag_name || "").toLowerCase().includes("outlook");
+
+    const matchedCount = getRuleMatchedCount(rule.id);
+
+    return (
+      <div
+        key={rule.id}
+        className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-xs transition-all p-4 sm:p-5 flex flex-col justify-between group"
+      >
+        {/* Card Header */}
+        <div className="flex items-start justify-between gap-3 pb-3.5 border-b border-slate-100">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                isGoogle
+                  ? "bg-amber-50 text-amber-600 border-amber-200/70"
+                  : isAzure
+                  ? "bg-blue-50 text-blue-600 border-blue-200/70"
+                  : "bg-indigo-50 text-indigo-600 border-indigo-200/70"
+              }`}
+            >
+              {isGoogle ? (
+                <Mail className="w-5 h-5 text-amber-600" />
+              ) : isAzure ? (
+                <Server className="w-5 h-5 text-blue-600" />
+              ) : (
+                <Layers className="w-5 h-5 text-indigo-600" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                  {rule.tag_name || "General"}
+                </h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 uppercase tracking-wider shrink-0">
+                  {workspaceName}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                <span className="font-semibold text-slate-800">
+                  {matchedCount.toLocaleString()} {matchedCount === 1 ? "inbox" : "inboxes"}
+                </span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-500">Live Rule Policy</span>
+              </div>
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Enforced
+          </span>
+        </div>
+
+        {/* 4 Guardrail Metrics Grid (2x2) */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 my-3.5 sm:my-4">
+          {/* Metric 1: Daily Cap */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50/70 border border-slate-100/90 hover:bg-amber-50/20 hover:border-amber-200/70 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                Daily Cap
+              </span>
+              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 uppercase">
+                Limit
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">
+                {rule.message_per_day != null ? rule.message_per_day : "∞"}
+              </span>
+              <span className="text-xs font-normal text-slate-400">
+                {rule.message_per_day != null ? "msgs/day" : "Uncapped"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">Max daily sends per inbox</p>
+          </div>
+
+          {/* Metric 2: Minimum Gap */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50/70 border border-slate-100/90 hover:bg-blue-50/20 hover:border-blue-200/70 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                Min Gap
+              </span>
+              <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60 uppercase">
+                Pacing
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">
+                {rule.minimum_gap != null ? rule.minimum_gap : "0"}
+              </span>
+              <span className="text-xs font-normal text-slate-400">
+                {rule.minimum_gap != null ? (rule.minimum_gap === 1 ? "min" : "mins") : "No gap"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">Delay between consecutive sends</p>
+          </div>
+
+          {/* Metric 3: Warmup Cap */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50/70 border border-slate-100/90 hover:bg-emerald-50/20 hover:border-emerald-200/70 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                Warmup Cap
+              </span>
+              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 uppercase">
+                Ceiling
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">
+                {rule.warmup_enabled === false
+                  ? "Off"
+                  : rule.warmup_daily != null
+                  ? rule.warmup_daily
+                  : "∞"}
+              </span>
+              <span className="text-xs font-normal text-slate-400">
+                {rule.warmup_enabled === false
+                  ? "Disabled"
+                  : rule.warmup_daily != null
+                  ? "msgs/day"
+                  : "No cap"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">Safe warmup max per day</p>
+          </div>
+
+          {/* Metric 4: Reply Target */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50/70 border border-slate-100/90 hover:bg-purple-50/20 hover:border-purple-200/70 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-500" />
+                Reply Target
+              </span>
+              <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200/60 uppercase">
+                Target
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">
+                {rule.reply_rate != null ? `${rule.reply_rate}%` : "—"}
+              </span>
+              <span className="text-xs font-normal text-slate-400">
+                {rule.reply_rate != null ? "minimum" : "Not set"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">Required reply engagement</p>
+          </div>
+        </div>
+
+        {/* Card Footer */}
+        <div className="pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+          <Link
+            href={`/emailaccounts?search=${encodeURIComponent(rule.tag_name || "")}`}
+            className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            <span>View {matchedCount.toLocaleString()} Inboxes</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href="/settings"
+            className="font-medium text-slate-400 hover:text-slate-700 transition-colors text-[11px]"
+          >
+            Edit in Settings →
+          </Link>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full max-w-[1440px] mx-auto pb-20 space-y-6">
@@ -1092,239 +1301,162 @@ export default function DashboardShell({
       </div>
 
       {/* ── Enforced Deliverability Rules (Full-Width Operations Stage) ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-7 space-y-5">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-6 space-y-5">
         {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal uppercase tracking-wider bg-blue-50 text-[#2563EB] border border-blue-200/80">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80">
+                <SlidersHorizontal className="w-3 h-3 text-blue-600" />
                 Deliverability Guardrails
               </span>
               {scopedRules.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-emerald-50 text-[#10B981] border border-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {scopedRules.length} Active {scopedRules.length === 1 ? "Rule" : "Rules"} Enforced
                 </span>
               )}
             </div>
-            <h3 className="text-[16px] font-semibold text-[#14243D] tracking-tight">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
               Enforced Deliverability Rules by Tag
             </h3>
-            <p className="text-[12px] font-normal text-slate-500 max-w-2xl">
-              Real-time threshold guardrails configured in Settings to prevent mailbox drift, daily cap breaches, and warmup decay.
+            <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+              Threshold guardrails configured in Settings to prevent mailbox drift, daily cap breaches, and warmup decay.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-start lg:self-auto shrink-0">
+            {/* Segmented Workspace Tabs */}
+            {ruleWorkspaces.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceRuleTab("ALL")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                    workspaceRuleTab === "ALL"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-blue-600" />
+                  <span>All Workspaces</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      workspaceRuleTab === "ALL"
+                        ? "bg-slate-100 text-slate-800"
+                        : "bg-slate-200/60 text-slate-600"
+                    }`}
+                  >
+                    {scopedRules.length}
+                  </span>
+                </button>
+                {ruleWorkspaces.map((ws) => {
+                  const isSelected = workspaceRuleTab === ws.id;
+                  return (
+                    <button
+                      key={ws.id}
+                      type="button"
+                      onClick={() => setWorkspaceRuleTab(ws.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                        isSelected
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                      }`}
+                    >
+                      <Server
+                        className={`w-3.5 h-3.5 ${
+                          isSelected ? "text-blue-600" : "text-slate-400"
+                        }`}
+                      />
+                      <span>{ws.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          isSelected
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-slate-200/60 text-slate-600"
+                        }`}
+                      >
+                        {ws.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <Link
               href="/settings"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-sm shadow-blue-600/25 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-xs shrink-0"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
               <span>Configure in Settings</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {selectedRule ? (
-          <div className="space-y-5">
-            {/* Tag Selection Row (Clean flex-wrap on mobile, no horizontal scrollbar) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F4F7FB]/70 p-3 sm:px-4 rounded-xl border border-slate-200/70">
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500 shrink-0 flex items-center gap-1.5 mr-1">
-                  <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
-                  Select Tag Rule:
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {scopedRules.map((rule) => {
-                    const isSelected = selectedRule?.id === rule.id;
-                    const accountName = integrationNameMap.get(rule.integration_id) || "Smartlead";
-                    return (
-                      <button
-                        key={rule.id}
-                        type="button"
-                        onClick={() => setActiveRuleTagKey(rule.id)}
-                        className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer flex items-center gap-2 ${
-                          isSelected
-                            ? "bg-[#14243D] text-white shadow-2xs"
-                            : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                            isSelected ? "bg-[#10B981]" : "bg-slate-300"
-                          }`}
-                        />
-                        <span
-                          className={`text-[12px] font-normal px-1.5 py-0.5 rounded transition-colors uppercase tracking-wider shrink-0 ${
-                            isSelected
-                              ? "bg-white/20 text-white"
-                              : "bg-blue-50 text-[#2563EB] border border-blue-200/60"
-                          }`}
-                        >
-                          {accountName}
+        {/* Rules Cards Body */}
+        {scopedRules.length > 0 ? (
+          <div className="space-y-6">
+            {workspaceRuleTab === "ALL" ? (
+              ruleWorkspaces.map((ws) => {
+                const wsRules = scopedRules.filter((r) => r.integration_id === ws.id);
+                if (wsRules.length === 0) return null;
+                return (
+                  <div key={ws.id} className="space-y-3">
+                    {ruleWorkspaces.length > 1 && (
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                            {ws.name} Guardrails
+                          </h4>
+                          <span className="text-[11px] font-medium text-slate-400">
+                            ({wsRules.length} {wsRules.length === 1 ? "Tag" : "Tags"})
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Active Surveillance
                         </span>
-                        <span>{rule.tag_name || "General"}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="text-[12px] font-normal text-slate-500 shrink-0 flex items-center gap-1.5">
-                <span className="font-medium text-slate-600">Active Rule:</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-normal bg-blue-50 text-[#14243D] border border-blue-200">
-                  <span className="text-[#2563EB] font-normal uppercase text-[12px] tracking-wider px-1.5 py-0.5 rounded bg-blue-100/90 border border-blue-200/70">
-                    {selectedRuleAccountName}
-                  </span>
-                  <span>{selectedRule.tag_name || "General"}</span>
-                </span>
-              </div>
-            </div>
-
-            {/* 4 Metric Guardrail Cards (Full Width 4-Columns on Desktop, 2-Columns on Mobile) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-              {/* Box 1: Daily Send Limit (Amber #F59E0B) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 via-white to-white border border-amber-200/80 hover:border-amber-400 transition-all shadow-2xs flex flex-col justify-between">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#F59E0B] text-white flex items-center justify-center shadow-xs">
-                    <Flame className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
+                      {wsRules.map((rule) => renderRuleCard(rule, ws.name))}
+                    </div>
                   </div>
-                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-[#F59E0B] border border-amber-200">
-                    Daily Cap
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <span className="text-[12px] font-normal uppercase tracking-wider text-amber-800 block">
-                    Daily Send Limit
-                  </span>
-                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
-                    {selectedRule.message_per_day != null ? `${selectedRule.message_per_day}` : "∞"}
-                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
-                      {selectedRule.message_per_day != null ? "msgs / day" : "Uncapped"}
-                    </span>
-                  </div>
-                  <p className="text-[12px] font-normal text-slate-500 mt-1">
-                    Maximum emails per mailbox per day before drift warning
-                  </p>
-                </div>
+                );
+              })
+            ) : (
+              <div className="space-y-3">
+                {(() => {
+                  const activeWs = ruleWorkspaces.find((ws) => ws.id === workspaceRuleTab);
+                  const wsRules = scopedRules.filter((r) => r.integration_id === workspaceRuleTab);
+                  return (
+                    <>
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                            {activeWs?.name || "Smartlead"} Guardrails
+                          </h4>
+                          <span className="text-[11px] font-medium text-slate-400">
+                            ({wsRules.length} {wsRules.length === 1 ? "Tag" : "Tags"})
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Active Surveillance
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
+                        {wsRules.map((rule) =>
+                          renderRuleCard(rule, activeWs?.name || "Smartlead")
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
-
-              {/* Box 2: Minimum Gap (Primary Blue #2563EB) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/50 via-white to-white border border-blue-200/80 hover:border-blue-400 transition-all shadow-2xs flex flex-col justify-between">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-xs">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200">
-                    Pacing
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#2563EB] block">
-                    Minimum Gap
-                  </span>
-                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
-                    {selectedRule.minimum_gap != null ? `${selectedRule.minimum_gap}` : "0"}
-                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
-                      {selectedRule.minimum_gap != null ? (selectedRule.minimum_gap === 1 ? "minute" : "minutes") : "No gap"}
-                    </span>
-                  </div>
-                  <p className="text-[12px] font-normal text-slate-500 mt-1">
-                    Spacing interval enforced between sequential outbound sends
-                  </p>
-                </div>
-              </div>
-
-              {/* Box 3: Warmup Daily Cap (Emerald Green #10B981) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-white border border-emerald-200/80 hover:border-emerald-400 transition-all shadow-2xs flex flex-col justify-between">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#10B981] text-white flex items-center justify-center shadow-xs">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-[#10B981] border border-emerald-200">
-                    Warmup
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#10B981] block">
-                    Warmup Daily Cap
-                  </span>
-                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
-                    {selectedRule.warmup_enabled === false
-                      ? "Off"
-                      : selectedRule.warmup_daily != null
-                      ? `${selectedRule.warmup_daily}`
-                      : "∞"}
-                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
-                      {selectedRule.warmup_enabled === false
-                        ? "Disabled"
-                        : selectedRule.warmup_daily != null
-                        ? "msgs / day"
-                        : "No cap"}
-                    </span>
-                  </div>
-                  <p className="text-[12px] font-normal text-slate-500 mt-1">
-                    Safe warmup interaction ceiling for deliverability reputation
-                  </p>
-                </div>
-              </div>
-
-              {/* Box 4: Reply Rate Target (Purple #8B5CF6) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/50 via-white to-white border border-purple-200/80 hover:border-purple-400 transition-all shadow-2xs flex flex-col justify-between">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 text-[#8B5CF6] border border-purple-200">
-                    Engagement
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#8B5CF6] block">
-                    Reply Rate Target
-                  </span>
-                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
-                    {selectedRule.reply_rate != null ? `${selectedRule.reply_rate}` : "—"}
-                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
-                      {selectedRule.reply_rate != null ? "% minimum" : "Not set"}
-                    </span>
-                  </div>
-                  <p className="text-[12px] font-normal text-slate-500 mt-1">
-                    Warmup network reply ratio to maintain inbox placement
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Status Bar */}
-            <div className="p-3.5 bg-[#F4F7FB]/70 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[12px] font-normal">
-              <div className="flex items-center gap-2 text-slate-600 flex-wrap">
-                <span className="h-2 w-2 rounded-full bg-[#10B981] shrink-0" />
-                <span>
-                  Rule actively applied to{" "}
-                  <strong className="text-[#2563EB] font-medium">{selectedRuleAccountName}</strong>{" "}
-                  inboxes tagged with:{" "}
-                  <strong className="text-slate-900 font-medium">{selectedRule.tag_name || "General"}</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-3 self-end sm:self-auto">
-                <Link
-                  href="/emailaccounts"
-                  className="text-[14px] font-medium text-slate-600 hover:text-[#2563EB] transition-colors"
-                >
-                  View Matched Inboxes →
-                </Link>
-                <Link
-                  href="/settings"
-                  className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 transition-colors"
-                >
-                  Edit This Rule in Settings →
-                </Link>
-              </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="p-8 text-center space-y-3 bg-[#F4F7FB]/50 rounded-xl border-2 border-dashed border-slate-200">
