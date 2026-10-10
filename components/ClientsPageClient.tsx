@@ -21,7 +21,7 @@ import {
   Layers,
   Zap,
 } from "lucide-react";
-import { getCleanInitials } from "@/lib/clientUtils";
+import { getCleanInitials } from "@/lib/utils";
 
 export type ClientIntegrationBreakdown = {
   name: string;

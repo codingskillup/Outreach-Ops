@@ -27,7 +27,7 @@ import {
   Radio,
   FileText,
 } from "lucide-react";
-import { cleanClientName } from "@/lib/clientUtils";
+import { cleanClientName } from "@/lib/utils";
 
 type RawData = Record<string, unknown>;
 

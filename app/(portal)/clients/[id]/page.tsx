@@ -10,7 +10,7 @@ import {
 import {
   cleanClientName,
   createClientId,
-} from "@/lib/clientUtils";
+} from "@/lib/utils";
 
 import ClientDetailPage, {
   type ClientDetailData,
