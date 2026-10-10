@@ -577,57 +577,58 @@ export default function DashboardShell({
       )}
 
       {/* ── Executive Command Header (v3) ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-xs">
+      {/* ── Executive Command Header (Soft, Luxury Executive Design) ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           {/* Left: Title & Live Badges */}
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">
-                <Radio className="w-3 h-3 text-indigo-600 animate-pulse" />
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-[#2563EB] border border-blue-200/80">
+                <Radio className="w-3 h-3 text-[#2563EB] animate-pulse" />
                 OUTREACH OPS v3.0
               </span>
 
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                   hasLiveSmartlead
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
+                    ? "bg-emerald-50 text-[#10B981] border-emerald-200/80"
                     : "bg-slate-50 text-slate-700 border-slate-200/80"
                 }`}
               >
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    hasLiveSmartlead ? "bg-emerald-500 animate-ping" : "bg-slate-400"
+                    hasLiveSmartlead ? "bg-[#10B981]" : "bg-slate-400"
                   }`}
                 />
                 {hasLiveSmartlead ? "Production Sync Live" : "Awaiting API Connection"}
               </span>
 
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-500 border border-slate-200/70">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-500 border border-slate-200/60">
                 <Clock className="w-3 h-3 text-slate-400" />
                 Audited: {checkedAt}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight leading-tight">
               Fleet Operations & Deliverability Command
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl">
-              Real-time drift surveillance across sending mailboxes, warmup pacing, sequences, and DNS compliance.
+            <p className="text-[14px] font-normal text-slate-500 mt-1 max-w-3xl">
+              Real-time surveillance across sending mailboxes, warmup pacing, sequences, and DNS compliance.
             </p>
           </div>
 
-          {/* Right: Quick Action Controls */}
+          {/* Right: Quick Action Controls (Buttons: 500, 14px) */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 w-full lg:w-auto">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border border-slate-200/90 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
               title="Trigger instant sync across all connected APIs"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${
-                  isRefreshing ? "animate-spin text-indigo-600" : "text-slate-500"
+                  isRefreshing ? "animate-spin text-[#2563EB]" : "text-slate-400"
                 }`}
               />
               <span>{isRefreshing ? "Syncing..." : "Sync Fleet"}</span>
@@ -635,12 +636,12 @@ export default function DashboardShell({
 
             <Link
               href="/issues"
-              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-xs"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-2xs"
             >
-              <TriangleAlert className="w-3.5 h-3.5 text-amber-600" />
+              <TriangleAlert className="w-3.5 h-3.5 text-[#F59E0B]" />
               <span>Issues</span>
               {openIssues.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-md text-[10px] font-black bg-rose-500 text-white">
+                <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-[#EF4444] text-white">
                   {openIssues.length}
                 </span>
               )}
@@ -648,15 +649,15 @@ export default function DashboardShell({
 
             <Link
               href="/connections"
-              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all shadow-xs"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 transition-all shadow-2xs"
             >
-              <Server className="w-3.5 h-3.5 text-slate-500" />
+              <Server className="w-3.5 h-3.5 text-slate-400" />
               <span>{displayConnections.length} Smartleads</span>
             </Link>
 
             <Link
               href="/settings"
-              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/25 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-xs active:scale-95"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Rules & Limits</span>
@@ -667,24 +668,24 @@ export default function DashboardShell({
         {/* ── Smartlead Workspace Scope Selector ── */}
         <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1.5">
-              <Server className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1.5">
+              <Server className="w-3.5 h-3.5 text-[#2563EB]" />
               Smartleads ({displayConnections.length}):
             </span>
 
-            {/* All Workspaces Combined Button */}
+            {/* All Workspaces Combined Button (500, 14px) */}
             <button
               type="button"
               onClick={() => setSelectedScope("ALL")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer flex items-center gap-2 ${
                 selectedScope === "ALL"
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                  ? "bg-[#14243D] text-white shadow-xs"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
               }`}
             >
-              <span>All Smartleads (Combined Fleet)</span>
+              <span>All Smartleads (Combined)</span>
               <span
-                className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
                   selectedScope === "ALL" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
                 }`}
               >
@@ -692,7 +693,7 @@ export default function DashboardShell({
               </span>
             </button>
 
-            {/* Individual Smartlead Buttons */}
+            {/* Individual Smartlead Buttons (500, 14px) */}
             {displayConnections.map((conn) => {
               const isSelected = selectedScope === conn.name;
               return (
@@ -700,16 +701,16 @@ export default function DashboardShell({
                   key={conn.id}
                   type="button"
                   onClick={() => setSelectedScope(conn.name)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                     isSelected
-                      ? "bg-indigo-600 text-white shadow-xs"
+                      ? "bg-[#2563EB] text-white shadow-xs font-medium"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                   }`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white" : "bg-[#10B981]"}`} />
                   <span>{conn.name}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
                       isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
                     }`}
                   >
@@ -723,23 +724,23 @@ export default function DashboardShell({
               <button
                 type="button"
                 onClick={() => setSelectedScope("ALL")}
-                className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 ml-2 transition-colors cursor-pointer"
+                className="text-[12px] font-medium text-slate-500 hover:text-[#2563EB] flex items-center gap-1 ml-2 transition-colors cursor-pointer"
                 title="Combine Both Smartleads"
               >
-                <X className="w-3 h-3 text-rose-500" />
-                <span>Show Both Smartleads</span>
+                <X className="w-3 h-3 text-[#EF4444]" />
+                <span>Show Both Combined</span>
               </button>
             )}
           </div>
 
           <div className="text-[11px] font-medium text-slate-400">
             {selectedScope === "ALL" ? (
-              <span className="text-emerald-700 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-[#10B981] font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
                 Aggregated fleet across all {displayConnections.length} Smartlead accounts
               </span>
             ) : (
-              <span className="text-indigo-600 font-bold">
+              <span className="text-[#2563EB] font-bold">
                 Focused on: {selectedScope}
               </span>
             )}
@@ -747,171 +748,171 @@ export default function DashboardShell({
         </div>
       </div>
 
-      {/* ── 5 Primary Executive Metric Cards (Unique, High-Impact, Zero Duplication) ── */}
+      {/* ── 5 Primary Executive Metric Cards (Exact Specified Palette & Typography) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Card 1: Sending Inboxes with Workspace Breakdown */}
         <Link
           href="/emailaccounts"
-          className="group bg-gradient-to-br from-indigo-50/70 via-white to-white rounded-2xl border-2 border-indigo-100/90 hover:border-indigo-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+          className="group bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs"
         >
           <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-100/80 group-hover:scale-105 transition-transform">
               <Mail className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/80">
+            <span className="text-[12px] font-normal uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/70">
               Fleet Scale
             </span>
           </div>
 
           <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+            <div className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Total Inboxes
             </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+            <div className="text-[28px] font-semibold text-slate-900 tracking-tight mt-0.5 tabular-nums">
               {totalAccounts.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-500 font-normal mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB] shrink-0" />
               <span className="truncate">
                 {displayConnections.length >= 2
                   ? `${displayConnections[0].name}: ${displayConnections[0].accounts.toLocaleString()} · ${displayConnections[1].name}: ${displayConnections[1].accounts.toLocaleString()}`
                   : `${healthy.toLocaleString()} compliant`}
               </span>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-indigo-100 flex items-center justify-between text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[13px] font-medium text-slate-600 group-hover:text-[#2563EB] transition-colors">
               <span>Inspect inboxes</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </Link>
 
-        {/* Card 2: Daily Sending Capacity */}
+        {/* Card 2: Daily Sending Capacity (Amber #F59E0B) */}
         <Link
           href="/emailaccounts"
-          className="group bg-gradient-to-br from-amber-50/70 via-white to-white rounded-2xl border-2 border-amber-100/90 hover:border-amber-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+          className="group bg-white rounded-2xl border border-slate-200/90 hover:border-amber-300 hover:shadow-md p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs"
         >
           <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-600/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 text-[#F59E0B] flex items-center justify-center border border-amber-100/80 group-hover:scale-105 transition-transform">
               <Flame className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200/80">
+            <span className="text-[12px] font-normal uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/70">
               Active Cap
             </span>
           </div>
 
           <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+            <div className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Daily Send Bandwidth
             </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+            <div className="text-[28px] font-semibold text-slate-900 tracking-tight mt-0.5 tabular-nums">
               {computedDailyCapacity.toLocaleString()}{" "}
-              <span className="text-xs font-semibold text-slate-400">emails/day</span>
+              <span className="text-xs font-normal text-slate-400">emails/day</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-500 font-normal mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B] shrink-0" />
               <span className="truncate">Rule-enforced daily outreach limit</span>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-amber-100 flex items-center justify-between text-[11px] font-bold text-amber-700 group-hover:text-amber-900">
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[13px] font-medium text-slate-600 group-hover:text-amber-700 transition-colors">
               <span>View daily limits</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </Link>
 
-        {/* Card 3: Warmup Operations */}
+        {/* Card 3: Warmup Operations (Emerald #10B981) */}
         <Link
           href="/emailaccounts"
-          className="group bg-gradient-to-br from-emerald-50/70 via-white to-white rounded-2xl border-2 border-emerald-100/90 hover:border-emerald-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+          className="group bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-300 hover:shadow-md p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs"
         >
           <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-[#10B981] flex items-center justify-center border border-emerald-100/80 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80">
+            <span className="text-[12px] font-normal uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#10B981] border border-emerald-200/70">
               {warmupRate}% Guarded
             </span>
           </div>
 
           <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+            <div className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Warmup Mailboxes
             </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+            <div className="text-[28px] font-semibold text-slate-900 tracking-tight mt-0.5 tabular-nums">
               {computedWarmupAccounts.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-500 font-normal mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] shrink-0" />
               <span className="truncate">Automated ramp pacing · 0 blocked</span>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between text-[11px] font-bold text-emerald-700 group-hover:text-emerald-900">
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[13px] font-medium text-slate-600 group-hover:text-[#10B981] transition-colors">
               <span>Deliverability health</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </Link>
 
-        {/* Card 4: Active Sequences */}
+        {/* Card 4: Active Sequences (Purple #8B5CF6) */}
         <Link
           href="/campaigns"
-          className="group bg-gradient-to-br from-purple-50/70 via-white to-white rounded-2xl border-2 border-purple-100/90 hover:border-purple-400 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
+          className="group bg-white rounded-2xl border border-slate-200/90 hover:border-purple-300 hover:shadow-md p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs"
         >
           <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-purple-50 text-[#8B5CF6] flex items-center justify-center border border-purple-100/80 group-hover:scale-105 transition-transform">
               <Megaphone className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/80">
+            <span className="text-[12px] font-normal uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-50 text-[#8B5CF6] border border-purple-200/70">
               Sequences
             </span>
           </div>
 
           <div className="mt-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-purple-700">
+            <div className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Live Sequences
             </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+            <div className="text-[28px] font-semibold text-slate-900 tracking-tight mt-0.5 tabular-nums">
               {activeCampaignCount.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shrink-0" />
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-500 font-normal mt-1 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] shrink-0" />
               <span className="truncate">Out of {filteredCampaigns.length} total sequences</span>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-purple-100 flex items-center justify-between text-[11px] font-bold text-purple-700 group-hover:text-purple-900">
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[13px] font-medium text-slate-600 group-hover:text-[#8B5CF6] transition-colors">
               <span>View sequences</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </Link>
 
-        {/* Card 5: Diagnostic Issues */}
+        {/* Card 5: Diagnostic Issues (Red #EF4444 or Emerald #10B981) */}
         <Link
           href="/issues"
-          className={`group rounded-2xl border-2 p-4 sm:p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between ${
+          className={`group rounded-2xl border p-4 sm:p-5 hover:shadow-md transition-all duration-200 flex flex-col justify-between bg-white shadow-2xs ${
             criticalIssuesCount > 0
-              ? "bg-gradient-to-br from-rose-50/70 via-white to-white border-rose-200 hover:border-rose-400"
+              ? "border-rose-300 hover:border-rose-400"
               : openIssues.length > 0
-              ? "bg-gradient-to-br from-amber-50/70 via-white to-white border-amber-200 hover:border-amber-400"
-              : "bg-gradient-to-br from-emerald-50/70 via-white to-white border-emerald-100 hover:border-emerald-400"
+              ? "border-amber-300 hover:border-amber-400"
+              : "border-slate-200/90 hover:border-emerald-300"
           }`}
         >
           <div className="flex items-start justify-between">
             <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform ${
+              className={`w-11 h-11 rounded-xl flex items-center justify-center border group-hover:scale-105 transition-transform ${
                 criticalIssuesCount > 0
-                  ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-600/20"
+                  ? "bg-rose-50 text-[#EF4444] border-rose-100"
                   : openIssues.length > 0
-                  ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-600/20"
-                  : "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-600/20"
+                  ? "bg-amber-50 text-[#F59E0B] border-amber-100"
+                  : "bg-emerald-50 text-[#10B981] border-emerald-100"
               }`}
             >
               <TriangleAlert className="w-5 h-5" />
             </div>
             <span
-              className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+              className={`text-[12px] font-normal uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                 criticalIssuesCount > 0
-                  ? "bg-rose-100 text-rose-800 border-rose-200 animate-pulse"
+                  ? "bg-rose-50 text-[#EF4444] border-rose-200"
                   : openIssues.length > 0
-                  ? "bg-amber-100 text-amber-800 border-amber-200"
-                  : "bg-emerald-100 text-emerald-800 border-emerald-200"
+                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                  : "bg-emerald-50 text-[#10B981] border-emerald-200"
               }`}
             >
               {criticalIssuesCount > 0
@@ -923,36 +924,28 @@ export default function DashboardShell({
           </div>
 
           <div className="mt-4">
-            <div
-              className={`text-[11px] font-bold uppercase tracking-wider ${
-                criticalIssuesCount > 0
-                  ? "text-rose-700"
-                  : openIssues.length > 0
-                  ? "text-amber-700"
-                  : "text-emerald-700"
-              }`}
-            >
+            <div className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Diagnostic Issues
             </div>
             <div
-              className={`text-3xl font-black tracking-tight mt-0.5 tabular-nums ${
+              className={`text-[28px] font-semibold tracking-tight mt-0.5 tabular-nums ${
                 criticalIssuesCount > 0
-                  ? "text-rose-900"
+                  ? "text-[#EF4444]"
                   : openIssues.length > 0
-                  ? "text-amber-900"
+                  ? "text-[#F59E0B]"
                   : "text-slate-900"
               }`}
             >
               {openIssues.length.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-1 truncate">
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-500 font-normal mt-1 truncate">
               <span
                 className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                   criticalIssuesCount > 0
-                    ? "bg-rose-500"
+                    ? "bg-[#EF4444]"
                     : openIssues.length > 0
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
+                    ? "bg-[#F59E0B]"
+                    : "bg-[#10B981]"
                 }`}
               />
               <span className="truncate">
@@ -962,13 +955,13 @@ export default function DashboardShell({
               </span>
             </div>
             <div
-              className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-bold ${
+              className={`mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[13px] font-medium ${
                 criticalIssuesCount > 0
-                  ? "border-rose-100 text-rose-700 group-hover:text-rose-900"
+                  ? "text-[#EF4444] group-hover:text-rose-800"
                   : openIssues.length > 0
-                  ? "border-amber-100 text-amber-700 group-hover:text-amber-900"
-                  : "border-emerald-100 text-emerald-700 group-hover:text-emerald-900"
-              }`}
+                  ? "text-amber-800 group-hover:text-amber-900"
+                  : "text-slate-600 group-hover:text-[#10B981]"
+              } transition-colors`}
             >
               <span>{openIssues.length > 0 ? "Resolve open issues" : "Audit pipeline"}</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -981,17 +974,17 @@ export default function DashboardShell({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Server className="w-4 h-4 text-indigo-600" />
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
+              <Server className="w-4 h-4 text-[#2563EB]" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <h2 className="text-[16px] font-semibold text-[#14243D] flex items-center gap-2">
                 <span>Connected Smartlead Accounts</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 border border-indigo-200">
+                <span className="px-2 py-0.5 rounded-full text-[12px] font-normal bg-blue-50 text-[#2563EB] border border-blue-200">
                   {displayConnections.length} Active Workspaces
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[12px] font-normal text-slate-500">
                 Independent Smartlead workspace synchronizations and mailbox allocations
               </p>
             </div>
@@ -1001,7 +994,7 @@ export default function DashboardShell({
             <button
               type="button"
               onClick={() => setSelectedScope("ALL")}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 flex items-center gap-1 cursor-pointer"
             >
               <span>View Both Combined</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1014,15 +1007,15 @@ export default function DashboardShell({
             <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <Server className="w-6 h-6" />
             </div>
-            <h4 className="text-sm font-bold text-slate-800">
+            <h4 className="text-[16px] font-semibold text-[#14243D]">
               No Smartlead accounts connected yet
             </h4>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
+            <p className="text-[12px] font-normal text-slate-500 max-w-md mx-auto">
               Add your Smartlead API key in Settings to sync mailboxes, campaigns, and deliverability rules.
             </p>
             <Link
               href="/settings"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[14px] font-medium bg-[#2563EB] text-white hover:bg-blue-700 transition-colors"
             >
               <span>Connect Smartlead</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1037,29 +1030,29 @@ export default function DashboardShell({
               return (
                 <div
                   key={conn.id}
-                  className={`rounded-2xl border transition-all duration-200 overflow-hidden bg-white shadow-xs ${
+                  className={`rounded-2xl border transition-all duration-200 overflow-hidden bg-white shadow-2xs ${
                     isFocused
-                      ? "ring-2 ring-indigo-600 border-indigo-500 shadow-md"
+                      ? "ring-2 ring-[#2563EB]/40 border-[#2563EB] shadow-md"
                       : "border-slate-200/90 hover:border-slate-300 hover:shadow-sm"
                   }`}
                 >
-                  {/* Header */}
-                  <div className="p-4 sm:p-5 flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
+                  {/* Clean Executive Header (Soothing white, no harsh pitch black) */}
+                  <div className="p-4 sm:p-5 flex items-start justify-between gap-3 border-b border-slate-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-xs shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center shadow-2xs shrink-0">
                         <Server className="w-5 h-5" />
                       </div>
 
                       <div className="min-w-0">
-                        <div className="text-sm sm:text-base font-black text-slate-900 truncate flex items-center gap-2">
+                        <div className="text-[16px] font-semibold text-[#14243D] truncate flex items-center gap-2">
                           <span>{conn.name}</span>
                           {isFocused && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-indigo-600 text-white">
+                            <span className="px-2 py-0.5 rounded-full text-[12px] font-normal bg-[#2563EB] text-white">
                               Focused
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 truncate">
+                        <div className="flex items-center gap-1.5 text-[12px] font-normal text-slate-500 mt-0.5 truncate">
                           <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="truncate">{formatClients(conn.clients)}</span>
                         </div>
@@ -1068,15 +1061,15 @@ export default function DashboardShell({
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal border ${
                           isConnected
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : "bg-amber-50 text-amber-800 border-amber-200"
+                            ? "bg-emerald-50 text-[#10B981] border-emerald-200"
+                            : "bg-amber-50 text-[#F59E0B] border-amber-200"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            isConnected ? "bg-emerald-500 animate-ping" : "bg-amber-500"
+                            isConnected ? "bg-[#10B981]" : "bg-[#F59E0B]"
                           }`}
                         />
                         {isConnected ? "Live Sync Active" : conn.status}
@@ -1084,62 +1077,62 @@ export default function DashboardShell({
                     </div>
                   </div>
 
-                  {/* 4 Metric Columns (2x2 on mobile, 4-col on sm+) */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-2 sm:py-3 px-1 text-xs bg-white">
+                  {/* 4 Metric Columns in Crisp White */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-2.5 sm:py-3 px-1 bg-white">
                     <div className="p-2">
-                      <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Inboxes
                       </span>
-                      <span className="text-lg font-black text-slate-900 mt-0.5 block tabular-nums">
+                      <span className="text-[28px] font-semibold text-[#14243D] mt-0.5 block tabular-nums">
                         {conn.accounts.toLocaleString()}
                       </span>
                     </div>
 
                     <div className="p-2">
-                      <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Campaigns
                       </span>
-                      <span className="text-lg font-black text-indigo-700 mt-0.5 block tabular-nums">
+                      <span className="text-[28px] font-semibold text-[#8B5CF6] mt-0.5 block tabular-nums">
                         {conn.activeCampaigns.toLocaleString()}
                       </span>
                     </div>
 
                     <div className="p-2">
-                      <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Daily Bandwidth
                       </span>
-                      <span className="text-lg font-black text-amber-700 mt-0.5 block tabular-nums">
+                      <span className="text-[28px] font-semibold text-[#F59E0B] mt-0.5 block tabular-nums">
                         {conn.dailyCapacity.toLocaleString()}
                       </span>
                     </div>
 
                     <div className="p-2">
-                      <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Warmup
                       </span>
-                      <span className="text-lg font-black text-emerald-700 mt-0.5 block tabular-nums">
+                      <span className="text-[28px] font-semibold text-[#10B981] mt-0.5 block tabular-nums">
                         {conn.warmupAccounts.toLocaleString()}
                       </span>
                     </div>
                   </div>
 
                   {/* Tags and Action Bar */}
-                  <div className="p-3 sm:px-4 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="p-3 sm:px-4 bg-[#F4F7FB]/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[12px]">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <span className="text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Tags:
                       </span>
                       {conn.tagDistribution.slice(0, 2).map((t) => (
                         <span
                           key={t.name}
-                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white text-slate-700 border border-slate-200 truncate max-w-[150px]"
+                          className="px-2 py-0.5 rounded-md text-[12px] font-normal bg-white text-slate-700 border border-slate-200 truncate max-w-[150px]"
                           title={`${t.name}: ${t.count}`}
                         >
                           {t.name} ({t.count})
                         </span>
                       ))}
                       {conn.tagDistribution.length > 2 && (
-                        <span className="text-[10px] text-slate-400 font-bold">
+                        <span className="text-[12px] text-slate-400 font-normal">
                           +{conn.tagDistribution.length - 2} more
                         </span>
                       )}
@@ -1149,10 +1142,10 @@ export default function DashboardShell({
                       <button
                         type="button"
                         onClick={() => setSelectedScope(isFocused ? "ALL" : conn.name)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
                           isFocused
-                            ? "bg-slate-900 text-white"
-                            : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80"
+                            ? "bg-[#14243D] text-white"
+                            : "bg-[#2563EB] text-white hover:bg-blue-700"
                         }`}
                       >
                         {isFocused ? "Viewing Scope" : "Filter Dashboard"}
@@ -1160,7 +1153,7 @@ export default function DashboardShell({
 
                       <Link
                         href="/emailaccounts"
-                        className="text-xs font-bold text-slate-600 hover:text-indigo-600 px-2 py-1 flex items-center gap-0.5"
+                        className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 px-2 py-1 flex items-center gap-0.5"
                       >
                         <span>Inboxes</span>
                         <ArrowRight className="w-3 h-3" />
@@ -1174,33 +1167,31 @@ export default function DashboardShell({
         )}
       </div>
 
-
-
       {/* ── Main Operations Split Grid (Left: Tabbed Operations Hub, Right: Operations Pulse) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (Span 2): Multi-Tab Operational Hub */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-            {/* Tab Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            {/* Tab Header (Gentle white header, gentle on eyes) */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
               <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Server className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-[16px] font-semibold text-[#14243D] flex items-center gap-2">
+                  <Server className="w-4 h-4 text-[#2563EB]" />
                   <span>Fleet Infrastructure & Drift Radar</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-[12px] font-normal text-slate-500 mt-0.5">
                   Synchronized account status, client portfolios, tag profiles, and anomalies
                 </p>
               </div>
 
-              {/* Segmented View Pills (Horizontally scrollable on mobile) */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/60 overflow-x-auto max-w-full no-scrollbar shrink-0 self-start sm:self-auto">
+              {/* Segmented View Pills (Soothing, exact palette) */}
+              <div className="flex items-center gap-1 p-1 bg-[#F4F7FB] rounded-xl border border-slate-200 overflow-x-auto max-w-full no-scrollbar shrink-0 self-start sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setActiveTab("workspaces")}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
                     activeTab === "workspaces"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-[#2563EB] text-white shadow-2xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1209,9 +1200,9 @@ export default function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setActiveTab("clients")}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
                     activeTab === "clients"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-[#2563EB] text-white shadow-2xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1220,9 +1211,9 @@ export default function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setActiveTab("infrastructure")}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
                     activeTab === "infrastructure"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-[#2563EB] text-white shadow-2xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1231,9 +1222,9 @@ export default function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setActiveTab("issues")}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
                     activeTab === "issues"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-[#2563EB] text-white shadow-2xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -1251,16 +1242,16 @@ export default function DashboardShell({
                       <Server className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-slate-800">
+                      <h4 className="text-[16px] font-semibold text-[#14243D]">
                         No workspaces connected yet
                       </h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-[12px] font-normal text-slate-400 mt-0.5">
                         Connect your Smartlead or EmailGuard API key to view live accounts.
                       </p>
                     </div>
                     <Link
                       href="/settings"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[14px] font-medium bg-[#2563EB] text-white hover:bg-blue-700 transition-colors"
                     >
                       <span>Connect First Workspace</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -1273,19 +1264,19 @@ export default function DashboardShell({
                     return (
                       <div
                         key={connection.id}
-                        className="rounded-xl border border-slate-200/80 bg-slate-50/30 hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150 overflow-hidden"
+                        className="rounded-xl border border-slate-200/80 bg-white hover:border-blue-300 hover:shadow-xs transition-all duration-150 overflow-hidden"
                       >
                         <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-xs shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center shadow-2xs shrink-0">
                               <Server className="w-5 h-5" />
                             </div>
 
                             <div>
-                              <div className="text-sm font-bold text-slate-900">
+                              <div className="text-[16px] font-semibold text-[#14243D]">
                                 {connection.name}
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                              <div className="flex items-center gap-1.5 text-[12px] font-normal text-slate-500 mt-0.5">
                                 <Users className="w-3.5 h-3.5 text-slate-400" />
                                 <span>{formatClients(connection.clients)}</span>
                               </div>
@@ -1294,15 +1285,15 @@ export default function DashboardShell({
 
                           <div className="flex items-center gap-2.5 self-start sm:self-auto">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal border ${
                                 isConnected
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                                  ? "bg-emerald-50 text-[#10B981] border-emerald-200"
+                                  : "bg-amber-50 text-[#F59E0B] border-amber-200"
                               }`}
                             >
                               <span
                                 className={`h-1.5 w-1.5 rounded-full ${
-                                  isConnected ? "bg-emerald-500" : "bg-amber-500"
+                                  isConnected ? "bg-[#10B981]" : "bg-[#F59E0B]"
                                 }`}
                               />
                               {isConnected ? "Active Sync" : connection.status}
@@ -1310,7 +1301,7 @@ export default function DashboardShell({
 
                             <Link
                               href="/emailaccounts"
-                              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1"
+                              className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 px-2.5 py-1 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
                             >
                               <span>View</span>
                               <ArrowRight className="w-3 h-3" />
@@ -1319,34 +1310,34 @@ export default function DashboardShell({
                         </div>
 
                         {/* Mailbox Breakdown Metrics Strip */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white text-center py-2.5 px-1 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white text-center py-2.5 px-1">
                           <div className="p-2">
-                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                            <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                               Inboxes
                             </span>
-                            <span className="text-base font-extrabold text-slate-900 mt-0.5 block tabular-nums">
+                            <span className="text-[28px] font-semibold text-[#14243D] mt-0.5 block tabular-nums">
                               {connection.accounts.toLocaleString()}
                             </span>
                           </div>
 
                           <div className="p-2">
-                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                            <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                               Campaigns
                             </span>
-                            <span className="text-base font-extrabold text-indigo-700 mt-0.5 block tabular-nums">
+                            <span className="text-[28px] font-semibold text-[#8B5CF6] mt-0.5 block tabular-nums">
                               {connection.activeCampaigns.toLocaleString()}
                             </span>
                           </div>
 
                           <div className="p-2 col-span-2 sm:col-span-2 text-left px-3">
-                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+                            <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider mb-1">
                               Top Infrastructure Tags
                             </span>
                             <div className="flex flex-wrap gap-1">
                               {connection.tagDistribution.slice(0, 2).map((t) => (
                                 <span
                                   key={t.name}
-                                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px]"
+                                  className="px-2 py-0.5 rounded-md text-[12px] font-normal bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px]"
                                   title={`${t.name}: ${t.count}`}
                                 >
                                   {t.name} ({t.count})
@@ -1357,7 +1348,7 @@ export default function DashboardShell({
                         </div>
 
                         {connection.lastSynced && (
-                          <div className="p-2 px-4 bg-slate-50/70 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                          <div className="p-2 px-4 bg-slate-50/70 border-t border-slate-100 text-[12px] font-normal text-slate-400 flex items-center justify-between">
                             <span>
                               Last synchronized: {formatDateTime(connection.lastSynced)}
                             </span>
@@ -1373,15 +1364,15 @@ export default function DashboardShell({
             {/* TAB 2: Clients Distribution */}
             {activeTab === "clients" && (
               <div className="p-5 space-y-4">
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <div className="flex items-center justify-between text-[12px] font-normal text-slate-500 mb-1">
                   <span>Mailbox allocation & health across active client portfolios:</span>
-                  <span className="text-[11px] font-bold text-slate-400">
+                  <span className="text-[12px] font-normal text-slate-400">
                     Click client to filter
                   </span>
                 </div>
 
                 {clientBreakdown.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400">
+                  <div className="p-8 text-center text-[13px] font-normal text-slate-400">
                     No client portfolios detected in synchronized accounts.
                   </div>
                 ) : (
@@ -1399,16 +1390,16 @@ export default function DashboardShell({
                           onClick={() => setSelectedScope(isSelected ? "ALL" : client.name)}
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-indigo-50/70 border-indigo-300 shadow-xs"
+                              ? "bg-blue-50/70 border-blue-300 shadow-xs"
                               : "bg-slate-50/70 hover:bg-white border-slate-200 hover:border-slate-300"
                           }`}
                         >
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span className="font-bold text-slate-900 flex items-center gap-2">
-                              <Users className="w-3.5 h-3.5 text-indigo-600" />
+                          <div className="flex items-center justify-between text-[13px] font-normal mb-1.5">
+                            <span className="font-semibold text-slate-900 flex items-center gap-2">
+                              <Users className="w-3.5 h-3.5 text-[#2563EB]" />
                               <span>{client.name}</span>
                               {isSelected && (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-indigo-600 text-white">
+                                <span className="px-1.5 py-0.2 rounded text-[12px] font-normal bg-[#2563EB] text-white">
                                   Filtered
                                 </span>
                               )}
@@ -1418,7 +1409,7 @@ export default function DashboardShell({
                               <span className="text-slate-500">
                                 {client.campaigns} active campaigns
                               </span>
-                              <span className="font-black text-indigo-700 tabular-nums">
+                              <span className="font-semibold text-[#2563EB] tabular-nums">
                                 {client.count.toLocaleString()} inboxes ({pct}%)
                               </span>
                             </div>
@@ -1426,7 +1417,7 @@ export default function DashboardShell({
 
                           <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
                             <div
-                              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                              className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -1441,12 +1432,12 @@ export default function DashboardShell({
             {/* TAB 3: Tag Infrastructure Matrix */}
             {activeTab === "infrastructure" && (
               <div className="p-5 space-y-4">
-                <div className="text-xs text-slate-500 mb-2">
+                <div className="text-[12px] font-normal text-slate-500 mb-2">
                   Mailbox infrastructure tag breakdown and enforced rule profile:
                 </div>
 
                 {tagBreakdown.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400">
+                  <div className="p-8 text-center text-[13px] font-normal text-slate-400">
                     No infrastructure tags detected in synchronized accounts.
                   </div>
                 ) : (
@@ -1495,27 +1486,27 @@ export default function DashboardShell({
                           key={tag.name}
                           className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80"
                         >
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-800 flex items-center gap-2">
-                              <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                          <div className="flex items-center justify-between text-[13px] font-normal">
+                            <span className="font-semibold text-slate-800 flex items-center gap-2">
+                              <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
                               {tag.name}
                             </span>
-                            <span className="font-extrabold text-indigo-600 tabular-nums">
+                            <span className="font-semibold text-[#2563EB] tabular-nums">
                               {tag.count.toLocaleString()} inboxes ({pct}%)
                             </span>
                           </div>
 
                           <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
                             <div
-                              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                              className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] pt-1">
+                          <div className="flex items-center justify-between text-[12px] font-normal pt-1">
                             {matchingRule ? (
-                              <span className="font-semibold text-emerald-700 flex items-center gap-1.5 truncate">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="font-normal text-[#10B981] flex items-center gap-1.5 truncate">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] shrink-0" />
                                 <span className="truncate">
                                   {ruleDescParts.length > 0
                                     ? ruleDescParts.join(" · ")
@@ -1529,7 +1520,7 @@ export default function DashboardShell({
                             )}
                             <Link
                               href="/settings"
-                              className="text-indigo-600 hover:text-indigo-800 font-bold shrink-0 ml-2"
+                              className="text-[#2563EB] hover:text-blue-800 font-medium shrink-0 ml-2 text-[14px]"
                             >
                               {matchingRule ? "Edit Rule →" : "Configure Rule →"}
                             </Link>
@@ -1546,7 +1537,7 @@ export default function DashboardShell({
             {activeTab === "issues" && (
               <div className="p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[12px] font-normal text-slate-500">
                     Live detected anomalies across mailboxes and sequences:
                   </div>
 
@@ -1554,9 +1545,9 @@ export default function DashboardShell({
                     <button
                       type="button"
                       onClick={() => setIssueSeverityFilter("ALL")}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[14px] font-medium cursor-pointer ${
                         issueSeverityFilter === "ALL"
-                          ? "bg-slate-900 text-white"
+                          ? "bg-[#14243D] text-white"
                           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
@@ -1565,10 +1556,10 @@ export default function DashboardShell({
                     <button
                       type="button"
                       onClick={() => setIssueSeverityFilter("Critical")}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[14px] font-medium cursor-pointer ${
                         issueSeverityFilter === "Critical"
-                          ? "bg-rose-600 text-white"
-                          : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          ? "bg-[#EF4444] text-white"
+                          : "bg-rose-50 text-[#EF4444] border border-rose-200 hover:bg-rose-100"
                       }`}
                     >
                       Critical Only
@@ -1576,10 +1567,10 @@ export default function DashboardShell({
                     <button
                       type="button"
                       onClick={() => setIssueSeverityFilter("Warning")}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[14px] font-medium cursor-pointer ${
                         issueSeverityFilter === "Warning"
-                          ? "bg-amber-600 text-white"
-                          : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                          ? "bg-[#F59E0B] text-white"
+                          : "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
                       }`}
                     >
                       Warnings
@@ -1590,11 +1581,11 @@ export default function DashboardShell({
                 <div className="space-y-3">
                   {displayedIssuesWithFilter.length === 0 ? (
                     <div className="p-8 text-center flex flex-col items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
-                      <span className="text-xs font-bold text-slate-800">
+                      <CheckCircle2 className="w-8 h-8 text-[#10B981] mb-2" />
+                      <span className="text-[13px] font-normal text-slate-800">
                         Zero drift issues detected in this scope
                       </span>
-                      <span className="text-[11px] text-slate-400 mt-0.5">
+                      <span className="text-[12px] font-normal text-slate-400 mt-0.5">
                         All monitored mailboxes comply with active sending and warmup rules.
                       </span>
                     </div>
@@ -1614,34 +1605,34 @@ export default function DashboardShell({
                           <div
                             className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                               isCritical
-                                ? "bg-rose-100 text-rose-600"
-                                : "bg-amber-100 text-amber-700"
+                                ? "bg-rose-100 text-[#EF4444]"
+                                : "bg-amber-100 text-[#F59E0B]"
                             }`}
                           >
                             <CircleAlert className="w-4 h-4" />
                           </div>
 
-                          <div className="flex-1 min-w-0 text-xs">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                              <span className="text-[13px] font-normal text-slate-900 group-hover:text-[#2563EB] transition-colors truncate">
                                 {issueTitle}
                               </span>
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                                className={`text-[12px] font-normal px-2 py-0.5 rounded-full border shrink-0 ${
                                   isCritical
-                                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : "bg-amber-50 text-amber-800 border-amber-200"
+                                    ? "bg-rose-50 text-[#EF4444] border-rose-200"
+                                    : "bg-amber-50 text-[#F59E0B] border-amber-200"
                                 }`}
                               >
                                 {issue.severity}
                               </span>
                             </div>
 
-                            <p className="text-slate-500 truncate mt-0.5">
+                            <p className="text-[13px] font-normal text-slate-500 truncate mt-0.5">
                               {issueDesc}
                             </p>
 
-                            <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
+                            <div className="flex items-center gap-2 text-[12px] font-normal text-slate-400 mt-1">
                               <span>Client: {issue.client || "General"}</span>
                               <span>•</span>
                               <span>{timeStr}</span>
@@ -1656,14 +1647,14 @@ export default function DashboardShell({
             )}
 
             {/* Workspaces Footer */}
-            <div className="p-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="p-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-[12px] font-normal text-slate-500">
+              <span className="flex items-center gap-1.5 font-normal">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
                 Live Smartlead & EmailGuard API Sync Active
               </span>
               <Link
                 href="/emailaccounts"
-                className="text-xs font-semibold text-slate-700 hover:text-indigo-600 flex items-center gap-1"
+                className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 flex items-center gap-1"
               >
                 <span>View all mailboxes</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1675,57 +1666,57 @@ export default function DashboardShell({
         {/* Right Column (Span 1): Today's Operations Pulse & Active Guardrails */}
         <div className="space-y-6">
           {/* Operations Pulse Widget */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col justify-between">
             <div>
               <div className="p-4 px-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-[16px] font-semibold text-[#14243D] flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#2563EB]" />
                     <span>Today&apos;s Operations Digest</span>
                   </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[12px] font-normal text-slate-400 mt-0.5">
                     Checked at: {checkedAt}
                   </p>
                 </div>
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-ping" />
               </div>
 
               <div className="p-5 pb-3">
                 {/* Health Rating Mini Card */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-slate-200/80 mb-4">
-                  <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="font-bold text-slate-800">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-[#F4F7FB] to-emerald-50/40 border border-slate-200/80 mb-4">
+                  <div className="flex items-center justify-between text-[13px] font-normal mb-2">
+                    <span className="font-semibold text-slate-800">
                       Fleet Health Index
                     </span>
-                    <span className="font-extrabold text-emerald-700 tabular-nums">
+                    <span className="font-semibold text-[#10B981] tabular-nums">
                       {healthRate}% Optimal
                     </span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      className="h-full bg-[#10B981] rounded-full transition-all duration-500"
                       style={{ width: `${healthRate}%` }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2">
+                  <div className="flex items-center justify-between text-[12px] font-normal text-slate-500 mt-2">
                     <span>{healthy.toLocaleString()} compliant</span>
                     <span>{needAttention.toLocaleString()} drift flagged</span>
                   </div>
                 </div>
 
                 {/* Rows of Daily Metrics with drill-down link affordance */}
-                <div className="space-y-1 divide-y divide-slate-100 text-xs">
+                <div className="space-y-1 divide-y divide-slate-100 text-[13px] font-normal">
                   <Link
                     href="/emailaccounts"
                     className="flex items-center justify-between py-2.5 hover:bg-slate-50/80 px-2 rounded-lg transition-colors group"
                   >
                     <span className="text-slate-600 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+                      <Mail className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB]" />
                       Inboxes audited
                     </span>
-                    <span className="font-bold text-slate-900 group-hover:text-indigo-600 flex items-center gap-1 tabular-nums">
+                    <span className="font-semibold text-slate-900 group-hover:text-[#2563EB] flex items-center gap-1 tabular-nums">
                       {todayCheckedAccounts.toLocaleString()}
-                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-600" />
+                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-[#2563EB]" />
                     </span>
                   </Link>
 
@@ -1734,12 +1725,12 @@ export default function DashboardShell({
                     className="flex items-center justify-between py-2.5 hover:bg-slate-50/80 px-2 rounded-lg transition-colors group"
                   >
                     <span className="text-slate-600 flex items-center gap-1.5">
-                      <Megaphone className="w-3.5 h-3.5 text-indigo-500" />
+                      <Megaphone className="w-3.5 h-3.5 text-[#8B5CF6]" />
                       Active campaigns
                     </span>
-                    <span className="font-bold text-indigo-700 group-hover:text-indigo-800 flex items-center gap-1 tabular-nums">
+                    <span className="font-semibold text-[#8B5CF6] group-hover:text-purple-800 flex items-center gap-1 tabular-nums">
                       {todayActiveCampaigns.toLocaleString()}
-                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-600" />
+                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-[#8B5CF6]" />
                     </span>
                   </Link>
 
@@ -1751,7 +1742,7 @@ export default function DashboardShell({
                       <Globe2 className="w-3.5 h-3.5 text-cyan-500" />
                       Domains checked
                     </span>
-                    <span className="font-bold text-slate-900 group-hover:text-cyan-700 flex items-center gap-1 tabular-nums">
+                    <span className="font-semibold text-slate-900 group-hover:text-cyan-700 flex items-center gap-1 tabular-nums">
                       {todayDomainsChecked.toLocaleString()}
                       <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-cyan-600" />
                     </span>
@@ -1762,16 +1753,16 @@ export default function DashboardShell({
                     className="flex items-center justify-between py-2.5 hover:bg-slate-50/80 px-2 rounded-lg transition-colors group"
                   >
                     <span className="text-slate-600 flex items-center gap-1.5">
-                      <TriangleAlert className="w-3.5 h-3.5 text-amber-500" />
+                      <TriangleAlert className="w-3.5 h-3.5 text-[#F59E0B]" />
                       Open issues
                     </span>
                     <span
-                      className={`font-bold flex items-center gap-1 tabular-nums ${
-                        displayedNewIssues > 0 ? "text-amber-600" : "text-slate-900"
+                      className={`font-semibold flex items-center gap-1 tabular-nums ${
+                        displayedNewIssues > 0 ? "text-[#F59E0B]" : "text-slate-900"
                       }`}
                     >
                       {displayedNewIssues.toLocaleString()}
-                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-amber-600" />
+                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-[#F59E0B]" />
                     </span>
                   </Link>
 
@@ -1780,12 +1771,12 @@ export default function DashboardShell({
                     className="flex items-center justify-between py-2.5 hover:bg-slate-50/80 px-2 rounded-lg transition-colors group"
                   >
                     <span className="text-slate-600 flex items-center gap-1.5">
-                      <CircleCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      <CircleCheck className="w-3.5 h-3.5 text-[#10B981]" />
                       Issues resolved
                     </span>
-                    <span className="font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-1 tabular-nums">
+                    <span className="font-semibold text-[#10B981] group-hover:text-emerald-800 flex items-center gap-1 tabular-nums">
                       {displayedResolved.toLocaleString()}
-                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-emerald-600" />
+                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-[#10B981]" />
                     </span>
                   </Link>
                 </div>
@@ -1795,7 +1786,7 @@ export default function DashboardShell({
             <div className="p-4 bg-slate-50/50 border-t border-slate-100">
               <Link
                 href="/activity"
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-indigo-200/80 bg-white hover:bg-indigo-50/50 transition-colors shadow-xs"
+                className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-blue-200 bg-white hover:bg-blue-50/50 transition-colors shadow-2xs"
               >
                 <Activity className="w-3.5 h-3.5" />
                 <span>View Full Activity & Audit Log</span>
@@ -1806,26 +1797,26 @@ export default function DashboardShell({
       </div>
 
       {/* ── Enforced Deliverability Rules (Full-Width Operations Stage) ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-7 space-y-5">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-7 space-y-5">
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal uppercase tracking-wider bg-blue-50 text-[#2563EB] border border-blue-200/80">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#2563EB]" />
                 Deliverability Guardrails
               </span>
               {scopedRules.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-emerald-50 text-[#10B981] border border-emerald-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
                   {scopedRules.length} Active {scopedRules.length === 1 ? "Rule" : "Rules"} Enforced
                 </span>
               )}
             </div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+            <h3 className="text-[16px] font-semibold text-[#14243D] tracking-tight">
               Enforced Deliverability Rules by Tag
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
+            <p className="text-[12px] font-normal text-slate-500 max-w-2xl">
               Real-time threshold guardrails configured in Settings to prevent mailbox drift, daily cap breaches, and warmup decay.
             </p>
           </div>
@@ -1833,7 +1824,7 @@ export default function DashboardShell({
           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
             <Link
               href="/settings"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/25 active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-sm shadow-blue-600/25 active:scale-95"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Configure in Settings</span>
@@ -1845,10 +1836,10 @@ export default function DashboardShell({
         {selectedRule ? (
           <div className="space-y-5">
             {/* Tag Selection Row (Clean flex-wrap on mobile, no horizontal scrollbar) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3 sm:px-4 rounded-xl border border-slate-200/70">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F4F7FB]/70 p-3 sm:px-4 rounded-xl border border-slate-200/70">
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1.5 mr-1">
-                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500 shrink-0 flex items-center gap-1.5 mr-1">
+                  <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
                   Select Tag Rule:
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -1860,22 +1851,22 @@ export default function DashboardShell({
                         key={rule.id}
                         type="button"
                         onClick={() => setActiveRuleTagKey(rule.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer flex items-center gap-2 ${
                           isSelected
-                            ? "bg-slate-900 text-white shadow-xs"
+                            ? "bg-[#14243D] text-white shadow-2xs"
                             : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                            isSelected ? "bg-emerald-400" : "bg-slate-300"
+                            isSelected ? "bg-[#10B981]" : "bg-slate-300"
                           }`}
                         />
                         <span
-                          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded transition-colors uppercase tracking-wider shrink-0 ${
+                          className={`text-[12px] font-normal px-1.5 py-0.5 rounded transition-colors uppercase tracking-wider shrink-0 ${
                             isSelected
                               ? "bg-white/20 text-white"
-                              : "bg-indigo-50 text-indigo-700 border border-indigo-200/60"
+                              : "bg-blue-50 text-[#2563EB] border border-blue-200/60"
                           }`}
                         >
                           {accountName}
@@ -1887,10 +1878,10 @@ export default function DashboardShell({
                 </div>
               </div>
 
-              <div className="text-xs text-slate-500 shrink-0 flex items-center gap-1.5">
-                <span className="font-semibold text-slate-600">Active Rule:</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-900 border border-indigo-200">
-                  <span className="text-indigo-700 font-extrabold uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded bg-indigo-100/90 border border-indigo-200/70">
+              <div className="text-[12px] font-normal text-slate-500 shrink-0 flex items-center gap-1.5">
+                <span className="font-medium text-slate-600">Active Rule:</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-normal bg-blue-50 text-[#14243D] border border-blue-200">
+                  <span className="text-[#2563EB] font-normal uppercase text-[12px] tracking-wider px-1.5 py-0.5 rounded bg-blue-100/90 border border-blue-200/70">
                     {selectedRuleAccountName}
                   </span>
                   <span>{selectedRule.tag_name || "General"}</span>
@@ -1900,79 +1891,79 @@ export default function DashboardShell({
 
             {/* 4 Metric Guardrail Cards (Full Width 4-Columns on Desktop, 2-Columns on Mobile) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-              {/* Box 1: Daily Send Limit */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50/60 via-white to-white border-2 border-amber-100/90 hover:border-amber-300 transition-all shadow-xs flex flex-col justify-between">
+              {/* Box 1: Daily Send Limit (Amber #F59E0B) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 via-white to-white border border-amber-200/80 hover:border-amber-400 transition-all shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+                  <div className="w-10 h-10 rounded-xl bg-[#F59E0B] text-white flex items-center justify-center shadow-xs">
                     <Flame className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-[#F59E0B] border border-amber-200">
                     Daily Cap
                   </span>
                 </div>
                 <div className="mt-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 block">
+                  <span className="text-[12px] font-normal uppercase tracking-wider text-amber-800 block">
                     Daily Send Limit
                   </span>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
                     {selectedRule.message_per_day != null ? `${selectedRule.message_per_day}` : "∞"}
-                    <span className="text-sm font-bold text-slate-400 ml-1.5">
+                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
                       {selectedRule.message_per_day != null ? "msgs / day" : "Uncapped"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[12px] font-normal text-slate-500 mt-1">
                     Maximum emails per mailbox per day before drift warning
                   </p>
                 </div>
               </div>
 
-              {/* Box 2: Minimum Gap */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-50/60 via-white to-white border-2 border-indigo-100/90 hover:border-indigo-300 transition-all shadow-xs flex flex-col justify-between">
+              {/* Box 2: Minimum Gap (Primary Blue #2563EB) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/50 via-white to-white border border-blue-200/80 hover:border-blue-400 transition-all shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+                  <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-xs">
                     <Clock className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200">
                     Pacing
                   </span>
                 </div>
                 <div className="mt-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 block">
+                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#2563EB] block">
                     Minimum Gap
                   </span>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
                     {selectedRule.minimum_gap != null ? `${selectedRule.minimum_gap}` : "0"}
-                    <span className="text-sm font-bold text-slate-400 ml-1.5">
+                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
                       {selectedRule.minimum_gap != null ? (selectedRule.minimum_gap === 1 ? "minute" : "minutes") : "No gap"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[12px] font-normal text-slate-500 mt-1">
                     Spacing interval enforced between sequential outbound sends
                   </p>
                 </div>
               </div>
 
-              {/* Box 3: Warmup Daily Cap */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/60 via-white to-white border-2 border-emerald-100/90 hover:border-emerald-300 transition-all shadow-xs flex flex-col justify-between">
+              {/* Box 3: Warmup Daily Cap (Emerald Green #10B981) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-white border border-emerald-200/80 hover:border-emerald-400 transition-all shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+                  <div className="w-10 h-10 rounded-xl bg-[#10B981] text-white flex items-center justify-center shadow-xs">
                     <TrendingUp className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-[#10B981] border border-emerald-200">
                     Warmup
                   </span>
                 </div>
                 <div className="mt-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">
+                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#10B981] block">
                     Warmup Daily Cap
                   </span>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
                     {selectedRule.warmup_enabled === false
                       ? "Off"
                       : selectedRule.warmup_daily != null
                       ? `${selectedRule.warmup_daily}`
                       : "∞"}
-                    <span className="text-sm font-bold text-slate-400 ml-1.5">
+                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
                       {selectedRule.warmup_enabled === false
                         ? "Disabled"
                         : selectedRule.warmup_daily != null
@@ -1980,33 +1971,33 @@ export default function DashboardShell({
                         : "No cap"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[12px] font-normal text-slate-500 mt-1">
                     Safe warmup interaction ceiling for deliverability reputation
                   </p>
                 </div>
               </div>
 
-              {/* Box 4: Reply Rate Target */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/60 via-white to-white border-2 border-purple-100/90 hover:border-purple-300 transition-all shadow-xs flex flex-col justify-between">
+              {/* Box 4: Reply Rate Target (Purple #8B5CF6) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/50 via-white to-white border border-purple-200/80 hover:border-purple-400 transition-all shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20">
+                  <div className="w-10 h-10 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                  <span className="text-[12px] font-normal uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 text-[#8B5CF6] border border-purple-200">
                     Engagement
                   </span>
                 </div>
                 <div className="mt-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 block">
+                  <span className="text-[12px] font-normal uppercase tracking-wider text-[#8B5CF6] block">
                     Reply Rate Target
                   </span>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5 tabular-nums">
+                  <div className="text-[28px] font-semibold text-[#14243D] tracking-tight mt-0.5 tabular-nums">
                     {selectedRule.reply_rate != null ? `${selectedRule.reply_rate}` : "—"}
-                    <span className="text-sm font-bold text-slate-400 ml-1.5">
+                    <span className="text-[14px] font-medium text-slate-400 ml-1.5">
                       {selectedRule.reply_rate != null ? "% minimum" : "Not set"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[12px] font-normal text-slate-500 mt-1">
                     Warmup network reply ratio to maintain inbox placement
                   </p>
                 </div>
@@ -2014,26 +2005,26 @@ export default function DashboardShell({
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="p-3.5 bg-[#F4F7FB]/70 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[12px] font-normal">
               <div className="flex items-center gap-2 text-slate-600 flex-wrap">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="h-2 w-2 rounded-full bg-[#10B981] shrink-0" />
                 <span>
                   Rule actively applied to{" "}
-                  <strong className="text-indigo-700 font-bold">{selectedRuleAccountName}</strong>{" "}
+                  <strong className="text-[#2563EB] font-medium">{selectedRuleAccountName}</strong>{" "}
                   inboxes tagged with:{" "}
-                  <strong className="text-slate-900">{selectedRule.tag_name || "General"}</strong>
+                  <strong className="text-slate-900 font-medium">{selectedRule.tag_name || "General"}</strong>
                 </span>
               </div>
               <div className="flex items-center gap-3 self-end sm:self-auto">
                 <Link
                   href="/emailaccounts"
-                  className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors"
+                  className="text-[14px] font-medium text-slate-600 hover:text-[#2563EB] transition-colors"
                 >
                   View Matched Inboxes →
                 </Link>
                 <Link
                   href="/settings"
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                  className="text-[14px] font-medium text-[#2563EB] hover:text-blue-800 transition-colors"
                 >
                   Edit This Rule in Settings →
                 </Link>
@@ -2041,21 +2032,21 @@ export default function DashboardShell({
             </div>
           </div>
         ) : (
-          <div className="p-8 text-center space-y-3 bg-slate-50/70 rounded-xl border-2 border-dashed border-slate-200">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-2xs">
+          <div className="p-8 text-center space-y-3 bg-[#F4F7FB]/50 rounded-xl border-2 border-dashed border-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto shadow-2xs">
               <SlidersHorizontal className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-800">
+              <h4 className="text-[16px] font-semibold text-[#14243D]">
                 No Deliverability Rules Configured Yet
               </h4>
-              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+              <p className="text-[12px] font-normal text-slate-400 mt-1 max-w-md mx-auto">
                 Configure your daily limits, minimum gaps, and warmup targets in Settings to activate automated drift surveillance.
               </p>
             </div>
             <Link
               href="/settings"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/25 active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-sm shadow-blue-600/25 active:scale-95"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Configure Deliverability Rules Now</span>
@@ -2066,17 +2057,17 @@ export default function DashboardShell({
       </div>
 
       {/* ── Quick Operations Launchpad (v3) ── */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h4 className="text-[12px] font-normal uppercase tracking-wider text-slate-400">
               Quick Operations Launchpad
             </h4>
-            <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">
+            <p className="text-[16px] font-semibold text-[#14243D] mt-0.5">
               Direct access across core outreach operational modules
             </p>
           </div>
-          <div className="text-[11px] font-medium text-slate-400">
+          <div className="text-[12px] font-normal text-slate-400">
             Click any module to jump directly to live records
           </div>
         </div>
@@ -2084,16 +2075,16 @@ export default function DashboardShell({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <Link
             href="/emailaccounts"
-            className="p-3.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/70 hover:border-indigo-300 text-slate-800 transition-all flex items-center gap-3 group"
+            className="p-3.5 rounded-xl bg-[#F4F7FB]/70 hover:bg-blue-50/50 border border-slate-200/70 hover:border-blue-300 text-slate-800 transition-all flex items-center gap-3 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 text-[#2563EB] group-hover:bg-[#2563EB] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
               <Mail className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold truncate group-hover:text-indigo-600 transition-colors">
+              <div className="text-[14px] font-medium truncate group-hover:text-[#2563EB] transition-colors">
                 Email Accounts
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[12px] font-normal text-slate-400 truncate">
                 Limits & warmup
               </div>
             </div>
@@ -2101,16 +2092,16 @@ export default function DashboardShell({
 
           <Link
             href="/campaigns"
-            className="p-3.5 rounded-xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200/70 hover:border-purple-300 text-slate-800 transition-all flex items-center gap-3 group"
+            className="p-3.5 rounded-xl bg-[#F4F7FB]/70 hover:bg-purple-50/50 border border-slate-200/70 hover:border-purple-300 text-slate-800 transition-all flex items-center gap-3 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-purple-100 text-[#8B5CF6] group-hover:bg-[#8B5CF6] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
               <Megaphone className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold truncate group-hover:text-purple-600 transition-colors">
+              <div className="text-[14px] font-medium truncate group-hover:text-[#8B5CF6] transition-colors">
                 Campaigns
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[12px] font-normal text-slate-400 truncate">
                 Active sequences
               </div>
             </div>
@@ -2118,16 +2109,16 @@ export default function DashboardShell({
 
           <Link
             href="/domains"
-            className="p-3.5 rounded-xl bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/70 hover:border-cyan-300 text-slate-800 transition-all flex items-center gap-3 group"
+            className="p-3.5 rounded-xl bg-[#F4F7FB]/70 hover:bg-blue-50/50 border border-slate-200/70 hover:border-blue-300 text-slate-800 transition-all flex items-center gap-3 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-cyan-100 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 text-[#2563EB] group-hover:bg-[#2563EB] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
               <Globe2 className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold truncate group-hover:text-cyan-600 transition-colors">
+              <div className="text-[14px] font-medium truncate group-hover:text-[#2563EB] transition-colors">
                 Domain Network
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[12px] font-normal text-slate-400 truncate">
                 DNS, SPF & DMARC
               </div>
             </div>
@@ -2135,16 +2126,16 @@ export default function DashboardShell({
 
           <Link
             href="/settings"
-            className="p-3.5 rounded-xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200/70 hover:border-purple-300 text-slate-800 transition-all flex items-center gap-3 group"
+            className="p-3.5 rounded-xl bg-[#F4F7FB]/70 hover:bg-amber-50/50 border border-slate-200/70 hover:border-amber-300 text-slate-800 transition-all flex items-center gap-3 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 text-[#F59E0B] group-hover:bg-[#F59E0B] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
               <SlidersHorizontal className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold truncate group-hover:text-purple-600 transition-colors">
+              <div className="text-[14px] font-medium truncate group-hover:text-amber-700 transition-colors">
                 Account Rules
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[12px] font-normal text-slate-400 truncate">
                 Drift & limits
               </div>
             </div>
@@ -2152,16 +2143,16 @@ export default function DashboardShell({
 
           <Link
             href="/notes"
-            className="p-3.5 rounded-xl bg-slate-50 hover:bg-emerald-50/50 border border-slate-200/70 hover:border-emerald-300 text-slate-800 transition-all flex items-center gap-3 group sm:col-span-2 md:col-span-1"
+            className="p-3.5 rounded-xl bg-[#F4F7FB]/70 hover:bg-emerald-50/50 border border-slate-200/70 hover:border-emerald-300 text-slate-800 transition-all flex items-center gap-3 group sm:col-span-2 md:col-span-1"
           >
-            <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-emerald-100 text-[#10B981] group-hover:bg-[#10B981] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
               <Activity className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold truncate group-hover:text-emerald-600 transition-colors">
+              <div className="text-[14px] font-medium truncate group-hover:text-[#10B981] transition-colors">
                 Ops Notes & Log
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[12px] font-normal text-slate-400 truncate">
                 Team notes & audit
               </div>
             </div>

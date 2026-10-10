@@ -492,15 +492,15 @@ export default function NotesPageClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-[26px] font-semibold tracking-tight text-[#14243D]">
               Notes & Operational Memos
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               Workspace Memos
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[13px] font-normal text-slate-500">
             Track client action items, deliverability reminders, inbox warmup deadlines, and operational memos.
           </p>
         </div>
@@ -509,7 +509,7 @@ export default function NotesPageClient({
           {isFilterActive && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               Clear Filters
@@ -519,7 +519,7 @@ export default function NotesPageClient({
           <button
             type="button"
             onClick={openNewNote}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Add New Note</span>
@@ -538,15 +538,15 @@ export default function NotesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-medium text-slate-500">Total Notes</span>
+            <span className="text-[12px] font-normal text-slate-500">Total Notes</span>
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
               <StickyNote className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-2">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-slate-900 mt-2">
             {notes.length}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">All active memos</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">All active memos</p>
         </div>
 
         <div
@@ -558,15 +558,15 @@ export default function NotesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-medium text-slate-500">Pinned</span>
+            <span className="text-[12px] font-normal text-slate-500">Pinned</span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
               <Pin className="w-4 h-4 fill-amber-500" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-2">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-slate-900 mt-2">
             {pinnedCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Stickied to top</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Stickied to top</p>
         </div>
 
         <div
@@ -578,15 +578,15 @@ export default function NotesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-rose-600">
-            <span className="text-xs font-medium text-slate-500">Important</span>
+            <span className="text-[12px] font-normal text-slate-500">Important</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
               <Flame className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-rose-600 mt-2">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-rose-600 mt-2">
             {importantCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">High priority</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">High priority</p>
         </div>
 
         <div
@@ -598,15 +598,15 @@ export default function NotesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-indigo-600">
-            <span className="text-xs font-medium text-slate-500">Follow Up</span>
+            <span className="text-[12px] font-normal text-slate-500">Follow Up</span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-2">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-slate-900 mt-2">
             {followUpCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Pending action</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Pending action</p>
         </div>
 
         <div
@@ -618,17 +618,17 @@ export default function NotesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-red-600">
-            <span className="text-xs font-medium text-slate-500">Overdue</span>
+            <span className="text-[12px] font-normal text-slate-500">Overdue</span>
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
               overdueCount > 0 ? "bg-red-100 text-red-700 animate-pulse" : "bg-slate-100 text-slate-400"
             }`}>
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-red-600 mt-2">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-red-600 mt-2">
             {overdueCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Past due date</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Past due date</p>
         </div>
       </div>
 
@@ -725,10 +725,10 @@ export default function NotesPageClient({
           <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
             <StickyNote className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900">
+          <h3 className="text-[16px] font-semibold text-[#14243D]">
             {notes.length === 0 ? "No notes added yet" : "No matching notes found"}
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mt-1 mb-4 leading-relaxed">
+          <p className="text-[13px] font-normal text-slate-500 max-w-sm mt-1 mb-4 leading-relaxed">
             {notes.length === 0
               ? "Create your first memo to track client deliverables, inbox warmup reminders, and urgent action items."
               : "Try adjusting your search keywords or filter criteria to view more notes."}
@@ -737,7 +737,7 @@ export default function NotesPageClient({
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               <span>Clear Filters</span>
@@ -746,7 +746,7 @@ export default function NotesPageClient({
             <button
               type="button"
               onClick={openNewNote}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Create First Note</span>
@@ -777,7 +777,7 @@ export default function NotesPageClient({
                       {note.client && (
                         <Link
                           href={`/clients/${createClientId(note.client)}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200/80 transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-normal bg-slate-100 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200/80 transition-colors"
                           title={`View client ${note.client}`}
                         >
                           <Building2 className="w-2.5 h-2.5 text-slate-500" />
@@ -810,7 +810,7 @@ export default function NotesPageClient({
                   {/* Note Title */}
                   <h3
                     onClick={() => setViewNote(note)}
-                    className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer line-clamp-1"
+                    className="text-[16px] font-semibold text-[#14243D] group-hover:text-indigo-600 transition-colors cursor-pointer line-clamp-1"
                     title={note.title}
                   >
                     {note.title}
@@ -819,7 +819,7 @@ export default function NotesPageClient({
                   {/* Note Content preview */}
                   <p
                     onClick={() => setViewNote(note)}
-                    className="text-xs text-slate-600 mt-2 line-clamp-3 leading-relaxed cursor-pointer"
+                    className="text-[13px] font-normal text-slate-600 mt-2 line-clamp-3 leading-relaxed cursor-pointer"
                   >
                     {note.content}
                   </p>
@@ -830,7 +830,7 @@ export default function NotesPageClient({
                   {/* Due Date Indicator */}
                   {note.due_date ? (
                     <div
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-normal ${
                         isOverdue
                           ? "bg-red-50 text-red-700 border border-red-200"
                           : isDueToday
@@ -842,7 +842,7 @@ export default function NotesPageClient({
                       <span>{formatDueDate(note.due_date)}</span>
                     </div>
                   ) : (
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[12px] font-normal text-slate-400">
                       No deadline
                     </span>
                   )}
@@ -914,10 +914,10 @@ export default function NotesPageClient({
                   )}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="text-[16px] font-semibold text-[#14243D]">
                     {editingId ? "Edit Note" : "Create New Note"}
                   </h2>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[12px] font-normal text-slate-500">
                     {editingId
                       ? "Update action item details, priority, or client association"
                       : "Add a memo, client action item, or deliverability reminder"}
@@ -938,7 +938,7 @@ export default function NotesPageClient({
             {/* Modal Body */}
             <div className="p-6 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                   Note Title *
                 </label>
                 <input
@@ -954,7 +954,7 @@ export default function NotesPageClient({
               {/* Client and Due Date Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                     Associated Client
                   </label>
                   <select
@@ -972,7 +972,7 @@ export default function NotesPageClient({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                     Due Date
                   </label>
                   <input
@@ -1019,7 +1019,7 @@ export default function NotesPageClient({
 
               {/* Priority Radio Pills */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-2">
                   Priority Level
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1050,7 +1050,7 @@ export default function NotesPageClient({
 
               {/* Note Content */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                   Note Content *
                 </label>
                 <textarea
@@ -1078,10 +1078,10 @@ export default function NotesPageClient({
                     }`}
                   />
                   <div>
-                    <span className="text-xs font-bold text-slate-900">
+                    <span className="text-[13px] font-medium text-slate-900">
                       Pin to Top
                     </span>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[12px] font-normal text-slate-500">
                       Keep this note pinned prominently above normal memos
                     </p>
                   </div>
@@ -1112,7 +1112,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1120,7 +1120,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-xs flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 shadow-xs flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {saving ? (
                   <span>Saving...</span>
@@ -1154,20 +1154,20 @@ export default function NotesPageClient({
                   {viewNote.client && (
                     <Link
                       href={`/clients/${createClientId(viewNote.client)}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 hover:underline border border-indigo-200"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-indigo-50 text-indigo-700 hover:underline border border-indigo-200"
                     >
                       <Building2 className="w-3 h-3" />
                       {viewNote.client}
                     </Link>
                   )}
                   {viewNote.is_pinned && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-amber-50 text-amber-700 border border-amber-200">
                       <Pin className="w-3 h-3 fill-amber-500" />
                       Pinned
                     </span>
                   )}
                 </div>
-                <h2 className="text-lg font-bold text-slate-900 break-words">
+                <h2 className="text-[16px] font-semibold text-[#14243D] break-words">
                   {viewNote.title}
                 </h2>
               </div>
@@ -1184,24 +1184,24 @@ export default function NotesPageClient({
             {/* Note Content */}
             <div className="p-6 overflow-y-auto space-y-4">
               {viewNote.due_date && (
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2 text-[12px] font-normal text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                   <Calendar className="w-4 h-4 text-indigo-600" />
                   <span>Deadline: {formatDueDate(viewNote.due_date)}</span>
                 </div>
               )}
 
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                <span className="text-[12px] font-normal uppercase tracking-wider text-slate-400 block mb-1.5">
                   Content
                 </span>
-                <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50/50 p-4 rounded-xl border border-slate-200/80">
+                <div className="text-[13px] font-normal text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50/50 p-4 rounded-xl border border-slate-200/80">
                   {viewNote.content}
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+            <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-[12px] font-normal text-slate-500">
               <span>
                 Updated: {new Date(viewNote.updated_at).toLocaleDateString()}
               </span>
@@ -1210,7 +1210,7 @@ export default function NotesPageClient({
                 <button
                   type="button"
                   onClick={() => handleCopyContent(viewNote)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
                 >
                   {copiedId === viewNote.id ? (
                     <>
@@ -1227,7 +1227,7 @@ export default function NotesPageClient({
                 <button
                   type="button"
                   onClick={() => openEditNote(viewNote)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   <span>Edit Note</span>
@@ -1252,10 +1252,10 @@ export default function NotesPageClient({
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-[16px] font-semibold text-[#14243D]">
                 Delete Note?
               </h3>
-              <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+              <p className="text-[13px] font-normal text-slate-600 mt-1 leading-relaxed">
                 Are you sure you want to delete{" "}
                 <span className="font-semibold text-slate-900">
                   &ldquo;{noteToDelete.title}&rdquo;
@@ -1269,7 +1269,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={() => setNoteToDelete(null)}
                 disabled={deleting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1277,7 +1277,7 @@ export default function NotesPageClient({
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-rose-600 hover:bg-rose-700 shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {deleting ? (
                   <span>Deleting...</span>

@@ -327,25 +327,25 @@ export default function NotificationSettingsClient({
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              <h2 className="text-[16px] font-semibold text-[#14243D] tracking-tight">
                 Alert Recipients
               </h2>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
+              <span className="text-[12px] font-normal px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
                 {recipients.length}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[12px] font-normal text-slate-500 mt-0.5">
               Team members receiving real-time drift alerts and the 8:00 AM executive brief.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="hidden md:flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal bg-rose-50 text-rose-700 border border-rose-200/60">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                 {instantSubscribers} Instant
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal bg-indigo-50 text-indigo-700 border border-indigo-200/60">
                 <Clock className="w-3 h-3 text-indigo-500" />
                 {dailySubscribers} 8 AM Brief
               </span>
@@ -354,7 +354,7 @@ export default function NotificationSettingsClient({
             <button
               type="button"
               onClick={openModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Recipient</span>

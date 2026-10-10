@@ -199,14 +199,14 @@ export default function ActivityPageClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-              Infrastructure Activity Log
-            </span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+            <h1 className="text-[26px] font-semibold tracking-tight text-[#14243D]">
+              Activity & Audit Trail
+            </h1>
+            <span className="text-[12px] font-normal px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
               Live Pipeline
             </span>
           </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
+          <p className="text-[13px] font-normal text-slate-500 mt-1">
             Audit sync runs, mailbox health events, domain alerts, and incident resolutions.
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function ActivityPageClient({
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
               viewMode === "table"
                 ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
@@ -229,7 +229,7 @@ export default function ActivityPageClient({
           <button
             type="button"
             onClick={() => setViewMode("timeline")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
               viewMode === "timeline"
                 ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
@@ -252,15 +252,15 @@ export default function ActivityPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">
+            <span className="text-[12px] font-normal uppercase tracking-wider">
               Today&apos;s Events
             </span>
             <Activity className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1.5">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-slate-900 mt-1.5">
             {todayCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Recorded in past 24h</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Recorded in past 24h</p>
         </div>
 
         <div
@@ -272,15 +272,15 @@ export default function ActivityPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Successful
             </span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-emerald-700 mt-1.5">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-emerald-700 mt-1.5">
             {successfulCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Syncs & resolutions</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Syncs & resolutions</p>
         </div>
 
         <div
@@ -292,15 +292,15 @@ export default function ActivityPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Warnings
             </span>
             <TriangleAlert className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold text-amber-700 mt-1.5">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-amber-700 mt-1.5">
             {warningsCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Require review</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Require review</p>
         </div>
 
         <div
@@ -312,15 +312,15 @@ export default function ActivityPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-rose-600">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Failed
             </span>
             <TriangleAlert className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-bold text-rose-700 mt-1.5">
+          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-rose-700 mt-1.5">
             {failedCount}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Critical errors</p>
+          <p className="text-[12px] font-normal text-slate-400 mt-0.5">Critical errors</p>
         </div>
       </div>
 
@@ -418,14 +418,14 @@ export default function ActivityPageClient({
           {/* Table Header Bar */}
           <div className="p-4 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-[16px] font-semibold text-[#14243D]">
                 Activity Records
               </h3>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+              <span className="text-[12px] font-normal px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
                 {filteredActivities.length}
               </span>
             </div>
-            <span className="text-xs text-slate-400">
+            <span className="text-[12px] font-normal text-slate-400">
               Click any row to view complete details
             </span>
           </div>
@@ -435,18 +435,18 @@ export default function ActivityPageClient({
               <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
                 <Activity className="w-8 h-8 text-slate-300" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900">
+              <h4 className="text-[16px] font-semibold text-[#14243D]">
                 No matching activity records found
               </h4>
-              <p className="text-xs text-slate-500 max-w-sm mt-1">
+              <p className="text-[13px] font-normal text-slate-500 max-w-sm mt-1">
                 Try widening your search terms or resetting the filter options.
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse text-[13px] font-normal">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <tr className="border-b border-slate-100 bg-slate-50/50 text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                     <th className="py-3 px-5 w-12 text-center">Type</th>
                     <th className="py-3 px-4">Event</th>
                     <th className="py-3 px-4 hidden md:table-cell">Details</th>
@@ -456,7 +456,7 @@ export default function ActivityPageClient({
                     <th className="py-3 px-4 w-12 text-right">View</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
                   {filteredActivities.map((activity) => (
                     <tr
                       key={activity.id}

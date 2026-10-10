@@ -108,30 +108,6 @@ export default function PortalHeader({
   useEffect(() => {
     loadSystemStatus();
 
-    let lastAutoScan = 0;
-    const runAutoAuditScan = async () => {
-      const now = Date.now();
-      // Debounce: minimum 25s between automatic background scans
-      if (now - lastAutoScan < 25000) return;
-      lastAutoScan = now;
-
-      try {
-        const res = await fetch("/api/issues/scan", { method: "POST" });
-        if (res.ok) {
-          await loadSystemStatus();
-          window.dispatchEvent(new CustomEvent("outreach:refresh"));
-        }
-      } catch {
-        // non-fatal background poll
-      }
-    };
-
-    const handleWindowFocus = () => {
-      if (document.visibilityState === "visible") {
-        runAutoAuditScan();
-      }
-    };
-
     const handleAutoRefresh = () => {
       setRefreshing(true);
       router.refresh();
@@ -142,32 +118,20 @@ export default function PortalHeader({
             minute: "2-digit",
           })
         );
-        setTimeout(() => setRefreshing(false), 600);
+        setTimeout(() => setRefreshing(false), 400);
       });
     };
 
     window.addEventListener("outreach:refresh", handleAutoRefresh);
-    window.addEventListener("focus", handleWindowFocus);
-    document.addEventListener("visibilitychange", handleWindowFocus);
 
-    // Auto-poll system status every 15 seconds so header always reflects live issues in real-time
+    // Calm system status check every 60 seconds (lightweight, zero remote API calls)
     const statusInterval = setInterval(() => {
       loadSystemStatus();
-    }, 15000);
-
-    // Auto-sync in background every 45 seconds while user is working
-    const autoScanInterval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        runAutoAuditScan();
-      }
-    }, 45000);
+    }, 60000);
 
     return () => {
       window.removeEventListener("outreach:refresh", handleAutoRefresh);
-      window.removeEventListener("focus", handleWindowFocus);
-      document.removeEventListener("visibilitychange", handleWindowFocus);
       clearInterval(statusInterval);
-      clearInterval(autoScanInterval);
     };
   }, [router]);
 
@@ -193,16 +157,14 @@ export default function PortalHeader({
     setRefreshing(true);
 
     try {
-      // Trigger live audit scan so newly introduced or solved issues update immediately
-      await fetch("/api/issues/scan", { method: "POST" }).catch(() => {});
+      // Quick local audit scan without blocking remote sync so UI responds in milliseconds
+      await fetch("/api/issues/scan?skipSync=true", { method: "POST" }).catch(() => {});
     } catch {
       // non-fatal
     }
 
     router.refresh();
     await loadSystemStatus();
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
     setLastRefresh(
       new Date().toLocaleTimeString([], {
@@ -217,7 +179,7 @@ export default function PortalHeader({
   const statusUI = getStatusUI(systemStatus, openIssues);
 
   return (
-    <header className="fixed top-0 left-0 lg:left-[250px] right-0 h-16 sm:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 z-40 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] select-none">
+    <header className="fixed top-0 left-0 lg:left-[260px] right-0 h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-40 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs select-none text-slate-900">
       {/* Left: Mobile Toggle + Breadcrumbs & Page Heading */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
         {/* Mobile Hamburger Drawer Trigger */}
@@ -231,15 +193,15 @@ export default function PortalHeader({
         </button>
 
         <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold tracking-wide uppercase text-slate-400">
+          <div className="flex items-center gap-1.5 text-[12px] font-normal tracking-wide text-slate-400">
             <Link
               href="/dashboard"
-              className="hover:text-indigo-600 transition-colors truncate hidden xs:inline"
+              className="hover:text-[#2563EB] transition-colors truncate hidden xs:inline"
             >
               Outreach Ops
             </Link>
             <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden xs:inline" />
-            <span className="text-indigo-600 font-bold lowercase first-letter:uppercase truncate">
+            <span className="text-[#2563EB] font-medium lowercase first-letter:uppercase truncate">
               {pageInfo.category}
             </span>
             <span className="hidden md:inline-block w-1 h-1 rounded-full bg-slate-300 mx-1" />
@@ -248,7 +210,7 @@ export default function PortalHeader({
             </span>
           </div>
 
-          <h1 className="text-base sm:text-lg md:text-[21px] font-extrabold tracking-tight text-slate-900 mt-0.5 truncate">
+          <h1 className="text-lg sm:text-[22px] md:text-[26px] font-semibold tracking-tight text-slate-900 mt-0.5 truncate">
             {pageInfo.title}
           </h1>
         </div>
@@ -258,7 +220,7 @@ export default function PortalHeader({
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Last Refresh Timestamp */}
         {lastRefresh && (
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-[11px] text-slate-500 font-medium border border-slate-200/60">
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-[12px] text-slate-500 font-normal border border-slate-200/60">
             <Clock className="w-3 h-3 text-slate-400" />
             <span>Synced {lastRefresh}</span>
           </div>
@@ -268,10 +230,10 @@ export default function PortalHeader({
         {openIssues > 0 && pathname !== "/issues" && (
           <Link
             href="/issues"
-            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-xs transition-all active:scale-95"
+            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-[14px] font-medium text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-2xs transition-all active:scale-95"
             title="View detected issues"
           >
-            <Bell className="w-3.5 h-3.5 text-amber-600 animate-bounce" />
+            <Bell className="w-3.5 h-3.5 text-amber-600" />
             <span className="hidden sm:inline">{openIssues} Issues</span>
             <span className="sm:hidden">{openIssues}</span>
           </Link>
@@ -279,7 +241,7 @@ export default function PortalHeader({
 
         {/* System Status Badge */}
         <div
-          className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-xs ${statusUI.badgeClasses}`}
+          className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all shadow-2xs ${statusUI.badgeClasses}`}
           title="Overall Pipeline & API Connection Health"
         >
           {statusUI.icon}
@@ -291,12 +253,12 @@ export default function PortalHeader({
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group"
-          title="Sync latest data from database and APIs"
+          className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-2xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer"
+          title="Sync latest data from database"
         >
           <RefreshCw
-            className={`w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors ${
-              refreshing ? "animate-spin text-indigo-600" : ""
+            className={`w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] transition-colors ${
+              refreshing ? "animate-spin text-[#2563EB]" : ""
             }`}
           />
           <span className="hidden sm:inline">
@@ -315,7 +277,6 @@ function getStatusUI(status: SystemStatus, openIssues: number) {
       badgeClasses: "bg-rose-50 text-rose-700 border-rose-200/80",
       icon: (
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
         </span>
       ),
@@ -330,15 +291,12 @@ function getStatusUI(status: SystemStatus, openIssues: number) {
     };
   }
 
-
-
   if (status === "operational") {
     return {
       label: "All Systems Live",
       badgeClasses: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
       icon: (
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
         </span>
       ),

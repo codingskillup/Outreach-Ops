@@ -293,7 +293,7 @@ export default async function DashboardPage() {
           ascending: false,
         }
       )
-      .limit(100),
+      .limit(20),
 
     supabase
       .from(

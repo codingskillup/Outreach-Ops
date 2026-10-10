@@ -295,35 +295,35 @@ export default function AccountRulesSettingsClient({
 
             <div className="space-y-1 max-w-2xl">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                <h2 className="text-[16px] font-semibold text-[#14243D] tracking-tight">
                   Mailbox Safety Rules & Sending Limits
                 </h2>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-[12px] font-normal px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   Domain Protection
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              <p className="text-[13px] font-normal text-slate-500 leading-relaxed">
                 Set safe daily sending caps (e.g., 30 emails/day) and warmup targets for your Smartlead mailboxes. If any inbox violates these rules, the system flags an issue immediately so your domain reputation remains safe.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-xs font-semibold text-slate-700">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">
+            <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[12px] font-normal text-slate-700">
+              <span className="text-slate-400 block text-[12px] font-normal uppercase">
                 Tags Found
               </span>
-              <span className="text-sm font-extrabold text-slate-900">
+              <span className="text-[16px] font-semibold text-slate-900 tabular-nums">
                 {discoveredTags.length}
               </span>
             </div>
 
-            <div className="px-3.5 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-xs font-semibold text-emerald-800">
-              <span className="text-emerald-600/80 block text-[10px] uppercase font-bold">
+            <div className="px-3.5 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-[12px] font-normal text-emerald-800">
+              <span className="text-emerald-600/80 block text-[12px] font-normal uppercase">
                 Rules Enforced
               </span>
-              <span className="text-sm font-extrabold text-emerald-700">
+              <span className="text-[16px] font-semibold text-emerald-700 tabular-nums">
                 {configuredRulesCount}
               </span>
             </div>
@@ -341,13 +341,13 @@ export default function AccountRulesSettingsClient({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter tags by name or workspace..."
-            className="w-full pl-9 pr-9 py-2 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            className="w-full pl-9 pr-9 py-2 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-[13px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-normal"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch("")}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -359,9 +359,9 @@ export default function AccountRulesSettingsClient({
           <button
             type="button"
             onClick={() => setFilterMode("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
               filterMode === "all"
-                ? "bg-white text-slate-900 shadow-xs font-bold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -370,9 +370,9 @@ export default function AccountRulesSettingsClient({
           <button
             type="button"
             onClick={() => setFilterMode("configured")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
               filterMode === "configured"
-                ? "bg-white text-slate-900 shadow-xs font-bold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -381,9 +381,9 @@ export default function AccountRulesSettingsClient({
           <button
             type="button"
             onClick={() => setFilterMode("unconfigured")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-all cursor-pointer ${
               filterMode === "unconfigured"
-                ? "bg-white text-slate-900 shadow-xs font-bold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >

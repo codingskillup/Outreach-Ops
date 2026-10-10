@@ -127,7 +127,7 @@ export default function PortalSidebar({
 
   return (
     <aside
-      className={`w-[260px] h-screen fixed left-0 top-0 bg-slate-950 border-r border-slate-800/80 p-4 flex flex-col justify-between z-50 text-slate-200 select-none transition-transform duration-300 ease-in-out ${
+      className={`w-[260px] h-screen fixed left-0 top-0 bg-[#14243D] border-r border-[#1e3456] p-4 flex flex-col justify-between z-50 text-slate-200 select-none transition-transform duration-300 ease-in-out ${
         isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
       }`}
     >
@@ -137,23 +137,21 @@ export default function PortalSidebar({
           <Link
             href="/dashboard"
             onClick={onClose}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-900/60 transition-colors group flex-1 min-w-0"
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#1b2f4f] transition-colors group flex-1 min-w-0"
           >
-            {/* Logo Badge */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-white">
-                <Zap className="w-5 h-5 text-indigo-400 fill-indigo-400/20" />
-              </div>
+            {/* Logo Badge with Primary Blue & Emerald */}
+            <div className="w-10 h-10 rounded-xl bg-[#2563EB] p-0.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center text-white">
+              <Zap className="w-5 h-5 text-white fill-white/20" />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-white group-hover:text-indigo-300 transition-colors truncate">
+                <span className="font-bold text-sm tracking-tight text-white group-hover:text-blue-300 transition-colors truncate">
                   Outreach Ops
                 </span>
-                <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+                <Sparkles className="w-3 h-3 text-[#10B981] shrink-0" />
               </div>
-              <div className="text-[11px] text-slate-400 truncate">
+              <div className="text-[11px] text-slate-300 truncate">
                 Cold Email Monitor
               </div>
             </div>
@@ -163,7 +161,7 @@ export default function PortalSidebar({
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors shrink-0"
+            className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-[#1b2f4f] transition-colors shrink-0"
             aria-label="Close navigation"
           >
             <X className="w-5 h-5" />
@@ -174,7 +172,7 @@ export default function PortalSidebar({
         <nav className="space-y-5 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 -mr-1">
           {navigationGroups.map((group) => (
             <div key={group.label} className="space-y-1">
-              <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="px-3 text-[12px] font-normal uppercase tracking-wider text-slate-400">
                 {group.label}
               </div>
 
@@ -190,20 +188,16 @@ export default function PortalSidebar({
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className={`relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                      className={`relative flex items-center gap-3 px-3 py-2 rounded-xl text-[14px] font-medium transition-all duration-150 ${
                         active
-                          ? "bg-indigo-600/15 text-white border border-indigo-500/30 shadow-sm"
-                          : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/80"
+                          ? "bg-[#2563EB] text-white shadow-sm"
+                          : "text-slate-300 hover:text-white hover:bg-[#1b2f4f]"
                       }`}
                     >
-                      {active && (
-                        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-indigo-500" />
-                      )}
-
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
                           active
-                            ? "text-indigo-400"
+                            ? "text-white"
                             : "text-slate-400 group-hover:text-slate-200"
                         }`}
                       />
@@ -219,27 +213,27 @@ export default function PortalSidebar({
       </div>
 
       {/* Bottom Footer (User & Logout) */}
-      <div className="pt-3 border-t border-slate-800/80 space-y-2">
+      <div className="pt-3 border-t border-[#1e3456] space-y-2">
         {/* Workspace Health Indicator */}
-        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0e1b2f] border border-[#1e3456] text-[11px] text-slate-300">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#10B981]" />
             <span>Pipeline Active</span>
           </div>
           <span className="text-[10px] font-mono text-slate-400">v2.4</span>
         </div>
 
         {/* User Profile & Sign Out Bar */}
-        <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/60 transition-colors">
+        <div className="flex items-center justify-between p-1.5 rounded-xl bg-[#0e1b2f] hover:bg-[#182c4a] border border-[#1e3456] transition-colors">
           <div className="flex items-center gap-2.5 min-w-0 pr-1">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-700 to-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center text-xs font-bold shrink-0">
               {userInitial}
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-slate-200 truncate">
+              <div className="text-xs font-semibold text-white truncate">
                 {userEmail ? userEmail.split("@")[0] : "Operations User"}
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[10px] text-slate-300 truncate">
                 Workspace Admin
               </div>
             </div>

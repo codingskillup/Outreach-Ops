@@ -382,19 +382,19 @@ export default function EmailAccountsPageClient({
 
   return (
     <div className="w-full min-w-0 max-w-[1440px] mx-auto pb-16 space-y-6 text-slate-900">
-      {/* Top Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-[26px] font-semibold tracking-tight text-[#14243D]">
               Email Accounts
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live Sync
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[12px] font-normal text-slate-500">
             Monitor mailbox thresholds, warmup rates, and tag alignment against your rule engine.
           </p>
         </div>
@@ -403,7 +403,7 @@ export default function EmailAccountsPageClient({
           {isFilterActive && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               Clear Filters
@@ -411,9 +411,9 @@ export default function EmailAccountsPageClient({
           )}
           <Link
             href="/settings?tab=rules"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/80 rounded-lg shadow-2xs transition"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-[14px] font-medium text-[#2563EB] bg-blue-50 hover:bg-blue-100/80 border border-blue-200/80 rounded-lg shadow-2xs transition"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#2563EB]" />
             Rule Engine Settings
           </Link>
         </div>
@@ -423,45 +423,45 @@ export default function EmailAccountsPageClient({
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Total Accounts</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Total Accounts</span>
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
               <Mail className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900">
+            <span className="text-[28px] font-semibold tracking-tight text-[#14243D] tabular-nums">
               {accounts.length.toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">mailboxes</span>
+            <span className="text-[12px] font-normal text-slate-400">mailboxes</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Across {clients.length} clients
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Healthy</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Healthy</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-emerald-600">
+            <span className="text-[28px] font-semibold tracking-tight text-[#10B981] tabular-nums">
               {healthyCount.toLocaleString()}
             </span>
-            <span className="text-xs text-emerald-600 font-semibold">
+            <span className="text-[12px] font-normal text-[#10B981]">
               {accounts.length > 0 ? Math.round((healthyCount / accounts.length) * 100) : 0}%
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             All rule parameters matched
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Needs Attention</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Needs Attention</span>
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
               attentionCount > 0 ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-slate-100 text-slate-400"
             }`}>
@@ -469,52 +469,52 @@ export default function EmailAccountsPageClient({
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-bold tracking-tight ${
-              attentionCount > 0 ? "text-amber-600" : "text-slate-900"
+            <span className={`text-[28px] font-semibold tracking-tight tabular-nums ${
+              attentionCount > 0 ? "text-[#F59E0B]" : "text-[#14243D]"
             }`}>
               {attentionCount.toLocaleString()}
             </span>
             {attentionCount > 0 && (
-              <span className="text-xs text-amber-600 font-semibold">
+              <span className="text-[12px] font-normal text-[#F59E0B]">
                 Action required
               </span>
             )}
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Settings differ from rule
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Not Evaluated</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Not Evaluated</span>
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
               <HelpCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-700">
+            <span className="text-[28px] font-semibold tracking-tight text-slate-700 tabular-nums">
               {notEvaluatedCount.toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">untargeted</span>
+            <span className="text-[12px] font-normal text-slate-400">untargeted</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             No active tag rules apply
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs relative overflow-hidden col-span-2 md:col-span-1">
-          <div className="flex items-center justify-between text-indigo-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Compliance</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+          <div className="flex items-center justify-between text-[#2563EB]">
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Compliance</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-[#2563EB]">
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-indigo-600">
+            <span className="text-[28px] font-semibold tracking-tight text-[#2563EB] tabular-nums">
               {complianceRate}%
             </span>
-            <span className="text-xs text-slate-500">of evaluated</span>
+            <span className="text-[12px] font-normal text-slate-500">of evaluated</span>
           </div>
           <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
             <div
@@ -550,7 +550,7 @@ export default function EmailAccountsPageClient({
                   setAccountTypeFilter("all");
                   handleFilterChange();
                 }}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                className="text-xs text-[#2563EB] hover:text-blue-800 font-semibold cursor-pointer"
               >
                 Reset tag filter
               </button>
@@ -588,15 +588,15 @@ export default function EmailAccountsPageClient({
                   }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     isSelected
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-200 text-slate-700 border border-slate-200/70"
+                      ? "bg-[#2563EB] text-white shadow-2xs"
+                      : "bg-slate-50 hover:bg-blue-50/60 hover:border-blue-200 text-slate-700 border border-slate-200/70"
                   }`}
                 >
                   <span className="truncate max-w-[160px]">{tag.name}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       isSelected
-                        ? "bg-indigo-500 text-indigo-100"
+                        ? "bg-blue-500 text-blue-100"
                         : "bg-slate-200 text-slate-600"
                     }`}
                   >
@@ -623,7 +623,7 @@ export default function EmailAccountsPageClient({
                 handleFilterChange();
               }}
               placeholder="Search email, client, or tag..."
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             />
             {search && (
               <button
@@ -646,7 +646,7 @@ export default function EmailAccountsPageClient({
                 setClientFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             >
               <option value="all">All Clients ({clients.length})</option>
               {clients.map((c) => (
@@ -665,7 +665,7 @@ export default function EmailAccountsPageClient({
                 setSmartleadFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             >
               <option value="all">All Integrations</option>
               {smartleads.map((s) => (
@@ -858,7 +858,7 @@ export default function EmailAccountsPageClient({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
               {paginatedAccounts.length > 0 ? (
                 paginatedAccounts.map((row) => (
                   <AccountTableRow
@@ -883,7 +883,7 @@ export default function EmailAccountsPageClient({
                       {isFilterActive && (
                         <button
                           onClick={clearFilters}
-                          className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                          className="mt-3 text-xs font-semibold text-[#2563EB] hover:text-blue-800"
                         >
                           Clear all filters
                         </button>
@@ -984,11 +984,11 @@ function AccountTableRow({
   const hasClient = account.client && account.client !== "Unassigned";
 
   return (
-    <tr className="hover:bg-indigo-50/30 transition-colors group">
+    <tr className="hover:bg-blue-50/30 transition-colors group">
       {/* Email column */}
       <td className="py-2.5 px-4">
         <div className="flex items-center gap-2">
-          <div className="truncate max-w-[220px] font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors" title={account.email}>
+          <div className="truncate max-w-[220px] font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors" title={account.email}>
             {account.email}
           </div>
           <button
@@ -1013,7 +1013,7 @@ function AccountTableRow({
         {hasClient ? (
           <Link
             href={`/clients/${createClientId(account.client)}`}
-            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-indigo-600 hover:underline max-w-[150px] truncate"
+            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-[#2563EB] hover:underline max-w-[150px] truncate"
             title={`View client ${account.client}`}
           >
             <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -1124,7 +1124,7 @@ function AccountTableRow({
       <td className="py-2.5 px-3 text-center">
         <button
           onClick={onInspect}
-          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition cursor-pointer"
           title="Inspect account details"
         >
           <Eye className="w-4 h-4" />
@@ -1148,9 +1148,9 @@ function SortIcon({
     return <ArrowUpDown className="w-3 h-3 text-slate-300" />;
   }
   return order === "asc" ? (
-    <ArrowUp className="w-3 h-3 text-indigo-600 font-bold" />
+    <ArrowUp className="w-3 h-3 text-[#2563EB] font-bold" />
   ) : (
-    <ArrowDown className="w-3 h-3 text-indigo-600 font-bold" />
+    <ArrowDown className="w-3 h-3 text-[#2563EB] font-bold" />
   );
 }
 
@@ -1377,7 +1377,7 @@ function InspectAccountDrawer({
                 {evaluation.matchedRuleNames.map((name) => (
                   <span
                     key={name}
-                    className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-[#2563EB] border border-blue-200"
                   >
                     {name}
                   </span>
@@ -1440,7 +1440,7 @@ function InspectAccountDrawer({
                 {account.client !== "Unassigned" ? (
                   <Link
                     href={`/clients/${createClientId(account.client)}`}
-                    className="font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                    className="font-semibold text-[#2563EB] hover:underline flex items-center gap-1"
                   >
                     {account.client}
                     <ExternalLink className="w-3 h-3" />

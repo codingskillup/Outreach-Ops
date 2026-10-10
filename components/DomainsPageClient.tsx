@@ -273,8 +273,9 @@ export default function DomainsPageClient({
           <h1
             style={{
               margin: 0,
-              fontSize: 28,
-              fontWeight: 750,
+              fontSize: 26,
+              fontWeight: 600,
+              color: "#14243D",
             }}
           >
             Domains
@@ -950,7 +951,8 @@ function SummaryCard({
             color:
               "#64748B",
 
-            fontSize: 11,
+            fontSize: 12,
+            fontWeight: 400,
           }}
         >
           {title}
@@ -961,9 +963,9 @@ function SummaryCard({
         style={{
           marginTop: 12,
 
-          fontSize: 25,
+          fontSize: 28,
 
-          fontWeight: 750,
+          fontWeight: 600,
 
           color,
         }}
@@ -994,9 +996,9 @@ function TableHeader({
         color:
           "#64748B",
 
-        fontSize: 10,
+        fontSize: 11,
 
-        fontWeight: 650,
+        fontWeight: 600,
 
         whiteSpace:
           "nowrap",
@@ -1022,7 +1024,8 @@ function TableCell({
         color:
           "#475569",
 
-        fontSize: 11,
+        fontSize: 13,
+        fontWeight: 400,
 
         verticalAlign:
           "middle",

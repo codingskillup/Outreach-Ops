@@ -286,15 +286,15 @@ export default function CampaignsPageClient({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-[26px] font-semibold tracking-tight text-[#14243D]">
               Campaigns
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live Sync
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[12px] font-normal text-slate-500">
             Monitor Smartlead outreach campaigns, sender mailbox allocation, and active execution status.
           </p>
         </div>
@@ -303,13 +303,13 @@ export default function CampaignsPageClient({
           {isFilterActive && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               Clear Filters
             </button>
           )}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100/80 rounded-lg border border-slate-200/70">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-slate-700 bg-slate-100/80 rounded-lg border border-slate-200/70">
             <Radio className="w-3.5 h-3.5 text-emerald-600" />
             {campaigns.length} Main Campaigns
           </div>
@@ -320,92 +320,92 @@ export default function CampaignsPageClient({
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Total Campaigns</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Total Campaigns</span>
             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
               <Megaphone className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900">
+            <span className="text-[28px] font-semibold tracking-tight text-[#14243D] tabular-nums">
               {campaigns.length.toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">total</span>
+            <span className="text-[12px] font-normal text-slate-400">total</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Across {clients.length} clients
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Active</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Active</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
               <PlayCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-emerald-600">
+            <span className="text-[28px] font-semibold tracking-tight text-[#10B981] tabular-nums">
               {activeCount.toLocaleString()}
             </span>
-            <span className="text-xs text-emerald-600 font-semibold">
+            <span className="text-[12px] font-normal text-[#10B981]">
               {campaigns.length > 0 ? Math.round((activeCount / campaigns.length) * 100) : 0}%
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Currently sending
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Paused</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Paused</span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
               <PauseCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-amber-600">
+            <span className="text-[28px] font-semibold tracking-tight text-[#F59E0B] tabular-nums">
               {pausedCount.toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">paused</span>
+            <span className="text-[12px] font-normal text-slate-400">paused</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Temporarily on hold
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
           <div className="flex items-center justify-between text-rose-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Stopped</span>
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Stopped</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
               <StopCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-800">
+            <span className="text-[28px] font-semibold tracking-tight text-slate-800 tabular-nums">
               {stoppedCount.toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">stopped</span>
+            <span className="text-[12px] font-normal text-slate-400">stopped</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             Ended or deactivated
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs col-span-2 md:col-span-1">
-          <div className="flex items-center justify-between text-indigo-600">
-            <span className="text-xs font-medium tracking-wide text-slate-500">Draft / Completed</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+          <div className="flex items-center justify-between text-[#8B5CF6]">
+            <span className="text-[12px] font-normal tracking-wide text-slate-500">Draft / Completed</span>
+            <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center text-[#8B5CF6]">
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-indigo-600">
+            <span className="text-[28px] font-semibold tracking-tight text-[#8B5CF6] tabular-nums">
               {(completedCount + draftCount + otherCount).toLocaleString()}
             </span>
-            <span className="text-xs text-slate-400">other</span>
+            <span className="text-[12px] font-normal text-slate-400">other</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[12px] font-normal text-slate-400">
             {completedCount} completed · {draftCount} draft
           </div>
         </div>
@@ -425,7 +425,7 @@ export default function CampaignsPageClient({
                 handleFilterChange();
               }}
               placeholder="Search campaign name, client, or ID..."
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             />
             {search && (
               <button
@@ -448,7 +448,7 @@ export default function CampaignsPageClient({
                 setClientFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             >
               <option value="all">All Clients ({clients.length})</option>
               {clients.map((c) => (
@@ -467,7 +467,7 @@ export default function CampaignsPageClient({
                 setSmartleadFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition"
             >
               <option value="all">All Integrations</option>
               {smartleads.map((s) => (
@@ -486,7 +486,7 @@ export default function CampaignsPageClient({
                 setStatusFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition font-medium"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] transition font-medium"
             >
               <option value="all">All Statuses ({statuses.length})</option>
               {statuses.map((s) => (
@@ -654,7 +654,7 @@ export default function CampaignsPageClient({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
               {paginatedCampaigns.length > 0 ? (
                 paginatedCampaigns.map((campaign) => (
                   <CampaignTableRow
@@ -679,7 +679,7 @@ export default function CampaignsPageClient({
                       {isFilterActive && (
                         <button
                           onClick={clearFilters}
-                          className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                          className="mt-3 text-xs font-semibold text-[#2563EB] hover:text-blue-800"
                         >
                           Clear all filters
                         </button>
@@ -777,12 +777,12 @@ function CampaignTableRow({
   const hasClient = campaign.client && campaign.client !== "Unassigned";
 
   return (
-    <tr className="hover:bg-indigo-50/30 transition-colors group">
+    <tr className="hover:bg-blue-50/30 transition-colors group">
       {/* Campaign Name */}
       <td className="py-2.5 px-4">
         <div className="flex items-center gap-2">
           <div
-            className="truncate font-bold text-slate-900 group-hover:text-indigo-600 transition-colors max-w-[280px]"
+            className="truncate font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors max-w-[280px]"
             title={campaign.name}
           >
             {campaign.name}
@@ -809,7 +809,7 @@ function CampaignTableRow({
         {hasClient ? (
           <Link
             href={`/clients/${createClientId(campaign.client)}`}
-            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-indigo-600 hover:underline max-w-[180px] truncate"
+            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-[#2563EB] hover:underline max-w-[180px] truncate"
             title={`View client ${campaign.client}`}
           >
             <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -862,7 +862,7 @@ function CampaignTableRow({
       <td className="py-2.5 px-3 text-center">
         <button
           onClick={onInspect}
-          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition cursor-pointer"
           title="Inspect campaign settings"
         >
           <Eye className="w-4 h-4" />
@@ -1034,7 +1034,7 @@ function CampaignInspectDrawer({
                 {hasClient ? (
                   <Link
                     href={`/clients/${createClientId(campaign.client)}`}
-                    className="font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                    className="font-semibold text-[#2563EB] hover:underline flex items-center gap-1"
                   >
                     {campaign.client}
                     <ExternalLink className="w-3 h-3" />
@@ -1116,7 +1116,7 @@ function CampaignInspectDrawer({
           {hasClient && (
             <Link
               href={`/clients/${createClientId(campaign.client)}`}
-              className="px-3.5 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg shadow-2xs transition inline-flex items-center gap-1.5"
+              className="px-3.5 py-2 text-xs font-semibold text-[#2563EB] bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-lg shadow-2xs transition inline-flex items-center gap-1.5"
             >
               <Building2 className="w-3.5 h-3.5" />
               View Client
@@ -1148,9 +1148,9 @@ function SortIcon({
     return <ArrowUpDown className="w-3 h-3 text-slate-300" />;
   }
   return order === "asc" ? (
-    <ArrowUp className="w-3 h-3 text-indigo-600 font-bold" />
+    <ArrowUp className="w-3 h-3 text-[#2563EB] font-bold" />
   ) : (
-    <ArrowDown className="w-3 h-3 text-indigo-600 font-bold" />
+    <ArrowDown className="w-3 h-3 text-[#2563EB] font-bold" />
   );
 }
 

@@ -115,7 +115,7 @@ export default function IssuesPageClient({
   const [toast, setToast] = useState<ScanToast | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Auto-refresh when sync occurs or periodic background poll
+  // Auto-refresh when sync occurs or user triggers action
   useEffect(() => {
     const handleAutoRefresh = () => {
       startTransition(() => {
@@ -125,16 +125,8 @@ export default function IssuesPageClient({
 
     window.addEventListener("outreach:refresh", handleAutoRefresh);
 
-    // Auto-poll issues list every 20 seconds so resolved and newly detected issues update live
-    const interval = setInterval(() => {
-      startTransition(() => {
-        router.refresh();
-      });
-    }, 20000);
-
     return () => {
       window.removeEventListener("outreach:refresh", handleAutoRefresh);
-      clearInterval(interval);
     };
   }, [router]);
 
@@ -376,21 +368,21 @@ export default function IssuesPageClient({
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200/80">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200/80">
                 <Flame className="w-3.5 h-3.5 text-rose-600" />
                 Infrastructure Drift Detection
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200/80">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal border bg-emerald-50 text-emerald-700 border-emerald-200/80">
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
                 Live Pipeline Audit
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-xl sm:text-[26px] font-semibold tracking-tight text-[#14243D]">
               System Diagnostics & Anomaly Hub
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            <p className="text-[12px] font-normal text-slate-500 leading-relaxed">
               Detect mailbox daily cap breaches, warmup setting drift, domain DNS failures, and API connection drops across all accounts.
             </p>
           </div>
@@ -400,10 +392,10 @@ export default function IssuesPageClient({
             type="button"
             onClick={handleScan}
             disabled={scanning}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-md shadow-slate-900/10 hover:shadow-lg transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed shrink-0 self-start sm:self-auto"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 active:scale-95 shadow-md shadow-blue-600/20 hover:shadow-lg transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed shrink-0 self-start sm:self-auto cursor-pointer"
           >
             <RefreshCw
-              className={`w-4 h-4 ${scanning ? "animate-spin text-indigo-400" : ""}`}
+              className={`w-4 h-4 ${scanning ? "animate-spin text-white" : ""}`}
             />
             <span>{scanning ? "Syncing & Auditing Pipeline..." : "Audit Pipeline Now"}</span>
           </button>
@@ -422,17 +414,17 @@ export default function IssuesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">
+            <span className="text-[12px] font-normal uppercase tracking-wider">
               Open Issues
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
+          <div className="text-[28px] font-semibold text-[#14243D] mt-2 tabular-nums">
             {openCount}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+          <div className="flex items-center justify-between text-[12px] font-normal text-slate-400 mt-1">
             <span>Requiring resolution</span>
             <span className="font-semibold text-amber-600">Active</span>
           </div>
@@ -448,17 +440,17 @@ export default function IssuesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-rose-600">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Critical
             </span>
             <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 flex items-center justify-center">
               <Flame className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-2">
+          <div className="text-[28px] font-semibold text-[#EF4444] mt-2 tabular-nums">
             {criticalCount}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+          <div className="flex items-center justify-between text-[12px] font-normal text-slate-400 mt-1">
             <span>Severe anomalies</span>
             <span className="font-semibold text-rose-600">Immediate</span>
           </div>
@@ -474,17 +466,17 @@ export default function IssuesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-amber-600">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Warnings
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center">
               <TriangleAlert className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
+          <div className="text-[28px] font-semibold text-[#F59E0B] mt-2 tabular-nums">
             {warningCount}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+          <div className="flex items-center justify-between text-[12px] font-normal text-slate-400 mt-1">
             <span>Rule configuration drift</span>
             <span className="font-semibold text-amber-700">Audit</span>
           </div>
@@ -500,17 +492,17 @@ export default function IssuesPageClient({
           }`}
         >
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Resolved
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-2">
+          <div className="text-[28px] font-semibold text-[#10B981] mt-2 tabular-nums">
             {resolvedCount}
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+          <div className="flex items-center justify-between text-[12px] font-normal text-slate-400 mt-1">
             <span>Cleared & compliant</span>
             <span className="font-semibold text-emerald-600">Archived</span>
           </div>
@@ -530,7 +522,7 @@ export default function IssuesPageClient({
               setCurrentPage(1);
             }}
             placeholder="Search by mailbox, issue category, client, or source..."
-            className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150"
+            className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/20 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150"
           />
           {search && (
             <button
@@ -555,7 +547,7 @@ export default function IssuesPageClient({
               setClientFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] cursor-pointer"
           >
             <option value="all">All Clients ({clients.length})</option>
             {clients.map((c) => (
@@ -572,7 +564,7 @@ export default function IssuesPageClient({
               setSourceFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] cursor-pointer"
           >
             <option value="all">All Sources ({sources.length})</option>
             {sources.map((s) => (
@@ -589,7 +581,7 @@ export default function IssuesPageClient({
               setSeverityFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] cursor-pointer"
           >
             <option value="all">All Severity</option>
             <option value="Critical">Critical</option>
@@ -603,7 +595,7 @@ export default function IssuesPageClient({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] cursor-pointer"
           >
             <option value="all">All Status</option>
             <option value="Open">Open</option>
@@ -668,7 +660,7 @@ export default function IssuesPageClient({
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="mt-3 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200"
+                className="mt-3 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2563EB] bg-blue-50 border border-blue-200"
               >
                 Clear Filters
               </button>
@@ -729,7 +721,7 @@ export default function IssuesPageClient({
                   <th className="py-3 px-4 w-12 text-right">Inspect</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
+              <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
                 {paginatedIssues.map((issue) => {
                   const isCritical = issue.severity === "Critical";
                   const isOpen = issue.status === "Open";
@@ -761,7 +753,7 @@ export default function IssuesPageClient({
                       </td>
 
                       {/* Mailbox / Item */}
-                      <td className="py-3.5 px-4 font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
                         <div className="flex items-center gap-2">
                           {issue.item.includes("@") ? (
                             <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -1067,12 +1059,12 @@ export default function IssuesPageClient({
               </div>
 
               {/* Actionable Resolution Guidance */}
-              <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200/80 text-indigo-950">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1 mb-1">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/80 text-blue-950">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB] flex items-center gap-1 mb-1">
+                  <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
                   Resolution Recommendation
                 </span>
-                <p className="text-xs text-indigo-900 leading-relaxed">
+                <p className="text-xs text-blue-900 leading-relaxed">
                   Log in to your {selectedIssue.source} dashboard for &ldquo;
                   {selectedIssue.item}&rdquo; and adjust the setting from{" "}
                   <strong className="text-rose-700">{selectedIssue.currentValue}</strong> to{" "}

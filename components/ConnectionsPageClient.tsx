@@ -422,36 +422,36 @@ export default function ConnectionsPageClient({
                   <Zap className="w-5 h-5 fill-white" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight">Smartlead</h3>
-                  <p className="text-xs text-slate-500">Cold Email & Multi-Inbox Engine</p>
+                  <h3 className="text-[16px] font-semibold text-[#14243D] tracking-tight">Smartlead</h3>
+                  <p className="text-[12px] font-normal text-slate-500">Cold Email & Multi-Inbox Engine</p>
                 </div>
               </div>
 
               {smartleadConnections.length > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {smartleadConnections.length} Connected
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-normal bg-slate-100 text-slate-600 border border-slate-200">
                   Not Connected
                 </span>
               )}
             </div>
 
-            <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+            <p className="text-[13px] font-normal text-slate-500 mt-3 leading-relaxed">
               Synchronize mailboxes, warmup progress, daily sender caps, and campaign deliverability in real time.
             </p>
           </div>
 
           <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-400">
+            <span className="text-[12px] font-normal text-slate-400">
               API Integration
             </span>
             <button
               type="button"
               onClick={() => openModal("smartlead")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Connect Smartlead</span>
@@ -468,36 +468,36 @@ export default function ConnectionsPageClient({
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight">EmailGuard</h3>
-                  <p className="text-xs text-slate-500">Domain & DNS Security Engine</p>
+                  <h3 className="text-[16px] font-semibold text-[#14243D] tracking-tight">EmailGuard</h3>
+                  <p className="text-[12px] font-normal text-slate-500">Domain & DNS Security Engine</p>
                 </div>
               </div>
 
               {emailguardConnections.length > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {emailguardConnections.length} Connected
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-normal bg-slate-100 text-slate-600 border border-slate-200">
                   Not Connected
                 </span>
               )}
             </div>
 
-            <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+            <p className="text-[13px] font-normal text-slate-500 mt-3 leading-relaxed">
               Continuous monitoring of SPF, DKIM, DMARC alignment, DNS records, and domain blacklists.
             </p>
           </div>
 
           <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-400">
+            <span className="text-[12px] font-normal text-slate-400">
               API Integration
             </span>
             <button
               type="button"
               onClick={() => openModal("emailguard")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-2xs transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Connect EmailGuard</span>
@@ -512,14 +512,14 @@ export default function ConnectionsPageClient({
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              <h2 className="text-[16px] font-semibold text-[#14243D] tracking-tight">
                 Connected Workspaces
               </h2>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
+              <span className="text-[12px] font-normal px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
                 {validIntegrations.length}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[12px] font-normal text-slate-500 mt-0.5">
               Active API credentials synchronized with your fleet.
             </p>
           </div>
@@ -528,7 +528,7 @@ export default function ConnectionsPageClient({
             type="button"
             onClick={handleSyncAll}
             disabled={validIntegrations.length === 0 || isSyncingAll}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 border border-slate-200/90 shadow-2xs disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 active:scale-95 border border-slate-200/90 shadow-2xs disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${isSyncingAll ? "animate-spin text-indigo-600" : ""}`} />
             <span>{isSyncingAll ? "Syncing Pipelines..." : "Sync All Pipelines"}</span>
@@ -698,10 +698,10 @@ export default function ConnectionsPageClient({
                   )}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="text-[16px] font-semibold text-[#14243D]">
                     Connect {provider === "smartlead" ? "Smartlead" : "EmailGuard"}
                   </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-[12px] font-normal text-slate-500 mt-0.5">
                     Enter API credentials to link your infrastructure
                   </p>
                 </div>
@@ -711,7 +711,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -720,7 +720,7 @@ export default function ConnectionsPageClient({
             {/* Modal Body */}
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                   Connection Name
                 </label>
                 <input
@@ -737,7 +737,7 @@ export default function ConnectionsPageClient({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[12px] font-normal text-slate-700 uppercase tracking-wider mb-1.5">
                   API Key
                 </label>
                 <div className="relative">
@@ -762,7 +762,7 @@ export default function ConnectionsPageClient({
                     )}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">
+                <p className="text-[12px] font-normal text-slate-400 mt-1.5">
                   {provider === "smartlead"
                     ? "Found in Smartlead.ai → Settings → Profile → API Keys"
                     : "Found in EmailGuard.io → Settings → API Access"}
@@ -783,7 +783,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -791,7 +791,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={handleAddConnection}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {saving ? (
                   <>
@@ -824,10 +824,10 @@ export default function ConnectionsPageClient({
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-[16px] font-semibold text-[#14243D]">
                 Disconnect {integrationToRemove.name}?
               </h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <p className="text-[13px] font-normal text-slate-500 mt-1 leading-relaxed">
                 This will remove the API integration. Synchronized data will remain cached until the next refresh.
               </p>
             </div>
@@ -837,7 +837,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={() => setIntegrationToRemove(null)}
                 disabled={removing}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 hover:bg-slate-100 border border-slate-300 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -845,7 +845,7 @@ export default function ConnectionsPageClient({
                 type="button"
                 onClick={handleRemoveIntegration}
                 disabled={removing}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors flex items-center gap-2 shadow-2xs"
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-rose-600 hover:bg-rose-700 transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
               >
                 {removing ? (
                   <>

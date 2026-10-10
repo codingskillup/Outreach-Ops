@@ -148,21 +148,21 @@ export default function ClientsPageClient({
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80">
                 <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                 Client Directory & Portfolio
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-normal bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 Live Pipeline Sync
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-xl sm:text-[26px] font-semibold tracking-tight text-[#14243D]">
               Managed Client Accounts
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            <p className="text-[12px] font-normal text-slate-500 leading-relaxed">
               Track live account distribution, infrastructure types, active sequences, and compliance health grouped across client workspaces.
             </p>
           </div>
@@ -170,7 +170,7 @@ export default function ClientsPageClient({
           <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
             <Link
               href="/emailaccounts"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/60 transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/60 transition-colors shadow-xs"
             >
               <Mail className="w-4 h-4 text-slate-500" />
               <span>All Mailboxes</span>
@@ -178,7 +178,7 @@ export default function ClientsPageClient({
 
             <Link
               href="/campaigns"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/10 active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/10 active:scale-95"
             >
               <Megaphone className="w-4 h-4 text-indigo-400" />
               <span>View Campaigns</span>
@@ -192,7 +192,7 @@ export default function ClientsPageClient({
         {/* Total Clients */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">
+            <span className="text-[12px] font-normal uppercase tracking-wider">
               Total Clients
             </span>
             <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -200,17 +200,17 @@ export default function ClientsPageClient({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <div className="text-[28px] font-semibold tracking-tight text-[#14243D] tabular-nums">
               {clients.length.toLocaleString()}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">Managed workspaces</p>
+            <p className="text-[12px] font-normal text-slate-400 mt-0.5">Managed workspaces</p>
           </div>
         </div>
 
         {/* Total Accounts */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">
+            <span className="text-[12px] font-normal uppercase tracking-wider">
               Total Inboxes
             </span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 flex items-center justify-center">
@@ -218,17 +218,17 @@ export default function ClientsPageClient({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <div className="text-[28px] font-semibold tracking-tight text-[#14243D] tabular-nums">
               {totalAccounts.toLocaleString()}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">Across all client fleets</p>
+            <p className="text-[12px] font-normal text-slate-400 mt-0.5">Across all client fleets</p>
           </div>
         </div>
 
         {/* Active Campaigns */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">
+            <span className="text-[12px] font-normal uppercase tracking-wider">
               Active Campaigns
             </span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 flex items-center justify-center">
@@ -236,17 +236,17 @@ export default function ClientsPageClient({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-indigo-950">
+            <div className="text-[28px] font-semibold tracking-tight text-[#8B5CF6] tabular-nums">
               {totalCampaigns.toLocaleString()}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">Live outreach sequences</p>
+            <p className="text-[12px] font-normal text-slate-400 mt-0.5">Live outreach sequences</p>
           </div>
         </div>
 
         {/* Fleet Health Rate */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Fleet Health
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center">
@@ -254,17 +254,17 @@ export default function ClientsPageClient({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-700">
+            <div className="text-[28px] font-semibold tracking-tight text-[#10B981] tabular-nums">
               {overallHealthRate}%
             </div>
-            <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Optimal compliance</p>
+            <p className="text-[12px] font-normal text-[#10B981] mt-0.5">Optimal compliance</p>
           </div>
         </div>
 
         {/* Clients With Issues */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[12px] font-normal uppercase tracking-wider text-slate-500">
               Clients w/ Issues
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center">
@@ -273,13 +273,13 @@ export default function ClientsPageClient({
           </div>
           <div className="mt-2">
             <div
-              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-                clientsWithIssues > 0 ? "text-amber-700" : "text-slate-900"
+              className={`text-[28px] font-semibold tracking-tight tabular-nums ${
+                clientsWithIssues > 0 ? "text-[#F59E0B]" : "text-[#14243D]"
               }`}
             >
               {clientsWithIssues.toLocaleString()}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[12px] font-normal text-slate-400 mt-0.5">
               {totalIssues} open {totalIssues === 1 ? "anomaly" : "anomalies"}
             </p>
           </div>
@@ -466,7 +466,7 @@ export default function ClientsPageClient({
                   <th className="py-3 px-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
+              <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
                 {paginatedClients.map((client) => {
                   const health = client.totalAccounts > 0
                     ? Math.round((client.healthyAccounts / client.totalAccounts) * 100)

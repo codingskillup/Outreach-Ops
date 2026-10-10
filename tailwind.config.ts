@@ -44,13 +44,26 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
+        brand: {
+          navy: "#14243D",
+          blue: "#2563EB",
+          emerald: "#10B981",
+          amber: "#F59E0B",
+          red: "#EF4444",
+          purple: "#8B5CF6",
+          bg: "#F4F7FB",
+          white: "#FFFFFF",
         },
+      },
+      fontFamily: {
+        sans: [
+          "var(--font-geist-sans)",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
       },
       borderRadius: {
         lg: "var(--radius)",
