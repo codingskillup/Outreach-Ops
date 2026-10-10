@@ -46,6 +46,12 @@ export type RealIssue = {
   first_seen_at: string;
   last_seen_at: string;
   resolved_at: string | null;
+  integration_id?: string | null;
+  integration_name?: string | null;
+  integrations?:
+    | { id: string; name: string; provider: string }
+    | { id: string; name: string; provider: string }[]
+    | null;
 };
 
 export type DisplayIssue = {
@@ -63,6 +69,7 @@ export type DisplayIssue = {
   firstSeenAt?: string;
   lastSeenAt?: string;
   resolvedAt?: string | null;
+  integrationName: string;
   // Pre-computed lowercase search index for maximum filtering performance
   searchIndex: string;
 };
@@ -80,7 +87,7 @@ type ScanToast = {
   };
 };
 
-type SortField = "severity" | "detectedAt" | "item" | "client" | "status";
+type SortField = "severity" | "detectedAt" | "item" | "client" | "workspace" | "status";
 type SortOrder = "asc" | "desc";
 
 const ITEMS_PER_PAGE_OPTIONS = [25, 50, 100];
@@ -98,6 +105,7 @@ export default function IssuesPageClient({
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [workspaceFilter, setWorkspaceFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeKpiFilter, setActiveKpiFilter] = useState<string | null>("open");
@@ -136,18 +144,20 @@ export default function IssuesPageClient({
   }, [realIssues]);
 
   // Single-pass computation for KPI Counts & Dropdown Filter Lists
-  const { openCount, criticalCount, warningCount, resolvedCount, clients, sources } = useMemo(() => {
+  const { openCount, criticalCount, warningCount, resolvedCount, clients, sources, workspaces } = useMemo(() => {
     let open = 0;
     let critical = 0;
     let warning = 0;
     let resolved = 0;
     const clientSet = new Set<string>();
     const sourceSet = new Set<string>();
+    const workspaceSet = new Set<string>();
 
     for (let i = 0; i < issues.length; i++) {
       const it = issues[i];
       if (it.client) clientSet.add(it.client);
       if (it.source) sourceSet.add(it.source);
+      if (it.integrationName) workspaceSet.add(it.integrationName);
 
       if (it.status === "Open") {
         open++;
@@ -165,6 +175,7 @@ export default function IssuesPageClient({
       resolvedCount: resolved,
       clients: Array.from(clientSet).sort(),
       sources: Array.from(sourceSet).sort(),
+      workspaces: Array.from(workspaceSet).sort(),
     };
   }, [issues]);
 
@@ -181,6 +192,7 @@ export default function IssuesPageClient({
 
       if (clientFilter !== "all" && issue.client !== clientFilter) return false;
       if (sourceFilter !== "all" && issue.source !== sourceFilter) return false;
+      if (workspaceFilter !== "all" && issue.integrationName !== workspaceFilter) return false;
       if (severityFilter !== "all" && issue.severity !== severityFilter) return false;
       if (statusFilter !== "all" && issue.status !== statusFilter) return false;
 
@@ -200,6 +212,8 @@ export default function IssuesPageClient({
         cmp = a.item.localeCompare(b.item);
       } else if (sortField === "client") {
         cmp = a.client.localeCompare(b.client);
+      } else if (sortField === "workspace") {
+        cmp = a.integrationName.localeCompare(b.integrationName);
       } else if (sortField === "status") {
         cmp = a.status.localeCompare(b.status);
       } else {
@@ -213,6 +227,7 @@ export default function IssuesPageClient({
     search,
     clientFilter,
     sourceFilter,
+    workspaceFilter,
     severityFilter,
     statusFilter,
     activeKpiFilter,
@@ -254,6 +269,7 @@ export default function IssuesPageClient({
     setSearch("");
     setClientFilter("all");
     setSourceFilter("all");
+    setWorkspaceFilter("all");
     setSeverityFilter("all");
     setStatusFilter("all");
     setActiveKpiFilter(null);
@@ -307,6 +323,7 @@ export default function IssuesPageClient({
     search ||
       clientFilter !== "all" ||
       sourceFilter !== "all" ||
+      workspaceFilter !== "all" ||
       severityFilter !== "all" ||
       statusFilter !== "all" ||
       activeKpiFilter !== "open"
@@ -557,19 +574,19 @@ export default function IssuesPageClient({
             ))}
           </select>
 
-          {/* Source Filter */}
+          {/* Smartlead Workspace Filter */}
           <select
-            value={sourceFilter}
+            value={workspaceFilter}
             onChange={(e) => {
-              setSourceFilter(e.target.value);
+              setWorkspaceFilter(e.target.value);
               setCurrentPage(1);
             }}
             className="px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-200 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] cursor-pointer"
           >
-            <option value="all">All Sources ({sources.length})</option>
-            {sources.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            <option value="all">All Smartlead Workspaces ({workspaces.length})</option>
+            {workspaces.map((w) => (
+              <option key={w} value={w}>
+                {w}
               </option>
             ))}
           </select>
@@ -667,61 +684,82 @@ export default function IssuesPageClient({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto min-w-0">
+            <table className="w-full text-left border-collapse table-fixed min-w-0">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
+                <tr className="border-b border-slate-100 bg-slate-50/60 text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
                   <th
                     onClick={() => handleSort("severity")}
-                    className="py-3 px-5 cursor-pointer hover:text-slate-900"
+                    style={{ width: "9%" }}
+                    className="py-2.5 px-2 cursor-pointer hover:text-slate-900 transition-colors"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Severity</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <span className="truncate">Severity</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                     </div>
                   </th>
                   <th
                     onClick={() => handleSort("item")}
-                    className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                    style={{ width: "23%" }}
+                    className="py-2.5 px-2 cursor-pointer hover:text-slate-900 transition-colors"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Mailbox / Domain</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <span className="truncate">Mailbox / Domain</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                     </div>
                   </th>
-                  <th className="py-3 px-4">Issue Category</th>
+                  <th style={{ width: "12%" }} className="py-2.5 px-1.5 xl:px-2">
+                    <span className="truncate">Category</span>
+                  </th>
                   <th
                     onClick={() => handleSort("client")}
-                    className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                    style={{ width: "11%" }}
+                    className="py-2.5 px-1.5 xl:px-2 cursor-pointer hover:text-slate-900 transition-colors"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Client</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <span className="truncate">Client</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                     </div>
                   </th>
-                  <th className="py-3 px-4">Setting Drift</th>
                   <th
-                    onClick={() => handleSort("status")}
-                    className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                    onClick={() => handleSort("workspace")}
+                    style={{ width: "12%" }}
+                    className="py-2.5 px-1.5 xl:px-2 cursor-pointer hover:text-slate-900 transition-colors"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Status</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <span className="truncate">Smartlead</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
+                    </div>
+                  </th>
+                  <th style={{ width: "11%" }} className="py-2.5 px-1.5 xl:px-2">
+                    <span className="truncate">Setting Drift</span>
+                  </th>
+                  <th
+                    onClick={() => handleSort("status")}
+                    style={{ width: "9%" }}
+                    className="py-2.5 px-1.5 xl:px-2 cursor-pointer hover:text-slate-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="truncate">Status</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                     </div>
                   </th>
                   <th
                     onClick={() => handleSort("detectedAt")}
-                    className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                    style={{ width: "9%" }}
+                    className="py-2.5 px-1.5 xl:px-2 cursor-pointer hover:text-slate-900 transition-colors"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Detected</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <span className="truncate">Detected</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                     </div>
                   </th>
-                  <th className="py-3 px-4 w-12 text-right">Inspect</th>
+                  <th style={{ width: "4%" }} className="py-2.5 px-1 text-right">
+                    <span className="sr-only">Inspect</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
+              <tbody className="divide-y divide-slate-100 text-[11px] xl:text-[12px] font-normal">
                 {paginatedIssues.map((issue) => {
                   const isCritical = issue.severity === "Critical";
                   const isOpen = issue.status === "Open";
@@ -733,34 +771,34 @@ export default function IssuesPageClient({
                       className="hover:bg-slate-50/80 cursor-pointer transition-colors duration-150 group"
                     >
                       {/* Severity Badge */}
-                      <td className="py-3.5 px-5 whitespace-nowrap">
+                      <td className="py-2 px-2 overflow-hidden">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9.5px] font-bold border truncate ${
                             isCritical
                               ? "bg-rose-50 text-rose-700 border-rose-200"
                               : "bg-amber-50 text-amber-700 border-amber-200"
                           }`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                               isCritical
                                 ? "bg-rose-500 animate-pulse"
                                 : "bg-amber-500"
                             }`}
                           />
-                          {issue.severity}
+                          <span className="truncate">{issue.severity}</span>
                         </span>
                       </td>
 
                       {/* Mailbox / Item */}
-                      <td className="py-3.5 px-4 font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
-                        <div className="flex items-center gap-2">
+                      <td className="py-2 px-2 font-medium text-slate-900 group-hover:text-[#2563EB] transition-colors overflow-hidden">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           {issue.item.includes("@") ? (
-                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                           ) : (
-                            <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <Globe className="w-3 h-3 text-slate-400 shrink-0" />
                           )}
-                          <span className="truncate max-w-[220px]">
+                          <span className="truncate text-[11px] xl:text-xs" title={issue.item}>
                             {issue.item}
                           </span>
                           <button
@@ -770,46 +808,56 @@ export default function IssuesPageClient({
                               handleCopyItem(issue.item, issue.id);
                             }}
                             title="Copy address"
-                            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
+                            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors shrink-0"
                           >
                             {copiedId === issue.id ? (
-                              <Check className="w-3 h-3 text-emerald-600" />
+                              <Check className="w-2.5 h-2.5 text-emerald-600" />
                             ) : (
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-2.5 h-2.5" />
                             )}
                           </button>
                         </div>
                       </td>
 
                       {/* Issue Category */}
-                      <td className="py-3.5 px-4 text-slate-700 font-medium">
-                        <div className="truncate max-w-[190px]">
+                      <td className="py-2 px-1.5 xl:px-2 text-slate-700 font-medium overflow-hidden">
+                        <span className="truncate block text-[11px] xl:text-xs" title={issue.issueType}>
                           {issue.issueType}
-                        </div>
+                        </span>
                       </td>
 
                       {/* Client */}
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                          <Building2 className="w-3 h-3 text-slate-400" />
-                          <span className="truncate max-w-[120px]">
+                      <td className="py-2 px-1.5 xl:px-2 overflow-hidden">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] xl:text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 max-w-full">
+                          <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                          <span className="truncate" title={issue.client}>
                             {issue.client}
                           </span>
                         </span>
                       </td>
 
+                      {/* Smartlead Workspace */}
+                      <td className="py-2 px-1.5 xl:px-2 overflow-hidden">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] xl:text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs max-w-full">
+                          <Zap className="w-2.5 h-2.5 text-amber-500 fill-amber-500 shrink-0" />
+                          <span className="truncate" title={issue.integrationName}>
+                            {issue.integrationName}
+                          </span>
+                        </span>
+                      </td>
+
                       {/* Setting Drift (Current vs Expected) */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 text-[11px]">
+                      <td className="py-2 px-1.5 xl:px-2 overflow-hidden">
+                        <div className="flex items-center gap-1 text-[9.5px] xl:text-[10px] min-w-0">
                           <span
-                            className="font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 truncate max-w-[110px]"
+                            className="font-semibold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200 truncate shrink min-w-0"
                             title={`Current: ${issue.currentValue}`}
                           >
                             {issue.currentValue}
                           </span>
-                          <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                          <ArrowRight className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                           <span
-                            className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 truncate max-w-[110px]"
+                            className="font-semibold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200 truncate shrink min-w-0"
                             title={`Target: ${issue.expectedValue}`}
                           >
                             {issue.expectedValue}
@@ -818,39 +866,42 @@ export default function IssuesPageClient({
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-2 px-1.5 xl:px-2 overflow-hidden">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9.5px] xl:text-[10px] font-bold border truncate ${
                             isOpen
                               ? "bg-amber-50 text-amber-800 border-amber-200"
                               : "bg-emerald-50 text-emerald-700 border-emerald-200"
                           }`}
                         >
                           {isOpen ? (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                           ) : (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                           )}
-                          {issue.status}
+                          <span className="truncate">{issue.status}</span>
                         </span>
                       </td>
 
                       {/* Detected Date */}
-                      <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap" suppressHydrationWarning>
-                        {issue.detectedAt}
+                      <td className="py-2 px-1.5 xl:px-2 text-slate-400 text-[10px] xl:text-[11px] overflow-hidden" suppressHydrationWarning>
+                        <span className="truncate block" title={issue.detectedAt}>
+                          {issue.detectedAt}
+                        </span>
                       </td>
 
                       {/* Action Button */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-2 px-1 text-right overflow-hidden">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedIssue(issue);
                           }}
-                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors shadow-xs"
+                          title="Inspect issue"
+                          className="w-5 h-5 xl:w-6 xl:h-6 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 inline-flex items-center justify-center transition-colors shadow-2xs"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3 h-3" />
                         </button>
                       </td>
                     </tr>
@@ -987,9 +1038,16 @@ export default function IssuesPageClient({
                   )}
                   <span>{selectedIssue.item}</span>
                 </div>
-                <div className="flex items-center gap-1 text-slate-500">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Client: {selectedIssue.client}</span>
+                <div className="flex flex-wrap items-center gap-3 text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Client: {selectedIssue.client}</span>
+                  </div>
+                  <span className="text-slate-300">•</span>
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80">
+                    <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <span>{selectedIssue.integrationName}</span>
+                  </div>
                 </div>
               </div>
 
@@ -1065,7 +1123,7 @@ export default function IssuesPageClient({
                   Resolution Recommendation
                 </span>
                 <p className="text-xs text-blue-900 leading-relaxed">
-                  Log in to your {selectedIssue.source} dashboard for &ldquo;
+                  Log in to your <strong>{selectedIssue.integrationName}</strong> dashboard for &ldquo;
                   {selectedIssue.item}&rdquo; and adjust the setting from{" "}
                   <strong className="text-rose-700">{selectedIssue.currentValue}</strong> to{" "}
                   <strong className="text-emerald-700">{selectedIssue.expectedValue}</strong>.
@@ -1098,6 +1156,18 @@ function convertRealIssue(issue: RealIssue): DisplayIssue {
   const issueTypeStr = issue.issue_type;
   const sourceStr = issue.source;
 
+  let integrationName = issue.integration_name || "";
+  if (!integrationName && issue.integrations) {
+    if (Array.isArray(issue.integrations)) {
+      integrationName = issue.integrations[0]?.name || "";
+    } else if (typeof issue.integrations === "object" && "name" in issue.integrations) {
+      integrationName = String(issue.integrations.name || "");
+    }
+  }
+  if (!integrationName) {
+    integrationName = sourceStr || "Smartlead";
+  }
+
   return {
     id: issue.id,
     source: sourceStr,
@@ -1113,7 +1183,8 @@ function convertRealIssue(issue: RealIssue): DisplayIssue {
     firstSeenAt: detected,
     lastSeenAt: formatDateTime(issue.last_seen_at),
     resolvedAt: issue.resolved_at ? formatDateTime(issue.resolved_at) : null,
-    searchIndex: `${itemStr} ${issueTypeStr} ${clientName} ${sourceStr}`.toLowerCase(),
+    integrationName,
+    searchIndex: `${itemStr} ${issueTypeStr} ${clientName} ${sourceStr} ${integrationName}`.toLowerCase(),
   };
 }
 

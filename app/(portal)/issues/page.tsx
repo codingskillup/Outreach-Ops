@@ -17,6 +17,7 @@ export default async function IssuesPage() {
   const [
     issuesResult,
     accountsResult,
+    integrationsResult,
   ] = await Promise.all([
     supabase
       .from("issues")
@@ -33,7 +34,13 @@ export default async function IssuesPage() {
         status,
         first_seen_at,
         last_seen_at,
-        resolved_at
+        resolved_at,
+        integration_id,
+        integrations (
+          id,
+          name,
+          provider
+        )
       `)
       .eq(
         "user_id",
@@ -59,14 +66,44 @@ export default async function IssuesPage() {
         "user_id",
         user.id
       ),
+
+    supabase
+      .from("integrations")
+      .select("id, name, provider")
+      .eq("user_id", user.id),
   ]);
+
+  const integrationMap = new Map<string, string>();
+  for (const int of integrationsResult.data || []) {
+    if (int.id && int.name) {
+      integrationMap.set(int.id, int.name);
+    }
+  }
+
+  const enrichedIssues = (issuesResult.data || []).map((issue) => {
+    let integrationName = "";
+    const rawIntegrations = issue.integrations as unknown;
+    if (rawIntegrations) {
+      if (Array.isArray(rawIntegrations)) {
+        integrationName = String((rawIntegrations[0] as { name?: string })?.name || "");
+      } else if (typeof rawIntegrations === "object" && rawIntegrations !== null) {
+        integrationName = String((rawIntegrations as { name?: string }).name || "");
+      }
+    }
+
+    if (!integrationName && issue.integration_id) {
+      integrationName = integrationMap.get(issue.integration_id) || "";
+    }
+
+    return {
+      ...issue,
+      integration_name: integrationName || issue.source || "Smartlead",
+    };
+  });
 
   return (
     <IssuesPageClient
-      realIssues={
-        issuesResult.data ||
-        []
-      }
+      realIssues={enrichedIssues}
       hasLiveData={
         (accountsResult.count ||
           0) > 0
