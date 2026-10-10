@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { decryptApiKey } from "@/lib/integrationCrypto";
 
+import { scanIssues } from "@/lib/issues/scanIssues";
+
 type RouteContext = {
 
   params: Promise<{
@@ -2668,6 +2670,18 @@ export async function POST(
 
       );
 
+    }
+
+    // Automatically trigger issue audit scan so newly detected or resolved issues are immediately updated
+    let auditSummary: unknown = null;
+    try {
+      auditSummary = await scanIssues({
+        supabase,
+        userId,
+        sendAlerts: true,
+      });
+    } catch (auditErr) {
+      console.warn("Auto-audit after Smartlead sync error:", auditErr);
     }
 
     return NextResponse.json({

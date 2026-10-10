@@ -6,6 +6,8 @@ import {
   decryptApiKey,
 } from "@/lib/integrationCrypto";
 
+import { scanIssues } from "@/lib/issues/scanIssues";
+
 type RouteContext = {
   params: Promise<{
     id: string;
@@ -288,6 +290,17 @@ export async function POST(
         "EmailGuard sync log error:",
         logError.message
       );
+    }
+
+    // Automatically trigger issue audit scan so DNS/domain issues are immediately updated
+    try {
+      await scanIssues({
+        supabase,
+        userId,
+        sendAlerts: true,
+      });
+    } catch (auditErr) {
+      console.warn("Auto-audit after EmailGuard sync error:", auditErr);
     }
 
     return NextResponse.json({

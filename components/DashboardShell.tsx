@@ -175,14 +175,18 @@ export default function DashboardShell({
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("outreach:refresh"));
-    }
-    router.refresh();
-    setTimeout(() => {
-      setIsRefreshing(false);
-      showToast("Fleet telemetry updated across all connected Smartlead workspaces.");
-    }, 1200);
+    fetch("/api/issues/scan", { method: "POST" })
+      .catch(() => {})
+      .finally(() => {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("outreach:refresh"));
+        }
+        router.refresh();
+        setTimeout(() => {
+          setIsRefreshing(false);
+          showToast("Fleet telemetry updated across all connected Smartlead workspaces.");
+        }, 800);
+      });
   };
 
   const safeIntegrations = useMemo(

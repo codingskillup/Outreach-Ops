@@ -108,6 +108,30 @@ export default function PortalHeader({
   useEffect(() => {
     loadSystemStatus();
 
+    let lastAutoScan = 0;
+    const runAutoAuditScan = async () => {
+      const now = Date.now();
+      // Debounce: minimum 25s between automatic background scans
+      if (now - lastAutoScan < 25000) return;
+      lastAutoScan = now;
+
+      try {
+        const res = await fetch("/api/issues/scan", { method: "POST" });
+        if (res.ok) {
+          await loadSystemStatus();
+          window.dispatchEvent(new CustomEvent("outreach:refresh"));
+        }
+      } catch {
+        // non-fatal background poll
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (document.visibilityState === "visible") {
+        runAutoAuditScan();
+      }
+    };
+
     const handleAutoRefresh = () => {
       setRefreshing(true);
       router.refresh();
@@ -123,8 +147,27 @@ export default function PortalHeader({
     };
 
     window.addEventListener("outreach:refresh", handleAutoRefresh);
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleWindowFocus);
+
+    // Auto-poll system status every 15 seconds so header always reflects live issues in real-time
+    const statusInterval = setInterval(() => {
+      loadSystemStatus();
+    }, 15000);
+
+    // Auto-sync in background every 45 seconds while user is working
+    const autoScanInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        runAutoAuditScan();
+      }
+    }, 45000);
+
     return () => {
       window.removeEventListener("outreach:refresh", handleAutoRefresh);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleWindowFocus);
+      clearInterval(statusInterval);
+      clearInterval(autoScanInterval);
     };
   }, [router]);
 
@@ -149,10 +192,17 @@ export default function PortalHeader({
     if (refreshing) return;
     setRefreshing(true);
 
+    try {
+      // Trigger live audit scan so newly introduced or solved issues update immediately
+      await fetch("/api/issues/scan", { method: "POST" }).catch(() => {});
+    } catch {
+      // non-fatal
+    }
+
     router.refresh();
     await loadSystemStatus();
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     setLastRefresh(
       new Date().toLocaleTimeString([], {

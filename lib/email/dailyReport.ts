@@ -489,7 +489,7 @@ await sendNotificationEmail({
           ],
           [
             "New Issues",
-            scanSummary.newIssues,
+            scanSummary?.newIssues ?? 0,
           ],
           [
             "Resolved Last 24 Hours",
@@ -659,7 +659,7 @@ function metricTable(
                     font-weight: 700;
                   "
                 >
-                  ${value.toLocaleString()}
+                  ${value != null ? Number(value).toLocaleString() : "0"}
                 </td>
               </tr>
             `

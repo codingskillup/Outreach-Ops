@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   RefreshCw,
@@ -114,6 +114,29 @@ export default function IssuesPageClient({
   const [selectedIssue, setSelectedIssue] = useState<DisplayIssue | null>(null);
   const [toast, setToast] = useState<ScanToast | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Auto-refresh when sync occurs or periodic background poll
+  useEffect(() => {
+    const handleAutoRefresh = () => {
+      startTransition(() => {
+        router.refresh();
+      });
+    };
+
+    window.addEventListener("outreach:refresh", handleAutoRefresh);
+
+    // Auto-poll issues list every 20 seconds so resolved and newly detected issues update live
+    const interval = setInterval(() => {
+      startTransition(() => {
+        router.refresh();
+      });
+    }, 20000);
+
+    return () => {
+      window.removeEventListener("outreach:refresh", handleAutoRefresh);
+      clearInterval(interval);
+    };
+  }, [router]);
 
   // Memoized full issues dataset with precomputed search index
   const issues: DisplayIssue[] = useMemo(() => {
@@ -271,6 +294,9 @@ export default function IssuesPageClient({
       });
 
       setTimeout(() => setToast(null), 7000);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("outreach:refresh"));
+      }
       startTransition(() => {
         router.refresh();
       });
@@ -379,7 +405,7 @@ export default function IssuesPageClient({
             <RefreshCw
               className={`w-4 h-4 ${scanning ? "animate-spin text-indigo-400" : ""}`}
             />
-            <span>{scanning ? "Auditing Pipeline..." : "Audit Pipeline Now"}</span>
+            <span>{scanning ? "Syncing & Auditing Pipeline..." : "Audit Pipeline Now"}</span>
           </button>
         </div>
       </div>
@@ -818,7 +844,7 @@ export default function IssuesPageClient({
                       </td>
 
                       {/* Detected Date */}
-                      <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap" suppressHydrationWarning>
                         {issue.detectedAt}
                       </td>
 
@@ -1034,7 +1060,7 @@ export default function IssuesPageClient({
                   <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold block mb-1">
                     First Detected
                   </span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-semibold text-slate-800" suppressHydrationWarning>
                     {selectedIssue.detectedAt}
                   </span>
                 </div>
@@ -1102,10 +1128,12 @@ function convertRealIssue(issue: RealIssue): DisplayIssue {
 function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(undefined, {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Karachi",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+    hour12: true,
+  }).format(date);
 }

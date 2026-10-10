@@ -806,13 +806,15 @@ function formatProvider(value: string) {
 function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(undefined, {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Karachi",
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+    hour12: true,
+  }).format(date);
 }
 
 function formatRelativeTime(value: string): string {
