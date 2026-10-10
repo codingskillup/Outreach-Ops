@@ -1293,384 +1293,237 @@ async function fetchAllExistingIssues(
 
 
 async function sendNewIssueAlert(
-
-  supabase: SupabaseClient,
-
-  userId: string,
-
-  issues: DetectedIssue[]
-
+  supabase: SupabaseClient,
+  userId: string,
+  issues: DetectedIssue[]
 ) {
-
-  const critical =
-
-    issues.filter(
-
-      (issue) =>
-
-        issue.severity ===
-
-        "Critical"
-
-    ).length;
-
-
-
-  const warning =
-
-    issues.filter(
-
-      (issue) =>
-
-        issue.severity ===
-
-        "Warning"
-
-    ).length;
-
-
-
-  const visibleIssues =
-
-    issues.slice(0, 50);
-
-
-
-  const rows =
-
-    visibleIssues
-
-      .map(
-
-        (issue) => `
-
-          <tr>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(issue.client)}
-
-            </td>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(issue.item)}
-
-            </td>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(issue.issue_type)}
-
-            </td>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(
-
-                issue.current_value ||
-
-                  "Unknown"
-
-              )}
-
-            </td>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(
-
-                issue.expected_value ||
-
-                  "N/A"
-
-              )}
-
-            </td>
-
-            <td style="${tdStyle()}">
-
-              ${escapeHtml(issue.severity)}
-
-            </td>
-
-          </tr>
-
-        `
-
-      )
-
-      .join("");
-
-
-
-  const remaining =
-
-    issues.length -
-
-    visibleIssues.length;
-
-
-
-  return await sendNotificationEmail({
-
-    supabase,
-
-    userId,
-
-    type:
-
-      "instant_issue_alert",
-
-    subject:
-
-      issues.length === 1
-
-        ? "Outreach Ops Alert: New Issue Detected"
-
-        : `Outreach Ops Alert: ${issues.length} New Issues Detected`,
-
-    html: `
-
-      <div
-
-        style="
-
-          font-family: Arial, sans-serif;
-
-          max-width: 900px;
-
-          margin: 0 auto;
-
-          color: #111827;
-
-          padding: 24px;
-
-        "
-
-      >
-
-        <h1
-
-          style="
-
-            font-size: 24px;
-
-            margin: 0 0 8px;
-
-          "
-
-        >
-
-          Outreach Ops Alert
-
-        </h1>
-
-
-
-        <p
-
-          style="
-
-            color: #6b7280;
-
-            margin: 0 0 24px;
-
-          "
-
-        >
-
-          New outreach infrastructure issues were detected.
-
-        </p>
-
-
-
-        <div
-
-          style="
-
-            display: flex;
-
-            gap: 12px;
-
-            margin-bottom: 24px;
-
-          "
-
-        >
-
-          <div
-
-            style="
-
-              padding: 12px 16px;
-
-              border: 1px solid #e5e7eb;
-
-              border-radius: 8px;
-
-            "
-
-          >
-
-            <strong>${issues.length}</strong>
-
-            New Issues
-
-          </div>
-
-
-
-          <div
-
-            style="
-
-              padding: 12px 16px;
-
-              border: 1px solid #e5e7eb;
-
-              border-radius: 8px;
-
-            "
-
-          >
-
-            <strong>${critical}</strong>
-
-            Critical
-
-          </div>
-
-
-
-          <div
-
-            style="
-
-              padding: 12px 16px;
-
-              border: 1px solid #e5e7eb;
-
-              border-radius: 8px;
-
-            "
-
-          >
-
-            <strong>${warning}</strong>
-
-            Warnings
-
-          </div>
-
-        </div>
-
-
-
-        <table
-
-          cellpadding="0"
-
-          cellspacing="0"
-
-          style="
-
-            width: 100%;
-
-            border-collapse: collapse;
-
-            font-size: 14px;
-
-          "
-
-        >
-
-          <thead>
-
-            <tr>
-
-              <th style="${thStyle()}">Client</th>
-
-              <th style="${thStyle()}">Account / Domain</th>
-
-              <th style="${thStyle()}">Issue</th>
-
-              <th style="${thStyle()}">Current</th>
-
-              <th style="${thStyle()}">Expected</th>
-
-              <th style="${thStyle()}">Severity</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows}
-
-          </tbody>
-
-        </table>
-
-
-
-        ${
-
-          remaining > 0
-
-            ? `
-
-              <p
-
-                style="
-
-                  margin-top: 16px;
-
-                  color: #6b7280;
-
-                "
-
-              >
-
-                + ${remaining} additional issues are available in Outreach Ops.
-
-              </p>
-
-            `
-
-            : ""
-
-        }
-
-
-
-        <p
-
-          style="
-
-            margin-top: 24px;
-
-            color: #6b7280;
-
-            font-size: 13px;
-
-          "
-
-        >
-
-          This notification was generated automatically by Outreach Ops.
-
-        </p>
-
-      </div>
-
-    `,
-
-  });
-
+  const critical = issues.filter(
+    (issue) => (issue.severity || "").toLowerCase() === "critical"
+  ).length;
+
+  const warning = issues.filter(
+    (issue) => (issue.severity || "").toLowerCase() === "warning"
+  ).length;
+
+  const visibleIssues = issues.slice(0, 50);
+
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "") ||
+    "https://outreach-ops.vercel.app";
+  const issuesUrl = `${appBaseUrl.replace(/\/$/, "")}/issues`;
+
+  const rows = visibleIssues
+    .map((issue, index) => {
+      const isCritical = (issue.severity || "").toLowerCase() === "critical";
+      const isWarning = (issue.severity || "").toLowerCase() === "warning";
+      const bg = index % 2 === 0 ? "#ffffff" : "#f8fafc";
+
+      const badgeStyle = isCritical
+        ? "display: inline-block; background-color: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;"
+        : isWarning
+        ? "display: inline-block; background-color: #fffbeb; color: #b45309; border: 1px solid #fcd34d; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;"
+        : "display: inline-block; background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;";
+
+      const badgeText = isCritical
+        ? "● Critical"
+        : isWarning
+        ? "▲ Warning"
+        : escapeHtml(issue.severity || "Info");
+
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${bg};">
+          <td style="padding: 12px 14px; vertical-align: top; font-size: 13px; font-weight: 600; color: #1e293b;">
+            ${escapeHtml(issue.client || "Unassigned")}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: top;">
+            <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; font-weight: 600; color: #0284c7; word-break: break-all;">
+              ${escapeHtml(issue.item || "—")}
+            </div>
+            ${
+              issue.account_type
+                ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">${escapeHtml(issue.account_type)}</div>`
+                : ""
+            }
+          </td>
+          <td style="padding: 12px 14px; vertical-align: top; font-size: 13px; font-weight: 600; color: #334155;">
+            ${escapeHtml(issue.issue_type)}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: top; font-size: 12px; color: #0f172a; font-weight: 700;">
+            ${escapeHtml(issue.current_value || "—")}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: top; font-size: 12px; color: #64748b;">
+            ${escapeHtml(issue.expected_value || "—")}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: top; text-align: right;">
+            <span style="${badgeStyle}">${badgeText}</span>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const remaining = issues.length - visibleIssues.length;
+
+  return await sendNotificationEmail({
+    supabase,
+    userId,
+    type: "instant_issue_alert",
+    subject:
+      issues.length === 1
+        ? `Outreach Ops Alert: ${critical > 0 ? "Critical " : ""}Issue Detected (${visibleIssues[0]?.issue_type || "Infrastructure"})`
+        : `Outreach Ops Alert: ${issues.length} Issues Detected (${critical} Critical, ${warning} Warnings)`,
+    html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Outreach Ops Alert</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #0f172a;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f5f9" style="width: 100%; min-width: 100%; margin: 0; padding: 32px 12px; background-color: #f1f5f9;">
+          <tr>
+            <td align="center">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 660px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); text-align: left;">
+                <!-- Top Accent Line -->
+                <tr>
+                  <td height="4" style="height: 4px; background-color: ${critical > 0 ? "#dc2626" : warning > 0 ? "#d97706" : "#2563eb"}; line-height: 4px; font-size: 1px;">&nbsp;</td>
+                </tr>
+
+                <!-- Content Area -->
+                <tr>
+                  <td style="padding: 28px 32px 24px 32px;">
+                    <!-- Top Brand Bar -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="background-color: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">
+                                OP
+                              </td>
+                              <td style="padding-left: 8px; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">
+                                Outreach Ops
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td align="right" style="vertical-align: middle;">
+                          ${
+                            critical > 0
+                              ? `<span style="display: inline-block; background-color: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px;">● Critical Alert</span>`
+                              : warning > 0
+                              ? `<span style="display: inline-block; background-color: #fffbeb; color: #b45309; border: 1px solid #fcd34d; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px;">▲ Drift Warning</span>`
+                              : `<span style="display: inline-block; background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px;">● Infrastructure Notice</span>`
+                          }
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Alert Heading -->
+                    <h1 style="margin: 20px 0 6px 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.4px; line-height: 1.3;">
+                      Outreach Ops Alert
+                    </h1>
+                    <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+                      New outreach infrastructure issues were detected and require attention.
+                    </p>
+
+                    <!-- Summary Metrics Row (3-Column Bulletproof Email Table) -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 22px 0; border-collapse: separate;">
+                      <tr>
+                        <td width="31%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; vertical-align: top;">
+                          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px;">Total Issues</div>
+                          <div style="font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.1;">${issues.length}</div>
+                          <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Detected now</div>
+                        </td>
+                        <td width="3.5%"></td>
+                        <td width="31%" style="background-color: ${critical > 0 ? "#fef2f2" : "#f8fafc"}; border: 1px solid ${critical > 0 ? "#fca5a5" : "#e2e8f0"}; border-radius: 8px; padding: 14px 16px; vertical-align: top;">
+                          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${critical > 0 ? "#b91c1c" : "#64748b"}; margin-bottom: 4px;">Critical</div>
+                          <div style="font-size: 26px; font-weight: 800; color: ${critical > 0 ? "#dc2626" : "#0f172a"}; line-height: 1.1;">${critical}</div>
+                          <div style="font-size: 11px; color: ${critical > 0 ? "#ef4444" : "#94a3b8"}; margin-top: 4px;">${critical > 0 ? "Requires action" : "None detected"}</div>
+                        </td>
+                        <td width="3.5%"></td>
+                        <td width="31%" style="background-color: ${warning > 0 ? "#fffbeb" : "#f8fafc"}; border: 1px solid ${warning > 0 ? "#fcd34d" : "#e2e8f0"}; border-radius: 8px; padding: 14px 16px; vertical-align: top;">
+                          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${warning > 0 ? "#b45309" : "#64748b"}; margin-bottom: 4px;">Warnings</div>
+                          <div style="font-size: 26px; font-weight: 800; color: ${warning > 0 ? "#d97706" : "#0f172a"}; line-height: 1.1;">${warning}</div>
+                          <div style="font-size: 11px; color: ${warning > 0 ? "#f59e0b" : "#94a3b8"}; margin-top: 4px;">${warning > 0 ? "Review advised" : "None detected"}</div>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Issues Table -->
+                    <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 16px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; text-align: left; width: 100%;">
+                        <thead>
+                          <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;">Client</th>
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;">Account / Domain</th>
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;">Issue</th>
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;">Current</th>
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;">Expected</th>
+                            <th style="padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; text-align: right;">Severity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${rows}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    ${
+                      remaining > 0
+                        ? `
+                          <div style="margin: 14px 0 20px 0; padding: 12px 16px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center; font-size: 13px; color: #64748b;">
+                            + <strong>${remaining} additional issues</strong> detected. View full list in the dashboard.
+                          </div>
+                        `
+                        : ""
+                    }
+
+                    <!-- Action Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 26px 0 8px 0;">
+                      <tr>
+                        <td align="center">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" style="background-color: #0f172a; border-radius: 8px; padding: 12px 28px;">
+                                <a href="${issuesUrl}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #ffffff; text-decoration: none; display: inline-block; letter-spacing: 0.2px;">
+                                  Review &amp; Fix in Dashboard &rarr;
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Card Footer -->
+                <tr>
+                  <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
+                    <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #475569;">
+                      Outreach Ops &middot; Infrastructure &amp; Drift Monitoring
+                    </p>
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                      This notification was generated automatically by your Outreach Ops scanner.<br />
+                      You can manage notification channels and thresholds in Settings.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `,
+  });
 }
+
 
 
 

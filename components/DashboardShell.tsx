@@ -138,6 +138,10 @@ export type ConnectionDisplay = {
   id: string;
   name: string;
   clients: string[];
+  clientBreakdown: {
+    name: string;
+    count: number;
+  }[];
   accounts: number;
   tagDistribution: {
     name: string;
@@ -643,6 +647,10 @@ export default function DashboardShell({
             {displayConnections.map((conn) => {
               const isFocused = selectedScope === conn.name;
               const isConnected = conn.status === "connected";
+              const warmupPct =
+                conn.accounts > 0
+                  ? Math.round((conn.warmupAccounts / conn.accounts) * 100)
+                  : 0;
 
               return (
                 <div
@@ -653,109 +661,192 @@ export default function DashboardShell({
                       : "border-slate-200/90 hover:border-slate-300 hover:shadow-sm"
                   }`}
                 >
-                  {/* Clean Executive Header (Soothing white, no harsh pitch black) */}
-                  <div className="p-4 sm:p-5 flex items-start justify-between gap-3 border-b border-slate-100 bg-white">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center shadow-2xs shrink-0">
-                        <Server className="w-5 h-5" />
+                  {/* Clean Executive Header */}
+                  <div className="p-4 sm:p-5 border-b border-slate-100 bg-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center shadow-2xs shrink-0">
+                          <Server className="w-5 h-5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="text-[16px] font-semibold text-[#14243D] truncate flex items-center gap-2">
+                            <span>{conn.name}</span>
+                            {isFocused && (
+                              <span className="px-2 py-0.5 rounded-full text-[12px] font-normal bg-[#2563EB] text-white">
+                                Focused
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[12px] font-normal text-slate-500 mt-0.5">
+                            {conn.accounts.toLocaleString()} total mailboxes connected
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="min-w-0">
-                        <div className="text-[16px] font-semibold text-[#14243D] truncate flex items-center gap-2">
-                          <span>{conn.name}</span>
-                          {isFocused && (
-                            <span className="px-2 py-0.5 rounded-full text-[12px] font-normal bg-[#2563EB] text-white">
-                              Focused
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[12px] font-normal text-slate-500 mt-0.5 truncate">
-                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{formatClients(conn.clients)}</span>
-                        </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal border ${
+                            isConnected
+                              ? "bg-emerald-50 text-[#10B981] border-emerald-200"
+                              : "bg-amber-50 text-[#F59E0B] border-amber-200"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              isConnected ? "bg-[#10B981]" : "bg-[#F59E0B]"
+                            }`}
+                          />
+                          {isConnected ? "Live Sync Active" : conn.status}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-normal border ${
-                          isConnected
-                            ? "bg-emerald-50 text-[#10B981] border-emerald-200"
-                            : "bg-amber-50 text-[#F59E0B] border-amber-200"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isConnected ? "bg-[#10B981]" : "bg-[#F59E0B]"
-                          }`}
-                        />
-                        {isConnected ? "Live Sync Active" : conn.status}
+                    {/* Client Portfolios with exact account counts */}
+                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[12px] font-normal text-slate-400 flex items-center gap-1 mr-0.5">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Clients:</span>
                       </span>
+                      {conn.clientBreakdown.length === 0 ? (
+                        <span className="text-[12px] text-slate-400 italic">
+                          No clients assigned
+                        </span>
+                      ) : (
+                        conn.clientBreakdown.map((c) => (
+                          <span
+                            key={c.name}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-normal bg-[#F4F7FB] text-slate-700 border border-slate-200/90"
+                          >
+                            <span className="font-medium text-slate-900">{c.name}:</span>
+                            <span className="font-semibold text-[#2563EB] tabular-nums">
+                              {c.count.toLocaleString()} inboxes
+                            </span>
+                          </span>
+                        ))
+                      )}
                     </div>
                   </div>
 
-                  {/* 4 Metric Columns in Crisp White */}
+                  {/* 4 Metric Columns in Crisp White with Warmup Progress Line */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-2.5 sm:py-3 px-1 bg-white">
-                    <div className="p-2">
+                    <div className="p-2 sm:p-2.5">
                       <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Inboxes
                       </span>
                       <span className="text-[28px] font-semibold text-[#14243D] mt-0.5 block tabular-nums">
                         {conn.accounts.toLocaleString()}
                       </span>
+                      <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
+                        Total Synced
+                      </span>
                     </div>
 
-                    <div className="p-2">
+                    <div className="p-2 sm:p-2.5">
                       <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Campaigns
                       </span>
                       <span className="text-[28px] font-semibold text-[#8B5CF6] mt-0.5 block tabular-nums">
                         {conn.activeCampaigns.toLocaleString()}
                       </span>
+                      <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
+                        Active Sequences
+                      </span>
                     </div>
 
-                    <div className="p-2">
+                    <div className="p-2 sm:p-2.5">
                       <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Daily Bandwidth
                       </span>
                       <span className="text-[28px] font-semibold text-[#F59E0B] mt-0.5 block tabular-nums">
                         {conn.dailyCapacity.toLocaleString()}
                       </span>
+                      <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
+                        Emails / day
+                      </span>
                     </div>
 
-                    <div className="p-2">
-                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
-                        Warmup
-                      </span>
-                      <span className="text-[28px] font-semibold text-[#10B981] mt-0.5 block tabular-nums">
-                        {conn.warmupAccounts.toLocaleString()}
-                      </span>
+                    {/* Warmup with Progress Bar & 100% Guarded line */}
+                    <div className="p-2 sm:p-2.5 text-left px-3 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
+                            Warmup
+                          </span>
+                          <span className="text-[12px] font-medium text-[#10B981] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 tabular-nums">
+                            {warmupPct}%
+                          </span>
+                        </div>
+                        <span className="text-[28px] font-semibold text-[#10B981] mt-0.5 block tabular-nums">
+                          {conn.warmupAccounts.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Visual Warmup Progress Line */}
+                      <div className="mt-1">
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full bg-[#10B981] rounded-full transition-all duration-500"
+                            style={{ width: `${warmupPct}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-normal text-[#10B981] mt-0.5 block">
+                          {warmupPct === 100
+                            ? "100% In Warmup"
+                            : `${conn.warmupAccounts} of ${conn.accounts} in warmup`}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Tags and Action Bar */}
-                  <div className="p-3 sm:px-4 bg-[#F4F7FB]/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[12px]">
+                  {/* Tags / Providers Breakdown (Hypertide Azure vs Google exact counts) */}
+                  <div className="p-3 sm:px-4 bg-[#F4F7FB]/70 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[12px]">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[12px] font-normal text-slate-500 uppercase tracking-wider">
-                        Tags:
+                      <span className="text-[12px] font-normal text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+                        <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
+                        <span>Providers & Tags:</span>
                       </span>
-                      {conn.tagDistribution.slice(0, 2).map((t) => (
-                        <span
-                          key={t.name}
-                          className="px-2 py-0.5 rounded-md text-[12px] font-normal bg-white text-slate-700 border border-slate-200 truncate max-w-[150px]"
-                          title={`${t.name}: ${t.count}`}
-                        >
-                          {t.name} ({t.count})
+                      {conn.tagDistribution.length === 0 ? (
+                        <span className="text-[12px] text-slate-400 italic">
+                          No tags detected
                         </span>
-                      ))}
-                      {conn.tagDistribution.length > 2 && (
-                        <span className="text-[12px] text-slate-400 font-normal">
-                          +{conn.tagDistribution.length - 2} more
-                        </span>
+                      ) : (
+                        conn.tagDistribution.map((t) => {
+                          const isGoogle = t.name.toLowerCase().includes("google");
+                          const isAzure =
+                            t.name.toLowerCase().includes("azure") ||
+                            t.name.toLowerCase().includes("entra");
+
+                          return (
+                            <span
+                              key={t.name}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-normal border transition-colors ${
+                                isGoogle
+                                  ? "bg-purple-50/90 text-purple-900 border-purple-200"
+                                  : isAzure
+                                  ? "bg-blue-50/90 text-blue-900 border-blue-200"
+                                  : "bg-white text-slate-700 border-slate-200"
+                              }`}
+                            >
+                              <span className="font-medium">{t.name}:</span>
+                              <span
+                                className={`font-semibold tabular-nums ${
+                                  isGoogle
+                                    ? "text-[#8B5CF6]"
+                                    : isAzure
+                                    ? "text-[#2563EB]"
+                                    : "text-slate-900"
+                                }`}
+                              >
+                                {t.count.toLocaleString()}
+                              </span>
+                            </span>
+                          );
+                        })
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                       <button
                         type="button"
                         onClick={() => setSelectedScope(isFocused ? "ALL" : conn.name)}
@@ -1461,12 +1552,29 @@ function buildLiveConnection(
     return getWarmupEnabled(warmup?.status) === true;
   }).length;
 
-  const clients = getConnectionClients(accounts, campaigns);
+  const clientCounts = new Map<string, number>();
+  for (const account of accounts) {
+    const clientName = getAccountClient(account);
+    clientCounts.set(clientName, (clientCounts.get(clientName) || 0) + 1);
+  }
+  for (const camp of campaigns) {
+    const clientName = getCampaignClient(camp);
+    if (!clientCounts.has(clientName)) {
+      clientCounts.set(clientName, 0);
+    }
+  }
+
+  const clientBreakdown = Array.from(clientCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const clients = clientBreakdown.map((c) => c.name);
 
   return {
     id: connection.id,
     name: connection.name,
     clients,
+    clientBreakdown,
     accounts: accounts.length,
     tagDistribution,
     activeCampaigns,
