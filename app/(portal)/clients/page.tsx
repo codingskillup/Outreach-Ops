@@ -48,12 +48,18 @@ type EmailAccountRow = {
 type CampaignRow = {
   id: string;
   status: string | null;
+  integration_id?: string | null;
+  integrations?:
+    | IntegrationRelation
+    | IntegrationRelation[]
+    | null;
   raw_data: RawData | null;
 };
 
 type IssueRow = {
   id: string;
   client: string | null;
+  source?: string | null;
   status: string;
 };
 
@@ -124,6 +130,11 @@ async function fetchCampaignsPage(
       .select(`
         id,
         status,
+        integration_id,
+        integrations (
+          id,
+          name
+        ),
         raw_data
       `)
       .eq(
@@ -169,6 +180,7 @@ async function fetchOpenIssuesPage(
       .select(`
         id,
         client,
+        source,
         status
       `)
       .eq(
@@ -404,6 +416,31 @@ function buildClientSummaries(
     return created;
   }
 
+  function ensureIntegration(
+    client: ClientSummary,
+    intName: string
+  ): ClientIntegrationBreakdown {
+    let existingInt = client.integrations.find(
+      (i) => i.name === intName
+    );
+
+    if (!existingInt) {
+      existingInt = {
+        name: intName,
+        count: 0,
+        azureEntra: 0,
+        hypertideGoogle: 0,
+        googleWorkspace: 0,
+        activeCampaigns: 0,
+        healthyAccounts: 0,
+        issues: 0,
+      };
+      client.integrations.push(existingInt);
+    }
+
+    return existingInt;
+  }
+
   for (
     const account of accounts
   ) {
@@ -427,19 +464,13 @@ function buildClientSummaries(
         account
       );
 
-    const existingInt =
-      client.integrations.find(
-        (i) => i.name === intName
+    const clientInt =
+      ensureIntegration(
+        client,
+        intName
       );
 
-    if (existingInt) {
-      existingInt.count += 1;
-    } else {
-      client.integrations.push({
-        name: intName,
-        count: 1,
-      });
-    }
+    clientInt.count += 1;
 
     if (
       account.account_type ===
@@ -447,6 +478,7 @@ function buildClientSummaries(
     ) {
       client.azureEntra +=
         1;
+      clientInt.azureEntra += 1;
     }
 
     if (
@@ -455,6 +487,7 @@ function buildClientSummaries(
     ) {
       client.hypertideGoogle +=
         1;
+      clientInt.hypertideGoogle += 1;
     }
 
     if (
@@ -463,6 +496,7 @@ function buildClientSummaries(
     ) {
       client.googleWorkspace +=
         1;
+      clientInt.googleWorkspace += 1;
     }
 
     if (
@@ -472,6 +506,7 @@ function buildClientSummaries(
     ) {
       client.healthyAccounts +=
         1;
+      clientInt.healthyAccounts += 1;
     }
   }
 
@@ -515,6 +550,16 @@ function buildClientSummaries(
 
     client.activeCampaigns +=
       1;
+
+    const intName =
+      getIntegrationName(
+        campaign
+      );
+
+    if (intName && intName !== "Unknown Integration") {
+      const clientInt = ensureIntegration(client, intName);
+      clientInt.activeCampaigns += 1;
+    }
   }
 
   for (
@@ -542,6 +587,16 @@ function buildClientSummaries(
 
     client.issues +=
       1;
+
+    const issueSource = getText(issue.source);
+    if (issueSource) {
+      const clientInt = client.integrations.find(
+        (i) => i.name === issueSource
+      );
+      if (clientInt) {
+        clientInt.issues += 1;
+      }
+    }
   }
 
   return Array.from(
@@ -695,7 +750,7 @@ function normalizeStatus(
 }
 
 function getIntegrationName(
-  account: EmailAccountRow
+  account: EmailAccountRow | CampaignRow
 ): string {
   if (account.integrations) {
     if (Array.isArray(account.integrations)) {

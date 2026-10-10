@@ -26,6 +26,12 @@ import { getCleanInitials } from "@/lib/utils";
 export type ClientIntegrationBreakdown = {
   name: string;
   count: number;
+  azureEntra: number;
+  hypertideGoogle: number;
+  googleWorkspace: number;
+  activeCampaigns: number;
+  healthyAccounts: number;
+  issues: number;
 };
 
 export type ClientSummary = {
@@ -57,30 +63,12 @@ export default function ClientsPageClient({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
-  // Single-pass computation for summary metrics
-  const { totalAccounts, totalCampaigns, totalIssues, clientsWithIssues } = useMemo(() => {
-    let accs = 0;
-    let camps = 0;
-    let iss = 0;
-    let withIssues = 0;
-
-    for (let i = 0; i < clients.length; i++) {
-      const c = clients[i];
-      accs += c.totalAccounts;
-      camps += c.activeCampaigns;
-      iss += c.issues;
-      if (c.issues > 0) withIssues++;
-    }
-
-    return {
-      totalAccounts: accs,
-      totalCampaigns: camps,
-      totalIssues: iss,
-      clientsWithIssues: withIssues,
-    };
+  // Total fleet-wide accounts across all clients (for "All Smartlead" button)
+  const allTotalAccounts = useMemo(() => {
+    return clients.reduce((acc, c) => acc + c.totalAccounts, 0);
   }, [clients]);
 
-  // Aggregate Smartlead connections
+  // Aggregate Smartlead connections across all clients
   const smartleadDistribution = useMemo(() => {
     const map = new Map<string, number>();
     for (let i = 0; i < clients.length; i++) {
@@ -94,26 +82,72 @@ export default function ClientsPageClient({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [clients]);
 
+  // Scoped clients based on active smartleadFilter
+  const scopedClients = useMemo(() => {
+    if (smartleadFilter === "all") {
+      return clients;
+    }
+
+    const filtered: ClientSummary[] = [];
+
+    for (const c of clients) {
+      const match = c.integrations?.find(
+        (i) => i.name === smartleadFilter && i.count > 0
+      );
+      if (match) {
+        filtered.push({
+          ...c,
+          totalAccounts: match.count,
+          azureEntra: match.azureEntra ?? 0,
+          hypertideGoogle: match.hypertideGoogle ?? 0,
+          googleWorkspace: match.googleWorkspace ?? 0,
+          healthyAccounts: match.healthyAccounts ?? 0,
+          activeCampaigns: match.activeCampaigns ?? 0,
+          issues: match.issues ?? 0,
+          // When a Smartlead is selected, ONLY show that workspace badge!
+          integrations: [match],
+        });
+      }
+    }
+
+    return filtered;
+  }, [clients, smartleadFilter]);
+
+  // Summary metrics computed on scopedClients (reflects selected Smartlead account)
+  const { totalAccounts, totalCampaigns, totalIssues, clientsWithIssues } = useMemo(() => {
+    let accs = 0;
+    let camps = 0;
+    let iss = 0;
+    let withIssues = 0;
+
+    for (let i = 0; i < scopedClients.length; i++) {
+      const c = scopedClients[i];
+      accs += c.totalAccounts;
+      camps += c.activeCampaigns;
+      iss += c.issues;
+      if (c.issues > 0) withIssues++;
+    }
+
+    return {
+      totalAccounts: accs,
+      totalCampaigns: camps,
+      totalIssues: iss,
+      clientsWithIssues: withIssues,
+    };
+  }, [scopedClients]);
+
   const overallHealthRate = totalAccounts > 0
     ? Math.round(((totalAccounts - totalIssues) / totalAccounts) * 100)
     : 100;
 
-  // Filter and sort clients
+  // Filter and sort clients from scopedClients
   const filteredAndSortedClients = useMemo(() => {
     const q = search.trim().toLowerCase();
 
-    const matched = clients.filter((client) => {
+    const matched = scopedClients.filter((client) => {
       const health = client.totalAccounts > 0
         ? Math.round((client.healthyAccounts / client.totalAccounts) * 100)
         : 100;
-
-      // Smartlead integration filter
-      if (smartleadFilter !== "all") {
-        const hasInt = client.integrations?.some(
-          (i) => i.name === smartleadFilter && i.count > 0
-        );
-        if (!hasInt) return false;
-      }
 
       if (filterMode === "healthy" && health < 98) return false;
       if (filterMode === "issues" && client.issues === 0) return false;
@@ -142,7 +176,7 @@ export default function ClientsPageClient({
 
       return sortOrder === "asc" ? -cmp : cmp;
     });
-  }, [clients, search, smartleadFilter, filterMode, sortField, sortOrder]);
+  }, [scopedClients, search, filterMode, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredAndSortedClients.length / pageSize) || 1;
   const paginatedClients = useMemo(() => {
@@ -359,7 +393,7 @@ export default function ClientsPageClient({
                     : "bg-slate-200 text-slate-600"
                 }`}
               >
-                {totalAccounts.toLocaleString()}
+                {allTotalAccounts.toLocaleString()}
               </span>
             </button>
 
@@ -440,7 +474,7 @@ export default function ClientsPageClient({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            All ({clients.length})
+            All ({scopedClients.length})
           </button>
           <button
             type="button"
@@ -652,7 +686,7 @@ export default function ClientsPageClient({
                         </div>
                         {smartleadFilter !== "all" && (
                           <div className="text-[10px] text-blue-600 font-medium mt-0.5">
-                            {(client.integrations?.find((i) => i.name === smartleadFilter)?.count || 0).toLocaleString()} in {smartleadFilter}
+                            in {smartleadFilter}
                           </div>
                         )}
                       </td>

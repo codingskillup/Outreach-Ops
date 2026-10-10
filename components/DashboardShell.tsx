@@ -493,13 +493,13 @@ export default function DashboardShell({
     return (
       <div
         key={rule.id}
-        className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-xs transition-all p-3.5 sm:p-4 flex flex-col justify-between group"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-xs transition-all p-3 sm:p-3.5 flex flex-col justify-between group"
       >
         {/* Card Header */}
-        <div className="flex items-start justify-between gap-2.5 pb-2.5 border-b border-slate-100">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2 min-w-0">
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
                 isGoogle
                   ? "bg-amber-50 text-amber-600 border-amber-200/60"
                   : isAzure
@@ -508,100 +508,99 @@ export default function DashboardShell({
               }`}
             >
               {isGoogle ? (
-                <Mail className="w-4 h-4 text-amber-600" />
+                <Mail className="w-3.5 h-3.5 text-amber-600" />
               ) : isAzure ? (
-                <Server className="w-4 h-4 text-blue-600" />
+                <Server className="w-3.5 h-3.5 text-blue-600" />
               ) : (
-                <Layers className="w-4 h-4 text-indigo-600" />
+                <Layers className="w-3.5 h-3.5 text-indigo-600" />
               )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h4 className="text-[13px] sm:text-sm font-bold text-slate-900 truncate">
+                <h4 className="text-[12px] sm:text-[13px] font-bold text-slate-900 truncate">
                   {rule.tag_name || "General"}
                 </h4>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60 uppercase tracking-wider shrink-0">
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200/60 uppercase tracking-wider shrink-0">
                   {workspaceName}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
-                <span className="font-semibold text-slate-700">{matchedCount.toLocaleString()}</span>
-                <span>{matchedCount === 1 ? "inbox" : "inboxes"} governed</span>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                <span className="font-semibold text-slate-700">{matchedCount.toLocaleString()}</span> inboxes
               </p>
             </div>
           </div>
 
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shrink-0">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Enforced
           </span>
         </div>
 
-        {/* 4 Guardrail Metrics Grid (Compact 4-Cols on Desktop, 2x2 on Mobile) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 my-2.5">
+        {/* 4 Guardrail Metrics (Tight 2x2 Grid) */}
+        <div className="grid grid-cols-2 gap-1.5 my-2">
           {/* Metric 1: Daily Cap */}
-          <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-amber-50/20 hover:border-amber-200/70 transition-colors">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-amber-50/20 hover:border-amber-200/70 transition-colors">
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Flame className="w-3 h-3 text-amber-500" />
+              <Flame className="w-2.5 h-2.5 text-amber-500" />
               Daily Cap
             </span>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="text-sm sm:text-base font-bold text-slate-900 tabular-nums">
                 {rule.message_per_day != null ? rule.message_per_day : "∞"}
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">
+              <span className="text-[9px] text-slate-400 font-normal">
                 {rule.message_per_day != null ? "msgs" : "Uncapped"}
               </span>
             </div>
           </div>
 
           {/* Metric 2: Minimum Gap */}
-          <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-blue-50/20 hover:border-blue-200/70 transition-colors">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-blue-50/20 hover:border-blue-200/70 transition-colors">
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Clock className="w-3 h-3 text-blue-500" />
+              <Clock className="w-2.5 h-2.5 text-blue-500" />
               Min Gap
             </span>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="text-sm sm:text-base font-bold text-slate-900 tabular-nums">
                 {rule.minimum_gap != null ? rule.minimum_gap : "0"}
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">
+              <span className="text-[9px] text-slate-400 font-normal">
                 {rule.minimum_gap != null ? (rule.minimum_gap === 1 ? "min" : "mins") : "None"}
               </span>
             </div>
           </div>
 
           {/* Metric 3: Warmup Cap */}
-          <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-emerald-50/20 hover:border-emerald-200/70 transition-colors">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-emerald-50/20 hover:border-emerald-200/70 transition-colors">
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-500" />
+              <TrendingUp className="w-2.5 h-2.5 text-emerald-500" />
               Warmup
             </span>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="text-sm sm:text-base font-bold text-slate-900 tabular-nums">
                 {rule.warmup_enabled === false
                   ? "Off"
                   : rule.warmup_daily != null
                   ? rule.warmup_daily
                   : "∞"}
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">
+              <span className="text-[9px] text-slate-400 font-normal">
                 {rule.warmup_enabled === false ? "Off" : rule.warmup_daily != null ? "msgs" : "Uncapped"}
               </span>
             </div>
           </div>
 
           {/* Metric 4: Reply Target */}
-          <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-purple-50/20 hover:border-purple-200/70 transition-colors">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50/70 border border-slate-100/90 hover:bg-purple-50/20 hover:border-purple-200/70 transition-colors">
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-purple-500" />
+              <CheckCircle2 className="w-2.5 h-2.5 text-purple-500" />
               Reply
             </span>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="text-sm sm:text-base font-bold text-slate-900 tabular-nums">
                 {rule.reply_rate != null ? `${rule.reply_rate}%` : "—"}
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">
+              <span className="text-[9px] text-slate-400 font-normal">
                 {rule.reply_rate != null ? "min" : "None"}
               </span>
             </div>
@@ -1364,64 +1363,32 @@ export default function DashboardShell({
           </div>
         </div>
 
-        {/* Rules Cards Body */}
+        {/* Rules Cards Body - All 4 Cards in 1 Row */}
         {scopedRules.length > 0 ? (
-          <div className="space-y-4">
-            {workspaceRuleTab === "ALL" ? (
-              ruleWorkspaces.map((ws) => {
-                const wsRules = scopedRules.filter((r) => r.integration_id === ws.id);
-                if (wsRules.length === 0) return null;
-                return (
-                  <div key={ws.id} className="space-y-2">
-                    {ruleWorkspaces.length > 1 && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          <span>{ws.name}</span>
-                          <span className="text-slate-400 font-normal">
-                            ({wsRules.length} {wsRules.length === 1 ? "Tag" : "Tags"})
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                          Active Surveillance
-                        </span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {wsRules.map((rule) => renderRuleCard(rule, ws.name))}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="space-y-2">
-                {(() => {
-                  const activeWs = ruleWorkspaces.find((ws) => ws.id === workspaceRuleTab);
-                  const wsRules = scopedRules.filter((r) => r.integration_id === workspaceRuleTab);
-                  return (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          <span>{activeWs?.name || "Smartlead"}</span>
-                          <span className="text-slate-400 font-normal">
-                            ({wsRules.length} {wsRules.length === 1 ? "Tag" : "Tags"})
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                          Active Surveillance
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                        {wsRules.map((rule) =>
-                          renderRuleCard(rule, activeWs?.name || "Smartlead")
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+          <div>
+            {(() => {
+              const displayRules =
+                workspaceRuleTab === "ALL"
+                  ? scopedRules
+                  : scopedRules.filter((r) => r.integration_id === workspaceRuleTab);
+
+              return (
+                <div
+                  className={`grid gap-3 ${
+                    displayRules.length >= 4
+                      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+                      : displayRules.length === 3
+                      ? "grid-cols-1 sm:grid-cols-3"
+                      : "grid-cols-1 sm:grid-cols-2 max-w-4xl"
+                  }`}
+                >
+                  {displayRules.map((rule) => {
+                    const wsName = integrationNameMap.get(rule.integration_id) || "Smartlead";
+                    return renderRuleCard(rule, wsName);
+                  })}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="p-8 text-center space-y-3 bg-[#F4F7FB]/50 rounded-xl border-2 border-dashed border-slate-200">

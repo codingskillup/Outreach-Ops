@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   Server,
   Sparkles,
+  Pencil,
 } from "lucide-react";
 
 export type Provider = "smartlead" | "emailguard";
@@ -70,6 +71,12 @@ export default function ConnectionsPageClient({
   // Custom remove confirmation modal state
   const [integrationToRemove, setIntegrationToRemove] = useState<Integration | null>(null);
   const [removing, setRemoving] = useState(false);
+
+  // Custom rename modal state
+  const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
+  const [editName, setEditName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
 
   // In-app Toast state
   const [toast, setToast] = useState<ToastNotification | null>(null);
@@ -227,6 +234,81 @@ export default function ConnectionsPageClient({
       setError("Network error occurred. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openEditModal(integration: Integration) {
+    setEditingIntegration(integration);
+    setEditName(integration.name || "");
+    setRenameError("");
+  }
+
+  function closeEditModal() {
+    if (isRenaming) return;
+    setEditingIntegration(null);
+    setEditName("");
+    setRenameError("");
+  }
+
+  async function handleSaveRename(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!editingIntegration) return;
+
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      setRenameError("Workspace name cannot be empty.");
+      return;
+    }
+
+    if (trimmed === editingIntegration.name) {
+      closeEditModal();
+      return;
+    }
+
+    setIsRenaming(true);
+    setRenameError("");
+
+    try {
+      const response = await fetch("/api/integrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingIntegration.id,
+          name: trimmed,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setRenameError(result.error || "Failed to update workspace name.");
+        return;
+      }
+
+      const updated = result.integration as Integration;
+
+      setIntegrations((current) =>
+        current.map((item) =>
+          item.id === editingIntegration.id ? { ...item, name: updated.name } : item
+        )
+      );
+
+      triggerToast({
+        type: "success",
+        title: "Workspace Renamed",
+        message: `Successfully renamed workspace to "${updated.name}".`,
+      });
+
+      closeEditModal();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("outreach:refresh"));
+      }
+      router.refresh();
+    } catch {
+      setRenameError("Network error occurred. Please try again.");
+    } finally {
+      setIsRenaming(false);
     }
   }
 
@@ -580,6 +662,14 @@ export default function ConnectionsPageClient({
                         <span className="text-sm font-bold text-slate-900">
                           {integration.name}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(integration)}
+                          title="Rename workspace"
+                          className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             isSmartlead
@@ -638,6 +728,17 @@ export default function ConnectionsPageClient({
                         </Link>
                       </div>
                     )}
+
+                    {/* Rename Button */}
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(integration)}
+                      title="Rename workspace"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-xs font-semibold text-slate-700 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="hidden sm:inline">Rename</span>
+                    </button>
 
                     {/* Sync Button */}
                     <button
@@ -860,6 +961,102 @@ export default function ConnectionsPageClient({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Workspace Modal */}
+      {editingIntegration && (
+        <div
+          onClick={closeEditModal}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/70">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200/70 text-indigo-600 flex items-center justify-center shadow-2xs">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Rename Workspace
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Update display name for this connection
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={isRenaming}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveRename}>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Workspace Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      if (renameError) setRenameError("");
+                    }}
+                    placeholder="e.g. 1st Smartlead, Client Outreach"
+                    autoFocus
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200"
+                  />
+                  <p className="text-[12px] font-normal text-slate-400 mt-1.5">
+                    This updated name will reflect across the Dashboard, Mailboxes, and Campaigns views.
+                  </p>
+                </div>
+
+                {renameError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>{renameError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 px-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  disabled={isRenaming}
+                  className="px-4 py-2 rounded-xl text-[14px] font-medium text-slate-700 hover:bg-slate-200/70 border border-slate-300/80 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRenaming || !editName.trim()}
+                  className="px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isRenaming ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

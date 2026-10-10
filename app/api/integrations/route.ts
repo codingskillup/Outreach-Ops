@@ -338,3 +338,77 @@ export async function POST(
     );
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const id = String(body.id || "").trim();
+    const name = String(body.name || "").trim();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Integration ID is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!name) {
+      return NextResponse.json(
+        { error: "Workspace name cannot be empty." },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("integrations")
+      .update({ name })
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select(`
+        id,
+        provider,
+        name,
+        status,
+        api_key_last4,
+        last_synced_at,
+        created_at
+      `)
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      integration: data,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to update workspace name.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
