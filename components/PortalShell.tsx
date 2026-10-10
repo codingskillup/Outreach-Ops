@@ -34,7 +34,7 @@ export default function PortalShell({
           onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}
         />
 
-        <main className="pt-20 sm:pt-24 px-3.5 sm:px-6 lg:px-8 pb-14 flex-1 w-full max-w-full overflow-x-hidden">
+        <main className="pt-20 sm:pt-24 px-3 sm:px-5 lg:px-4 xl:px-6 pb-14 flex-1 w-full max-w-full overflow-x-hidden">
           {children}
         </main>
       </div>

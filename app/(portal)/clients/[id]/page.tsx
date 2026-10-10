@@ -7,6 +7,11 @@ import {
   isAccountType,
 } from "@/lib/accountRules";
 
+import {
+  cleanClientName,
+  createClientId,
+} from "@/lib/clientUtils";
+
 import ClientDetailPage, {
   type ClientDetailData,
 } from "@/components/ClientDetailPage";
@@ -347,20 +352,31 @@ export default async function ClientPage({
   for (
     const account of accounts
   ) {
-    const clientName =
+    const rawClient =
       getClientName(
         account.raw_data
       );
+    const cleanClient =
+      cleanClientName(
+        rawClient
+      );
 
     if (
-      clientName !==
+      cleanClient !==
       "Unassigned"
     ) {
+      // Map both cleaned ID ("pathai") and raw ID ("pathai-smartlead-account") to cleanClient
       clientNames.set(
         createClientId(
-          clientName
+          cleanClient
         ),
-        clientName
+        cleanClient
+      );
+      clientNames.set(
+        createClientId(
+          rawClient
+        ),
+        cleanClient
       );
     }
   }
@@ -368,20 +384,30 @@ export default async function ClientPage({
   for (
     const campaign of campaigns
   ) {
-    const clientName =
+    const rawClient =
       getClientName(
         campaign.raw_data
       );
+    const cleanClient =
+      cleanClientName(
+        rawClient
+      );
 
     if (
-      clientName !==
+      cleanClient !==
       "Unassigned"
     ) {
       clientNames.set(
         createClientId(
-          clientName
+          cleanClient
         ),
-        clientName
+        cleanClient
+      );
+      clientNames.set(
+        createClientId(
+          rawClient
+        ),
+        cleanClient
       );
     }
   }
@@ -420,8 +446,10 @@ export default async function ClientPage({
   const clientAccounts =
     accounts.filter(
       (account) =>
-        getClientName(
-          account.raw_data
+        cleanClientName(
+          getClientName(
+            account.raw_data
+          )
         )
           .trim()
           .toLowerCase() ===
@@ -434,8 +462,10 @@ export default async function ClientPage({
         isMainCampaign(
           campaign.raw_data
         ) &&
-        getClientName(
-          campaign.raw_data
+        cleanClientName(
+          getClientName(
+            campaign.raw_data
+          )
         )
           .trim()
           .toLowerCase() ===
@@ -465,10 +495,11 @@ export default async function ClientPage({
     openIssues.filter(
       (issue) => {
         const issueClient =
-          getText(
-            issue.client
-          )
-            ?.toLowerCase();
+          cleanClientName(
+            getText(
+              issue.client
+            )
+          )?.toLowerCase();
 
         if (
           issueClient ===
@@ -661,28 +692,6 @@ function getClientName(
       raw.client
     ) ||
     "Unassigned"
-  );
-}
-
-function createClientId(
-  value: string
-) {
-  const slug =
-    value
-      .trim()
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      );
-
-  return (
-    slug ||
-    "unassigned"
   );
 }
 

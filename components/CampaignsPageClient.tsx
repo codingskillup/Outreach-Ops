@@ -27,6 +27,7 @@ import {
   Radio,
   FileText,
 } from "lucide-react";
+import { cleanClientName } from "@/lib/clientUtils";
 
 type RawData = Record<string, unknown>;
 
@@ -1183,11 +1184,11 @@ function getCampaignClient(
   clientNamesById: Record<string, string>
 ) {
   const directName = getText(raw.client_name) || getText(raw.clientName);
-  if (directName) return directName;
+  if (directName) return cleanClientName(directName);
 
   if (typeof raw.client === "string") {
     const client = getText(raw.client);
-    if (client) return client;
+    if (client) return cleanClientName(client);
   }
 
   const clientObject = asObject(raw.client);
@@ -1195,11 +1196,11 @@ function getCampaignClient(
     getText(clientObject.name) ||
     getText(clientObject.client_name) ||
     getText(clientObject.company_name);
-  if (objectName) return objectName;
+  if (objectName) return cleanClientName(objectName);
 
   const clientId = getId(raw.client_id) || getId(raw.clientId);
   if (clientId && clientNamesById[clientId]) {
-    return clientNamesById[clientId];
+    return cleanClientName(clientNamesById[clientId]);
   }
 
   return "Unassigned";

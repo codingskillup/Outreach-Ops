@@ -21,6 +21,12 @@ import {
   Layers,
   Zap,
 } from "lucide-react";
+import { getCleanInitials } from "@/lib/clientUtils";
+
+export type ClientIntegrationBreakdown = {
+  name: string;
+  count: number;
+};
 
 export type ClientSummary = {
   id: string;
@@ -32,6 +38,7 @@ export type ClientSummary = {
   activeCampaigns: number;
   healthyAccounts: number;
   issues: number;
+  integrations: ClientIntegrationBreakdown[];
 };
 
 type SortField = "accounts" | "name" | "campaigns" | "issues" | "health";
@@ -43,6 +50,7 @@ export default function ClientsPageClient({
   clients: ClientSummary[];
 }) {
   const [search, setSearch] = useState("");
+  const [smartleadFilter, setSmartleadFilter] = useState<string>("all");
   const [filterMode, setFilterMode] = useState<"all" | "healthy" | "issues" | "highVolume">("all");
   const [sortField, setSortField] = useState<SortField>("accounts");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
@@ -72,6 +80,20 @@ export default function ClientsPageClient({
     };
   }, [clients]);
 
+  // Aggregate Smartlead connections
+  const smartleadDistribution = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < clients.length; i++) {
+      const c = clients[i];
+      for (const int of c.integrations || []) {
+        map.set(int.name, (map.get(int.name) || 0) + int.count);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients]);
+
   const overallHealthRate = totalAccounts > 0
     ? Math.round(((totalAccounts - totalIssues) / totalAccounts) * 100)
     : 100;
@@ -84,6 +106,14 @@ export default function ClientsPageClient({
       const health = client.totalAccounts > 0
         ? Math.round((client.healthyAccounts / client.totalAccounts) * 100)
         : 100;
+
+      // Smartlead integration filter
+      if (smartleadFilter !== "all") {
+        const hasInt = client.integrations?.some(
+          (i) => i.name === smartleadFilter && i.count > 0
+        );
+        if (!hasInt) return false;
+      }
 
       if (filterMode === "healthy" && health < 98) return false;
       if (filterMode === "issues" && client.issues === 0) return false;
@@ -112,7 +142,7 @@ export default function ClientsPageClient({
 
       return sortOrder === "asc" ? -cmp : cmp;
     });
-  }, [clients, search, filterMode, sortField, sortOrder]);
+  }, [clients, search, smartleadFilter, filterMode, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredAndSortedClients.length / pageSize) || 1;
   const paginatedClients = useMemo(() => {
@@ -131,12 +161,7 @@ export default function ClientsPageClient({
   }
 
   function getInitials(name: string) {
-    if (!name || name === "Unassigned") return "UA";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
+    return getCleanInitials(name);
   }
 
   return (
@@ -286,6 +311,92 @@ export default function ClientsPageClient({
         </div>
       </div>
 
+      {/* Smartlead Connections Quick Filter Bar */}
+      {smartleadDistribution.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Smartlead Accounts
+              </span>
+              <span className="text-[11px] text-slate-400">
+                ({smartleadDistribution.length} connected)
+              </span>
+            </div>
+            {smartleadFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSmartleadFilter("all");
+                  setCurrentPage(1);
+                }}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+              >
+                Reset Smartlead filter
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSmartleadFilter("all");
+                setCurrentPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                smartleadFilter === "all"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70"
+              }`}
+            >
+              All Smartlead
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  smartleadFilter === "all"
+                    ? "bg-slate-800 text-slate-300"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {totalAccounts.toLocaleString()}
+              </span>
+            </button>
+
+            {smartleadDistribution.map((item) => {
+              const isSelected = smartleadFilter === item.name;
+              return (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => {
+                    setSmartleadFilter(isSelected ? "all" : item.name);
+                    setCurrentPage(1);
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    isSelected
+                      ? "bg-[#2563EB] text-white shadow-2xs"
+                      : "bg-slate-50 hover:bg-blue-50/60 hover:border-blue-200 text-slate-700 border border-slate-200/70"
+                  }`}
+                >
+                  <Zap className={`w-3 h-3 ${isSelected ? "text-blue-200" : "text-blue-600"}`} />
+                  <span className="truncate max-w-[200px]">{item.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected
+                        ? "bg-blue-500 text-blue-100"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {item.count.toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Search */}
@@ -406,6 +517,7 @@ export default function ClientsPageClient({
               onClick={() => {
                 setSearch("");
                 setFilterMode("all");
+                setSmartleadFilter("all");
               }}
               className="mt-3 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200"
             >
@@ -492,9 +604,42 @@ export default function ClientsPageClient({
                             <span className="font-bold text-slate-900 group-hover:text-indigo-600 block text-sm">
                               {client.name}
                             </span>
-                            <span className="text-[11px] text-slate-400">
-                              {isUnassigned ? "Uncategorized mailboxes" : "Managed Client"}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-slate-400">
+                                {isUnassigned ? "Uncategorized mailboxes" : "Managed Client"}
+                              </span>
+                              {client.integrations && client.integrations.length > 0 && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    {client.integrations.map((int) => {
+                                      const isSelected = smartleadFilter === int.name;
+                                      const is1st = int.name.toLowerCase().includes("1st");
+                                      return (
+                                        <span
+                                          key={int.name}
+                                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                                            isSelected
+                                              ? "bg-[#2563EB] text-white border-blue-600 shadow-2xs"
+                                              : is1st
+                                              ? "bg-blue-50 text-blue-700 border-blue-200/80"
+                                              : "bg-indigo-50 text-indigo-700 border-indigo-200/80"
+                                          }`}
+                                        >
+                                          <Zap className={`w-2.5 h-2.5 ${isSelected ? "text-blue-200" : "opacity-80"}`} />
+                                          <span>{int.name}</span>
+                                          {client.integrations.length > 1 && (
+                                            <span className={`text-[9px] ${isSelected ? "text-blue-100" : "opacity-75"} font-normal`}>
+                                              ({int.count.toLocaleString()})
+                                            </span>
+                                          )}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </Link>
                       </td>
@@ -505,6 +650,11 @@ export default function ClientsPageClient({
                           <Mail className="w-3.5 h-3.5 text-slate-400" />
                           <span>{client.totalAccounts.toLocaleString()}</span>
                         </div>
+                        {smartleadFilter !== "all" && (
+                          <div className="text-[10px] text-blue-600 font-medium mt-0.5">
+                            {(client.integrations?.find((i) => i.name === smartleadFilter)?.count || 0).toLocaleString()} in {smartleadFilter}
+                          </div>
+                        )}
                       </td>
 
                       {/* Account Type Mix */}

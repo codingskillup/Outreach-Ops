@@ -29,6 +29,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { cleanClientName } from "@/lib/clientUtils";
 
 type RawData = Record<string, unknown>;
 
@@ -393,7 +394,7 @@ export default function EmailAccountsPageClient({
   };
 
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto pb-16 space-y-6 text-slate-900">
+    <div className="w-full min-w-0 max-w-full pb-16 space-y-5 text-slate-900">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
@@ -789,102 +790,107 @@ export default function EmailAccountsPageClient({
       {/* Accounts Table Container */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse table-fixed min-w-0">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
+              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] xl:text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
                 <th
                   onClick={() => toggleSort("email")}
-                  className="py-3 px-4 cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "22%" }}
+                  className="py-2.5 px-2 xl:px-3 cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "21%" }}
                 >
-                  <div className="flex items-center gap-1.5">
-                    Email Account
+                  <div className="flex items-center gap-1">
+                    <span className="truncate">Email Account</span>
                     <SortIcon field="email" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
                 <th
                   onClick={() => toggleSort("client")}
-                  className="py-3 px-3 cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "13%" }}
+                  className="py-2.5 px-1.5 xl:px-2 cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "12%" }}
                 >
-                  <div className="flex items-center gap-1.5">
-                    Client
+                  <div className="flex items-center gap-1">
+                    <span className="truncate">Client</span>
                     <SortIcon field="client" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
-                <th className="py-3 px-3" style={{ width: "14%" }}>
-                  Account Tags
+                <th className="py-2.5 px-1.5 xl:px-2" style={{ width: "13%" }}>
+                  <span className="truncate">Tags</span>
                 </th>
                 <th
                   onClick={() => toggleSort("dailyLimit")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "8%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "6%" }}
+                  title="Daily Limit"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Daily Limit
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Daily</span>
                     <SortIcon field="dailyLimit" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
                 <th
                   onClick={() => toggleSort("minimumGap")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "8%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "6.5%" }}
+                  title="Minimum Gap"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Min Gap
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Min Gap</span>
                     <SortIcon field="minimumGap" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center" style={{ width: "7%" }}>
-                  Warmup
+                <th className="py-2.5 px-1 text-center" style={{ width: "7%" }}>
+                  <span className="truncate">Warmup</span>
                 </th>
                 <th
                   onClick={() => toggleSort("warmupDaily")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "8%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "7.5%" }}
+                  title="Warmup Max Daily"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Warmup Max
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Warm Max</span>
                     <SortIcon field="warmupDaily" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
                 <th
                   onClick={() => toggleSort("replyRate")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "7%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "6.5%" }}
+                  title="Reply Rate"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Reply %
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Reply %</span>
                     <SortIcon field="replyRate" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
                 <th
                   onClick={() => toggleSort("bounceRate")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "6%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "5.5%" }}
+                  title="Bounce Rate"
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Bounce
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Bounce</span>
                     <SortIcon field="bounceRate" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
                 <th
                   onClick={() => toggleSort("status")}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 transition"
-                  style={{ width: "9%" }}
+                  className="py-2.5 px-1 text-center cursor-pointer hover:text-slate-900 transition"
+                  style={{ width: "10%" }}
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    Status
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span className="truncate">Status</span>
                     <SortIcon field="status" currentField={sortField} order={sortOrder} />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center" style={{ width: "6%" }}>
-                  Inspect
+                <th className="py-2.5 px-0.5 text-center" style={{ width: "5%" }}>
+                  <span className="sr-only">Inspect</span>
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 text-[13px] font-normal">
+            <tbody className="divide-y divide-slate-100 text-xs font-normal">
               {paginatedAccounts.length > 0 ? (
                 paginatedAccounts.map((row) => (
                   <AccountTableRow
@@ -1012,37 +1018,40 @@ function AccountTableRow({
   return (
     <tr className="hover:bg-blue-50/30 transition-colors group">
       {/* Email column */}
-      <td className="py-2.5 px-4">
-        <div className="flex items-center gap-2">
-          <div className="truncate max-w-[220px] font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors" title={account.email}>
+      <td className="py-2 px-2 xl:px-3">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="truncate max-w-[170px] xl:max-w-[210px] font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors text-xs"
+            title={account.email}
+          >
             {account.email}
           </div>
           <button
             onClick={() => onCopyEmail(account.email)}
-            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-600 rounded transition cursor-pointer"
+            className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-slate-600 rounded transition cursor-pointer flex-shrink-0"
             title="Copy email"
           >
             {copiedEmail === account.email ? (
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <Check className="w-3 h-3 text-emerald-600" />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3 h-3" />
             )}
           </button>
         </div>
-        <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
+        <div className="text-[10px] text-slate-400 truncate max-w-[170px] xl:max-w-[210px]">
           {account.smartlead}
         </div>
       </td>
 
       {/* Client column */}
-      <td className="py-2.5 px-3">
+      <td className="py-2 px-1.5 xl:px-2">
         {hasClient ? (
           <Link
             href={`/clients/${createClientId(account.client)}`}
-            className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-[#2563EB] hover:underline max-w-[150px] truncate"
+            className="inline-flex items-center gap-1 font-medium text-slate-700 hover:text-[#2563EB] hover:underline max-w-[110px] xl:max-w-[130px] truncate text-xs"
             title={`View client ${account.client}`}
           >
-            <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <Building2 className="w-3 h-3 text-slate-400 flex-shrink-0" />
             <span className="truncate">{account.client}</span>
           </Link>
         ) : (
@@ -1053,30 +1062,30 @@ function AccountTableRow({
       </td>
 
       {/* Account Tags */}
-      <td className="py-2.5 px-3">
-        <div className="flex flex-wrap gap-1 max-w-[180px]">
-          {account.tags.slice(0, 2).map((tag) => (
+      <td className="py-2 px-1.5 xl:px-2">
+        <div className="flex flex-wrap gap-1 max-w-[120px] xl:max-w-[150px]">
+          {account.tags.slice(0, 1).map((tag) => (
             <span
               key={tag.key}
               title={tag.name}
-              className="inline-block max-w-[120px] truncate px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/60"
+              className="inline-block max-w-[100px] xl:max-w-[120px] truncate px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/60"
             >
               {tag.name}
             </span>
           ))}
-          {account.tags.length > 2 && (
+          {account.tags.length > 1 && (
             <span
-              className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500"
+              className="px-1 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500 flex-shrink-0"
               title={account.tags.map((t) => t.name).join(", ")}
             >
-              +{account.tags.length - 2}
+              +{account.tags.length - 1}
             </span>
           )}
         </div>
       </td>
 
       {/* Daily Limit */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         <ValueBadge
           value={account.dailyLimit}
           field={evaluation.dailyLimit}
@@ -1085,7 +1094,7 @@ function AccountTableRow({
       </td>
 
       {/* Minimum Gap */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         <ValueBadge
           value={account.minimumGap}
           field={evaluation.minimumGap}
@@ -1095,7 +1104,7 @@ function AccountTableRow({
       </td>
 
       {/* Warmup */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         <WarmupStatusBadge
           enabled={account.warmupEnabled}
           field={evaluation.warmupEnabled}
@@ -1104,7 +1113,7 @@ function AccountTableRow({
       </td>
 
       {/* Warmup Daily */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         <ValueBadge
           value={account.warmupDaily}
           field={evaluation.warmupDaily}
@@ -1113,7 +1122,7 @@ function AccountTableRow({
       </td>
 
       {/* Reply Rate */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         <ValueBadge
           value={account.replyRate}
           field={evaluation.replyRate}
@@ -1123,7 +1132,7 @@ function AccountTableRow({
       </td>
 
       {/* Bounce Rate */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center text-xs">
         {account.bounceRate !== null ? (
           <span
             className={`font-semibold ${
@@ -1142,18 +1151,18 @@ function AccountTableRow({
       </td>
 
       {/* Status Pill */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-1 text-center">
         <HealthPill status={evaluation.status} />
       </td>
 
       {/* Inspect Action */}
-      <td className="py-2.5 px-3 text-center">
+      <td className="py-2 px-0.5 text-center">
         <button
           onClick={onInspect}
-          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition cursor-pointer"
+          className="inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 transition cursor-pointer"
           title="Inspect account details"
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="w-3.5 h-3.5" />
         </button>
       </td>
     </tr>
@@ -1696,11 +1705,12 @@ function convertRealAccount(account: RealAccount): DisplayAccount {
     integrationId: account.integration_id,
     email: account.email || account.username || "Unknown",
     fromName: getText(account.from_name) || getText(raw.from_name) || null,
-    client:
+    client: cleanClientName(
       getText(raw.client_name) ||
       getText(raw.clientName) ||
       getText(raw.client) ||
-      "Unassigned",
+      "Unassigned"
+    ),
     smartlead: integration?.name || "Smartlead",
     tags: getAccountTags(raw),
     dailyLimit: getNumber(raw.message_per_day),

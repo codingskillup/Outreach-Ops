@@ -7,7 +7,15 @@ import {
   isAccountType,
 } from "@/lib/accountRules";
 
-import ClientsPageClient from "@/components/ClientsPageClient";
+import {
+  cleanClientName,
+  createClientId,
+} from "@/lib/clientUtils";
+
+import ClientsPageClient, {
+  type ClientSummary,
+  type ClientIntegrationBreakdown,
+} from "@/components/ClientsPageClient";
 
 const PAGE_SIZE = 1000;
 
@@ -21,9 +29,19 @@ type SupabaseServerClient =
 type RawData =
   Record<string, unknown>;
 
+type IntegrationRelation = {
+  id: string;
+  name: string;
+};
+
 type EmailAccountRow = {
   id: string;
   account_type: string | null;
+  integration_id: string | null;
+  integrations:
+    | IntegrationRelation
+    | IntegrationRelation[]
+    | null;
   raw_data: RawData | null;
 };
 
@@ -37,18 +55,6 @@ type IssueRow = {
   id: string;
   client: string | null;
   status: string;
-};
-
-type ClientSummary = {
-  id: string;
-  name: string;
-  totalAccounts: number;
-  azureEntra: number;
-  hypertideGoogle: number;
-  googleWorkspace: number;
-  activeCampaigns: number;
-  healthyAccounts: number;
-  issues: number;
 };
 
 async function fetchAccountsPage(
@@ -68,6 +74,11 @@ async function fetchAccountsPage(
       .select(`
         id,
         account_type,
+        integration_id,
+        integrations (
+          id,
+          name
+        ),
         raw_data
       `)
       .eq(
@@ -338,8 +349,7 @@ function buildClientSummaries(
     name: string
   ) {
     const cleanedName =
-      name.trim() ||
-      "Unassigned";
+      cleanClientName(name);
 
     const key =
       cleanedName.toLowerCase();
@@ -381,6 +391,9 @@ function buildClientSummaries(
 
         issues:
           0,
+
+        integrations:
+          [],
       };
 
     buckets.set(
@@ -395,8 +408,10 @@ function buildClientSummaries(
     const account of accounts
   ) {
     const clientName =
-      getClientName(
-        account.raw_data
+      cleanClientName(
+        getClientName(
+          account.raw_data
+        )
       );
 
     const client =
@@ -406,6 +421,25 @@ function buildClientSummaries(
 
     client.totalAccounts +=
       1;
+
+    const intName =
+      getIntegrationName(
+        account
+      );
+
+    const existingInt =
+      client.integrations.find(
+        (i) => i.name === intName
+      );
+
+    if (existingInt) {
+      existingInt.count += 1;
+    } else {
+      client.integrations.push({
+        name: intName,
+        count: 1,
+      });
+    }
 
     if (
       account.account_type ===
@@ -441,6 +475,13 @@ function buildClientSummaries(
     }
   }
 
+  // Sort integrations for each client (e.g. 1st Smartlead, 2nd Smartlead)
+  for (const client of buckets.values()) {
+    client.integrations.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }
+
   for (
     const campaign of campaigns
   ) {
@@ -461,8 +502,10 @@ function buildClientSummaries(
     }
 
     const clientName =
-      getClientName(
-        campaign.raw_data
+      cleanClientName(
+        getClientName(
+          campaign.raw_data
+        )
       );
 
     const client =
@@ -485,10 +528,12 @@ function buildClientSummaries(
     }
 
     const clientName =
-      getText(
-        issue.client
-      ) ||
-      "Unassigned";
+      cleanClientName(
+        getText(
+          issue.client
+        ) ||
+        "Unassigned"
+      );
 
     const client =
       ensureClient(
@@ -649,26 +694,20 @@ function normalizeStatus(
   );
 }
 
-function createClientId(
-  value: string
-) {
-  const id =
-    value
-      .trim()
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      );
+function getIntegrationName(
+  account: EmailAccountRow
+): string {
+  if (account.integrations) {
+    if (Array.isArray(account.integrations)) {
+      if (account.integrations[0]?.name) {
+        return account.integrations[0].name;
+      }
+    } else if (account.integrations.name) {
+      return account.integrations.name;
+    }
+  }
 
-  return (
-    id ||
-    "unassigned"
-  );
+  return "Unknown Integration";
 }
 
 function asObject(

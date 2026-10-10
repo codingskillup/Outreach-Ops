@@ -46,6 +46,7 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
+import { cleanClientName } from "@/lib/clientUtils";
 
 type RawData = Record<string, unknown>;
 
@@ -1813,7 +1814,7 @@ function getAccountTags(raw: RawData): AccountTag[] {
 
 function getAccountClient(account: EmailAccount): string {
   const raw = account.raw_data || {};
-  return (
+  return cleanClientName(
     getText(raw.client_name) ||
     getText(raw.clientName) ||
     getText(raw.client) ||
@@ -1823,7 +1824,7 @@ function getAccountClient(account: EmailAccount): string {
 
 function getCampaignClient(campaign: Campaign): string {
   const raw = campaign.raw_data || {};
-  return (
+  return cleanClientName(
     getText(raw.client_name) ||
     getText(raw.clientName) ||
     getText(raw.client) ||
