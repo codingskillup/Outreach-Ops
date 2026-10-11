@@ -17,8 +17,8 @@ type ScanSummary = {
   newIssues: number;
   alertSent: boolean;
   alertError:
-    | string
-    | null;
+  | string
+  | null;
 };
 
 type EmailAccount = {
@@ -325,17 +325,17 @@ export async function sendDailyReport({
       new Date()
     );
 
-await sendNotificationEmail({
-  supabase,
-  userId,
+  await sendNotificationEmail({
+    supabase,
+    userId,
 
-  type:
-    "daily_report",
+    type:
+      "daily_report",
 
-  subject:
-    `Outreach Ops Daily Report - ${reportDate}`,
+    subject:
+      `Outreach Ops Daily Report - ${reportDate}`,
 
-  html: `
+    html: `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -392,38 +392,37 @@ await sendNotificationEmail({
                     </h2>
 
                     ${metricTable([
-                      ["Total Accounts", totalAccounts],
-                      ["Healthy", healthyAccounts],
-                      ["Need Attention", accountsAttention],
-                      ["Active Campaigns", activeCampaigns],
-                    ])}
+      ["Total Accounts", totalAccounts],
+      ["Healthy", healthyAccounts],
+      ["Need Attention", accountsAttention],
+      ["Active Campaigns", activeCampaigns],
+    ])}
 
                     <h2 style="${heading()}">
                       Domains
                     </h2>
 
                     ${metricTable([
-                      ["Total Domains", domains.length],
-                      ["Healthy", healthyDomains],
-                      ["Need Attention", attentionDomains],
-                      ["Unknown", unknownDomains],
-                    ])}
+      ["Total Domains", domains.length],
+      ["Healthy", healthyDomains],
+      ["Need Attention", attentionDomains],
+      ["Unknown", unknownDomains],
+    ])}
 
                     <h2 style="${heading()}">
                       Issues &amp; Drift
                     </h2>
 
                     ${metricTable([
-                      ["Open Issues", openIssues.length],
-                      ["Critical", criticalIssues],
-                      ["Warnings", warningIssues],
-                      ["New Issues", scanSummary?.newIssues ?? 0],
-                      ["Resolved Last 24 Hours", resolvedLast24Hours],
-                    ])}
+      ["Open Issues", openIssues.length],
+      ["Critical", criticalIssues],
+      ["Warnings", warningIssues],
+      ["New Issues", scanSummary?.newIssues ?? 0],
+      ["Resolved Last 24 Hours", resolvedLast24Hours],
+    ])}
 
-                    ${
-                      smartleadRows
-                        ? `
+                    ${smartleadRows
+        ? `
                           <h2 style="${heading()}">
                             Smartlead Workspaces (${smartleadIntegrations.length})
                           </h2>
@@ -445,12 +444,11 @@ await sendNotificationEmail({
                             </table>
                           </div>
                         `
-                        : ""
-                    }
+        : ""
+      }
 
-                    ${
-                      emailGuardIntegrations.length > 0
-                        ? `
+                    ${emailGuardIntegrations.length > 0
+        ? `
                           <h2 style="${heading()}">
                             EmailGuard DNS Workspaces (${emailGuardIntegrations.length})
                           </h2>
@@ -472,7 +470,7 @@ await sendNotificationEmail({
                             </table>
                           </div>
                         `
-                        : `
+        : `
                           <h2 style="${heading()}">
                             EmailGuard DNS Workspaces
                           </h2>
@@ -493,11 +491,10 @@ await sendNotificationEmail({
                             </table>
                           </div>
                         `
-                    }
+      }
 
-                    ${
-                      scanSummary
-                        ? `
+                    ${scanSummary
+        ? `
                           <div style="margin-top: 24px; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
                             <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 8px;">
                               Latest Automated Scan
@@ -511,8 +508,8 @@ await sendNotificationEmail({
                             </table>
                           </div>
                         `
-                        : ""
-                    }
+        : ""
+      }
 
                     <!-- Action Button -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 8px 0;">
@@ -521,7 +518,7 @@ await sendNotificationEmail({
                           <table cellpadding="0" cellspacing="0" border="0">
                             <tr>
                               <td align="center" style="background-color: #0f172a; border-radius: 8px; padding: 12px 28px;">
-                                <a href="https://outreach-ops.vercel.app" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #ffffff; text-decoration: none; display: inline-block; letter-spacing: 0.2px;">
+                                <a href="https://outreach-ops-ten.vercel.app" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #ffffff; text-decoration: none; display: inline-block; letter-spacing: 0.2px;">
                                   Open Outreach Ops Dashboard &rarr;
                                 </a>
                               </td>
@@ -593,16 +590,16 @@ function metricTable(
       <table style="${table()}">
         <tbody>
           ${metrics
-            .map(
-              ([
-                label,
-                value,
-              ], index) => `
+      .map(
+        ([
+          label,
+          value,
+        ], index) => `
                 <tr style="background-color: ${index % 2 === 0 ? "#ffffff" : "#f8fafc"};">
                   <td style="${td()}">
                     ${escapeHtml(
-                      label
-                    )}
+          label
+        )}
                   </td>
 
                   <td
@@ -617,8 +614,8 @@ function metricTable(
                   </td>
                 </tr>
               `
-            )
-            .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
     </div>
