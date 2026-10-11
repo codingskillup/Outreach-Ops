@@ -92,22 +92,22 @@ export default function SettingsPageClient({
       </div>
 
       {/* Modern Segmented Navigation Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 pb-px">
-        <div className="flex items-center gap-1 sm:gap-2">
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto max-w-full pb-0.5">
           {/* Tab 1: Platform Connections */}
           <button
             type="button"
             onClick={() => setActiveTab("connections")}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[14px] font-medium transition-all cursor-pointer shrink-0 ${
               activeTab === "connections"
-                ? "bg-slate-900 text-white shadow-sm"
+                ? "bg-slate-900 text-white shadow-sm font-semibold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <Plug className="w-4 h-4" />
+            <Plug className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Integrations</span>
             <span
-              className={`text-[12px] px-2 py-0.5 rounded-full font-normal ${
+              className={`text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-normal ${
                 activeTab === "connections"
                   ? "bg-slate-800 text-white border border-slate-700"
                   : "bg-slate-200/80 text-slate-600"
@@ -121,16 +121,16 @@ export default function SettingsPageClient({
           <button
             type="button"
             onClick={() => setActiveTab("notifications")}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[14px] font-medium transition-all cursor-pointer shrink-0 ${
               activeTab === "notifications"
-                ? "bg-slate-900 text-white shadow-sm"
+                ? "bg-slate-900 text-white shadow-sm font-semibold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Notifications</span>
             <span
-              className={`text-[12px] px-2 py-0.5 rounded-full font-normal ${
+              className={`text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-normal ${
                 activeTab === "notifications"
                   ? "bg-slate-800 text-white border border-slate-700"
                   : "bg-slate-200/80 text-slate-600"
@@ -144,16 +144,16 @@ export default function SettingsPageClient({
           <button
             type="button"
             onClick={() => setActiveTab("rules")}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[14px] font-medium transition-all cursor-pointer shrink-0 ${
               activeTab === "rules"
-                ? "bg-slate-900 text-white shadow-sm"
+                ? "bg-slate-900 text-white shadow-sm font-semibold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Mailbox Rules</span>
             <span
-              className={`text-[12px] px-2 py-0.5 rounded-full font-normal ${
+              className={`text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-normal ${
                 activeTab === "rules"
                   ? "bg-slate-800 text-white border border-slate-700"
                   : "bg-slate-200/80 text-slate-600"

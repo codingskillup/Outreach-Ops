@@ -789,8 +789,13 @@ export default function EmailAccountsPageClient({
 
       {/* Accounts Table Container */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        {/* Mobile Swipe Hint */}
+        <div className="lg:hidden px-3.5 py-1.5 bg-slate-50 border-b border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between">
+          <span>Swipe horizontally to inspect all metrics</span>
+          <span className="font-semibold text-[#2563EB]">Scroll →</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse table-fixed min-w-0">
+          <table className="w-full text-left border-collapse min-w-[860px] lg:min-w-full lg:table-fixed">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] xl:text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
                 <th

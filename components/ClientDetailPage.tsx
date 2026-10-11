@@ -301,7 +301,7 @@ export default function ClientDetailPage({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-[13px] font-normal">
+            <table className="w-full text-left border-collapse text-[13px] font-normal min-w-[560px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60 text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                   <th className="py-3 px-6">Campaign Name</th>

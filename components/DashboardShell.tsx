@@ -631,13 +631,13 @@ export default function DashboardShell({
     <div className="w-full max-w-[1440px] mx-auto pb-20 space-y-6">
       {/* ── Toast Notification Banner ── */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+          <span className="flex-1 min-w-0">{toastMessage}</span>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="ml-2 text-slate-400 hover:text-white"
+            className="ml-2 text-slate-400 hover:text-white p-1 rounded-md"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -678,20 +678,19 @@ export default function DashboardShell({
         </div>
       )}
 
-      {/* ── Executive Command Header (v3) ── */}
       {/* ── Executive Command Header (Soft, Luxury Executive Design) ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-2xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
           {/* Left: Title & Live Badges */}
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-[#2563EB] border border-blue-200/80">
+            <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider bg-blue-50 text-[#2563EB] border border-blue-200/80">
                 <Radio className="w-3 h-3 text-[#2563EB] animate-pulse" />
                 OUTREACH OPS v3.0
               </span>
 
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold border ${
                   hasLiveSmartlead
                     ? "bg-emerald-50 text-[#10B981] border-emerald-200/80"
                     : "bg-slate-50 text-slate-700 border-slate-200/80"
@@ -705,27 +704,27 @@ export default function DashboardShell({
                 {hasLiveSmartlead ? "Production Sync Live" : "Awaiting API Connection"}
               </span>
 
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-500 border border-slate-200/60">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-medium bg-slate-50 text-slate-500 border border-slate-200/60">
                 <Clock className="w-3 h-3 text-slate-400" />
                 Audited: {checkedAt}
               </span>
             </div>
 
-            <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-xl sm:text-[26px] font-semibold text-slate-900 tracking-tight leading-tight">
               Fleet Operations & Deliverability Command
             </h1>
-            <p className="text-[14px] font-normal text-slate-500 mt-1 max-w-3xl">
+            <p className="text-xs sm:text-[14px] font-normal text-slate-500 mt-1 max-w-3xl">
               Real-time surveillance across sending mailboxes, warmup pacing, sequences, and DNS compliance.
             </p>
           </div>
 
-          {/* Right: Quick Action Controls (Buttons: 500, 14px) */}
+          {/* Right: Quick Action Controls */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 w-full lg:w-auto">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border border-slate-200/90 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border border-slate-200/90 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
               title="Trigger instant sync across all connected APIs"
             >
               <RefreshCw
@@ -738,7 +737,7 @@ export default function DashboardShell({
 
             <Link
               href="/issues"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-2xs"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-[14px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-2xs"
             >
               <TriangleAlert className="w-3.5 h-3.5 text-[#F59E0B]" />
               <span>Issues</span>
@@ -751,7 +750,7 @@ export default function DashboardShell({
 
             <Link
               href="/connections"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 transition-all shadow-2xs"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 transition-all shadow-2xs"
             >
               <Server className="w-3.5 h-3.5 text-slate-400" />
               <span>{displayConnections.length} Smartleads</span>
@@ -759,7 +758,7 @@ export default function DashboardShell({
 
             <Link
               href="/settings"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-xs active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 transition-all shadow-xs active:scale-95"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Rules & Limits</span>
@@ -907,12 +906,12 @@ export default function DashboardShell({
                   </div>
 
                   {/* 4 Metric Columns in Crisp White with Warmup Progress Line */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-2.5 sm:py-3 px-1 bg-white">
-                    <div className="p-2 sm:p-2.5">
-                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-0 sm:divide-x divide-slate-100 text-center p-2.5 sm:py-3 sm:px-1 bg-white">
+                    <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-none bg-slate-50/70 sm:bg-transparent border border-slate-100 sm:border-0">
+                      <span className="block text-[11px] sm:text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Inboxes
                       </span>
-                      <span className="text-[28px] font-semibold text-[#14243D] mt-0.5 block tabular-nums">
+                      <span className="text-2xl sm:text-[28px] font-semibold text-[#14243D] mt-0.5 block tabular-nums">
                         {conn.accounts.toLocaleString()}
                       </span>
                       <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
@@ -920,11 +919,11 @@ export default function DashboardShell({
                       </span>
                     </div>
 
-                    <div className="p-2 sm:p-2.5">
-                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
+                    <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-none bg-slate-50/70 sm:bg-transparent border border-slate-100 sm:border-0">
+                      <span className="block text-[11px] sm:text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Campaigns
                       </span>
-                      <span className="text-[28px] font-semibold text-[#8B5CF6] mt-0.5 block tabular-nums">
+                      <span className="text-2xl sm:text-[28px] font-semibold text-[#8B5CF6] mt-0.5 block tabular-nums">
                         {conn.activeCampaigns.toLocaleString()}
                       </span>
                       <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
@@ -932,11 +931,11 @@ export default function DashboardShell({
                       </span>
                     </div>
 
-                    <div className="p-2 sm:p-2.5">
-                      <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
+                    <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-none bg-slate-50/70 sm:bg-transparent border border-slate-100 sm:border-0">
+                      <span className="block text-[11px] sm:text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                         Daily Bandwidth
                       </span>
-                      <span className="text-[28px] font-semibold text-[#F59E0B] mt-0.5 block tabular-nums">
+                      <span className="text-2xl sm:text-[28px] font-semibold text-[#F59E0B] mt-0.5 block tabular-nums">
                         {conn.dailyCapacity.toLocaleString()}
                       </span>
                       <span className="text-[11px] font-normal text-slate-400 mt-0.5 block">
@@ -945,30 +944,30 @@ export default function DashboardShell({
                     </div>
 
                     {/* Warmup with Progress Bar & 100% Guarded line */}
-                    <div className="p-2 sm:p-2.5 text-left px-3 flex flex-col justify-between">
+                    <div className="p-2 sm:p-2.5 text-left px-3 rounded-xl sm:rounded-none bg-slate-50/70 sm:bg-transparent border border-slate-100 sm:border-0 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className="block text-[12px] font-normal text-slate-500 uppercase tracking-wider">
+                          <span className="block text-[11px] sm:text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                             Warmup
                           </span>
-                          <span className="text-[12px] font-medium text-[#10B981] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 tabular-nums">
+                          <span className="text-[11px] sm:text-[12px] font-medium text-[#10B981] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 tabular-nums">
                             {warmupPct}%
                           </span>
                         </div>
-                        <span className="text-[28px] font-semibold text-[#10B981] mt-0.5 block tabular-nums">
+                        <span className="text-2xl sm:text-[28px] font-semibold text-[#10B981] mt-0.5 block tabular-nums">
                           {conn.warmupAccounts.toLocaleString()}
                         </span>
                       </div>
 
                       {/* Visual Warmup Progress Line */}
                       <div className="mt-1">
-                        <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="w-full h-1.5 rounded-full bg-slate-200/80 overflow-hidden">
                           <div
                             className="h-full bg-[#10B981] rounded-full transition-all duration-500"
                             style={{ width: `${warmupPct}%` }}
                           />
                         </div>
-                        <span className="text-[11px] font-normal text-[#10B981] mt-0.5 block">
+                        <span className="text-[10px] sm:text-[11px] font-normal text-[#10B981] mt-0.5 block truncate">
                           {warmupPct === 100
                             ? "100% In Warmup"
                             : `${conn.warmupAccounts} of ${conn.accounts} in warmup`}
@@ -1151,7 +1150,7 @@ export default function DashboardShell({
               </span>
             </div>
 
-            <div className="p-5 grid grid-cols-2 gap-3">
+            <div className="p-3.5 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {/* Tile 1: Inboxes Audited */}
               <Link
                 href="/emailaccounts"
@@ -1296,7 +1295,7 @@ export default function DashboardShell({
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
             {/* Segmented Workspace Tabs */}
             {ruleWorkspaces.length > 1 && (
-              <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80">
+              <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80 max-w-full overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setWorkspaceRuleTab("ALL")}

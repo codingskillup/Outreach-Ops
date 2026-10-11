@@ -432,7 +432,7 @@ export default function ConnectionsPageClient({
     <div className="w-full space-y-6">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
             className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md ${
               toast.type === "success"

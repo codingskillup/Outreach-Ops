@@ -592,8 +592,13 @@ export default function CampaignsPageClient({
 
       {/* Campaigns Table Container */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        {/* Mobile Swipe Hint */}
+        <div className="lg:hidden px-3.5 py-1.5 bg-slate-50 border-b border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between">
+          <span>Swipe horizontally to view campaigns & metrics</span>
+          <span className="font-semibold text-[#2563EB]">Scroll →</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1150px]">
+          <table className="w-full text-left border-collapse min-w-[980px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
                 <th

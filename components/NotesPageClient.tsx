@@ -454,7 +454,7 @@ export default function NotesPageClient({
     <div className="w-full max-w-[1440px] mx-auto pb-16 space-y-6 text-slate-900">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div
             className={`p-4 rounded-xl shadow-2xl border backdrop-blur-md flex items-start gap-3 ${
               toast.type === "success"
@@ -505,11 +505,11 @@ export default function NotesPageClient({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           {isFilterActive && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-[14px] font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               Clear Filters
@@ -519,7 +519,7 @@ export default function NotesPageClient({
           <button
             type="button"
             onClick={openNewNote}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[14px] font-medium text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all duration-150 cursor-pointer flex-1 sm:flex-initial"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Add New Note</span>

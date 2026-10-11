@@ -443,8 +443,14 @@ export default function ActivityPageClient({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-[13px] font-normal">
+            <div>
+              {/* Mobile Swipe Hint */}
+              <div className="md:hidden px-4 py-1.5 bg-slate-50 border-b border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>Swipe horizontally to view audit events</span>
+                <span className="font-semibold text-[#2563EB]">Scroll →</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[13px] font-normal min-w-[680px] md:min-w-full">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/50 text-[12px] font-normal text-slate-500 uppercase tracking-wider">
                     <th className="py-3 px-5 w-12 text-center">Type</th>
@@ -515,7 +521,8 @@ export default function ActivityPageClient({
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+        )}
         </div>
       ) : (
         /* Timeline View */

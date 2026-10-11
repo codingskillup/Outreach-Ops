@@ -333,7 +333,7 @@ export default function IssuesPageClient({
     <div className="w-full max-w-[1360px] mx-auto pb-16 space-y-6">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div className="p-4 rounded-2xl shadow-2xl border backdrop-blur-md bg-slate-900/95 text-slate-100 border-slate-700/80">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
@@ -409,7 +409,7 @@ export default function IssuesPageClient({
             type="button"
             onClick={handleScan}
             disabled={scanning}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 active:scale-95 shadow-md shadow-blue-600/20 hover:shadow-lg transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed shrink-0 self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[14px] font-medium text-white bg-[#2563EB] hover:bg-blue-700 active:scale-95 shadow-md shadow-blue-600/20 hover:shadow-lg transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto shrink-0 cursor-pointer"
           >
             <RefreshCw
               className={`w-4 h-4 ${scanning ? "animate-spin text-white" : ""}`}
@@ -684,8 +684,14 @@ export default function IssuesPageClient({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto min-w-0">
-            <table className="w-full text-left border-collapse table-fixed min-w-0">
+          <div>
+            {/* Mobile Swipe Hint */}
+            <div className="lg:hidden px-4 py-1.5 bg-slate-50 border-b border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between">
+              <span>Swipe horizontally to inspect issue details</span>
+              <span className="font-semibold text-[#2563EB]">Scroll →</span>
+            </div>
+            <div className="overflow-x-auto min-w-0">
+              <table className="w-full text-left border-collapse min-w-[760px] lg:min-w-full lg:table-fixed">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60 text-[10px] xl:text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
                   <th
@@ -910,7 +916,8 @@ export default function IssuesPageClient({
               </tbody>
             </table>
           </div>
-        )}
+        </div>
+      )}
 
         {/* Pagination Navigation Bar */}
         {filteredAndSortedIssues.length > pageSize && (

@@ -179,29 +179,29 @@ export default function PortalHeader({
   const statusUI = getStatusUI(systemStatus, openIssues);
 
   return (
-    <header className="fixed top-0 left-0 lg:left-[260px] right-0 h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-40 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs select-none text-slate-900">
+    <header className="fixed top-0 left-0 lg:left-[275px] right-0 h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-40 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs select-none text-slate-900 transition-all">
       {/* Left: Mobile Toggle + Breadcrumbs & Page Heading */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-1.5">
         {/* Mobile Hamburger Drawer Trigger */}
         <button
           type="button"
           onClick={onToggleMobileMenu}
-          className="lg:hidden p-2 -ml-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
+          className="lg:hidden p-2 -ml-1 rounded-xl text-slate-700 hover:text-slate-900 bg-slate-100/80 hover:bg-slate-200/80 active:scale-95 transition-all shrink-0 cursor-pointer"
           aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-1.5 text-[12px] font-normal tracking-wide text-slate-400">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-[12px] font-normal tracking-wide text-slate-400">
             <Link
               href="/dashboard"
-              className="hover:text-[#2563EB] transition-colors truncate hidden xs:inline"
+              className="hover:text-[#2563EB] transition-colors truncate hidden sm:inline"
             >
               Outreach Ops
             </Link>
-            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden xs:inline" />
-            <span className="text-[#2563EB] font-medium lowercase first-letter:uppercase truncate">
+            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden sm:inline" />
+            <span className="text-[#2563EB] font-semibold text-[10px] sm:text-[11px] uppercase tracking-wider truncate">
               {pageInfo.category}
             </span>
             <span className="hidden md:inline-block w-1 h-1 rounded-full bg-slate-300 mx-1" />
@@ -210,7 +210,7 @@ export default function PortalHeader({
             </span>
           </div>
 
-          <h1 className="text-lg sm:text-[22px] md:text-[26px] font-semibold tracking-tight text-slate-900 mt-0.5 truncate">
+          <h1 className="text-base sm:text-[22px] md:text-[26px] font-bold sm:font-semibold tracking-tight text-slate-900 mt-0.5 truncate leading-tight">
             {pageInfo.title}
           </h1>
         </div>
@@ -218,7 +218,7 @@ export default function PortalHeader({
 
       {/* Right: Status, Refresh & Controls */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        {/* Last Refresh Timestamp */}
+        {/* Last Refresh Timestamp (Desktop) */}
         {lastRefresh && (
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-[12px] text-slate-500 font-normal border border-slate-200/60">
             <Clock className="w-3 h-3 text-slate-400" />
@@ -230,22 +230,22 @@ export default function PortalHeader({
         {openIssues > 0 && pathname !== "/issues" && (
           <Link
             href="/issues"
-            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-[14px] font-medium text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-2xs transition-all active:scale-95"
-            title="View detected issues"
+            className="inline-flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-[14px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/80 shadow-2xs transition-all active:scale-95 shrink-0"
+            title={`${openIssues} detected issues`}
           >
-            <Bell className="w-3.5 h-3.5 text-amber-600" />
-            <span className="hidden sm:inline">{openIssues} Issues</span>
-            <span className="sm:hidden">{openIssues}</span>
+            <Bell className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="text-xs font-bold">{openIssues}</span>
+            <span className="hidden md:inline font-normal">Issues</span>
           </Link>
         )}
 
         {/* System Status Badge */}
         <div
-          className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all shadow-2xs ${statusUI.badgeClasses}`}
-          title="Overall Pipeline & API Connection Health"
+          className={`inline-flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[12px] font-medium border transition-all shadow-2xs shrink-0 ${statusUI.badgeClasses}`}
+          title={`System Health: ${statusUI.label}`}
         >
           {statusUI.icon}
-          <span className="hidden sm:inline">{statusUI.label}</span>
+          <span className="hidden md:inline">{statusUI.label}</span>
         </div>
 
         {/* Refresh Action Button */}
@@ -253,15 +253,15 @@ export default function PortalHeader({
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-2xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer"
+          className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-[14px] font-medium text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 active:scale-95 border border-slate-200/90 shadow-2xs transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer shrink-0"
           title="Sync latest data from database"
         >
           <RefreshCw
-            className={`w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] transition-colors ${
+            className={`w-3.5 h-3.5 text-slate-500 group-hover:text-[#2563EB] transition-colors ${
               refreshing ? "animate-spin text-[#2563EB]" : ""
             }`}
           />
-          <span className="hidden sm:inline">
+          <span className="hidden sm:inline ml-1.5">
             {refreshing ? "Syncing..." : "Refresh"}
           </span>
         </button>
