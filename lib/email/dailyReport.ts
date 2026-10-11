@@ -30,35 +30,74 @@ type Campaign = {
   id: string;
   integration_id: string;
   status: string | null;
+  raw_data?: Record<string, unknown> | null;
 };
 
 type Domain = {
   id: string;
-  integration_id:
-    | string
-    | null;
-  overall_status:
-    | string
-    | null;
+  integration_id: string | null;
+  overall_status: string | null;
+  domain?: string | null;
 };
 
 type Issue = {
   id: string;
-  email_account_id:
-    | string
-    | null;
+  email_account_id: string | null;
   severity: string;
   status: string;
-  resolved_at:
-    | string
-    | null;
+  resolved_at: string | null;
 };
 
 type Integration = {
   id: string;
   name: string;
   provider: string;
+  status?: string | null;
 };
+
+/**
+ * Loads all rows across pagination boundaries (bypassing PostgREST default 1,000 limit)
+ */
+async function loadAllRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: any; error: any }>
+): Promise<T[]> {
+  const rows: T[] = [];
+  const PAGE_SIZE = 1000;
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await fetchPage(from, to);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    rows.push(...(data as T[]));
+
+    if (data.length < PAGE_SIZE) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+
+    if (from > 100000) {
+      break;
+    }
+  }
+
+  return rows;
+}
+
+function isMainCampaign(campaign: Campaign): boolean {
+  const raw = (campaign.raw_data || {}) as Record<string, unknown>;
+  const parentId = raw.parent_campaign_id;
+  return parentId === null || parentId === undefined || parentId === "";
+}
 
 export async function sendDailyReport({
   supabase,
@@ -70,309 +109,209 @@ export async function sendDailyReport({
   scanSummary: ScanSummary;
 }) {
   const [
-    accountsResult,
-    campaignsResult,
-    domainsResult,
-    issuesResult,
+    accounts,
+    campaigns,
+    domains,
+    issues,
     integrationsResult,
   ] = await Promise.all([
-    supabase
-      .from("email_accounts")
-      .select(`
-        id,
-        integration_id
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
-    supabase
-      .from("campaigns")
-      .select(`
-        id,
-        integration_id,
-        status
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
-    supabase
-      .from("domains")
-      .select(`
-        id,
-        integration_id,
-        overall_status
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
-    supabase
-      .from("issues")
-      .select(`
-        id,
-        email_account_id,
-        severity,
-        status,
-        resolved_at
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
-
+    loadAllRows<EmailAccount>((from, to) =>
+      supabase
+        .from("email_accounts")
+        .select("id, integration_id")
+        .eq("user_id", userId)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
+    loadAllRows<Campaign>((from, to) =>
+      supabase
+        .from("campaigns")
+        .select("id, integration_id, status, raw_data")
+        .eq("user_id", userId)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
+    loadAllRows<Domain>((from, to) =>
+      supabase
+        .from("domains")
+        .select("id, integration_id, overall_status, domain")
+        .eq("user_id", userId)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
+    loadAllRows<Issue>((from, to) =>
+      supabase
+        .from("issues")
+        .select("id, email_account_id, severity, status, resolved_at")
+        .eq("user_id", userId)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
     supabase
       .from("integrations")
-      .select(`
-        id,
-        name,
-        provider
-      `)
-      .eq(
-        "user_id",
-        userId
-      ),
+      .select("id, name, provider, status")
+      .eq("user_id", userId)
+      .order("name", { ascending: true }),
   ]);
 
-  if (accountsResult.error) {
-    throw new Error(
-      accountsResult
-        .error
-        .message
-    );
+  if (integrationsResult.error) {
+    throw new Error(integrationsResult.error.message);
   }
 
-  if (campaignsResult.error) {
-    throw new Error(
-      campaignsResult
-        .error
-        .message
-    );
-  }
+  const integrations = (integrationsResult.data || []) as Integration[];
 
-  if (domainsResult.error) {
-    throw new Error(
-      domainsResult
-        .error
-        .message
-    );
-  }
+  const openIssues = issues.filter((issue) => issue.status === "Open");
 
-  if (issuesResult.error) {
-    throw new Error(
-      issuesResult
-        .error
-        .message
-    );
-  }
+  const affectedAccounts = new Set(
+    openIssues
+      .map((issue) => issue.email_account_id)
+      .filter((id): id is string => Boolean(id))
+  );
 
-  if (
-    integrationsResult.error
-  ) {
-    throw new Error(
-      integrationsResult
-        .error
-        .message
-    );
-  }
+  const totalAccounts = accounts.length;
+  const accountsAttention = affectedAccounts.size;
+  const healthyAccounts = Math.max(totalAccounts - accountsAttention, 0);
 
-  const accounts =
-    (accountsResult.data ||
-      []) as EmailAccount[];
+  const mainCampaigns = campaigns.filter(isMainCampaign);
+  const activeCampaigns = mainCampaigns.filter(
+    (campaign) => campaign.status?.toUpperCase() === "ACTIVE"
+  ).length;
 
-  const campaigns =
-    (campaignsResult.data ||
-      []) as Campaign[];
+  const healthyDomains = domains.filter(
+    (domain) => normalize(domain.overall_status) === "healthy"
+  ).length;
 
-  const domains =
-    (domainsResult.data ||
-      []) as Domain[];
-
-  const issues =
-    (issuesResult.data ||
-      []) as Issue[];
-
-  const integrations =
-    (integrationsResult.data ||
-      []) as Integration[];
-
-  const openIssues =
-    issues.filter(
-      (issue) =>
-        issue.status ===
-        "Open"
-    );
-
-  const affectedAccounts =
-    new Set(
-      openIssues
-        .map(
-          (issue) =>
-            issue.email_account_id
-        )
-        .filter(
-          (
-            id
-          ): id is string =>
-            Boolean(id)
-        )
-    );
-
-  const totalAccounts =
-    accounts.length;
-
-  const accountsAttention =
-    affectedAccounts.size;
-
-  const healthyAccounts =
-    Math.max(
-      totalAccounts -
-        accountsAttention,
-      0
-    );
-
-  const activeCampaigns =
-    campaigns.filter(
-      (campaign) =>
-        campaign.status
-          ?.toUpperCase() ===
-        "ACTIVE"
-    ).length;
-
-  const healthyDomains =
-    domains.filter(
-      (domain) =>
-        normalize(
-          domain.overall_status
-        ) === "healthy"
-    ).length;
-
-  const attentionDomains =
-    domains.filter(
-      (domain) =>
-        normalize(
-          domain.overall_status
-        ) ===
-        "attention"
-    ).length;
+  const attentionDomains = domains.filter(
+    (domain) => normalize(domain.overall_status) === "attention"
+  ).length;
 
   const unknownDomains =
-    domains.length -
-    healthyDomains -
-    attentionDomains;
+    domains.length - healthyDomains - attentionDomains;
 
-  const criticalIssues =
-    openIssues.filter(
-      (issue) =>
-        issue.severity ===
-        "Critical"
-    ).length;
+  const criticalIssues = openIssues.filter(
+    (issue) => issue.severity === "Critical"
+  ).length;
 
-  const warningIssues =
-    openIssues.filter(
-      (issue) =>
-        issue.severity ===
-        "Warning"
-    ).length;
+  const warningIssues = openIssues.filter(
+    (issue) => issue.severity === "Warning"
+  ).length;
 
-  const yesterday =
-    Date.now() -
-    24 *
-      60 *
-      60 *
-      1000;
+  const yesterday = Date.now() - 24 * 60 * 60 * 1000;
 
-  const resolvedLast24Hours =
-    issues.filter(
-      (issue) =>
-        issue.status ===
-          "Resolved" &&
-        issue.resolved_at &&
-        new Date(
-          issue.resolved_at
-        ).getTime() >=
-          yesterday
-    ).length;
+  const resolvedLast24Hours = issues.filter(
+    (issue) =>
+      issue.status === "Resolved" &&
+      issue.resolved_at &&
+      new Date(issue.resolved_at).getTime() >= yesterday
+  ).length;
 
-  const smartleadRows =
-    integrations
-      .filter(
-        (integration) =>
-          integration.provider ===
-          "smartlead"
-      )
-      .map((integration) => {
-        const integrationAccounts =
-          accounts.filter(
-            (account) =>
-              account.integration_id ===
-              integration.id
-          ).length;
+  const smartleadIntegrations = integrations.filter(
+    (integration) => integration.provider === "smartlead"
+  );
 
-        const integrationCampaigns =
-          campaigns.filter(
-            (campaign) =>
-              campaign.integration_id ===
-                integration.id &&
-              campaign.status
-                ?.toUpperCase() ===
-                "ACTIVE"
-          ).length;
+  let totalSmartleadAccounts = 0;
+  let totalSmartleadActiveCampaigns = 0;
 
-        return `
-          <tr>
-            <td style="${td()}">
-              ${escapeHtml(
-                integration.name
-              )}
-            </td>
+  const smartleadRows = smartleadIntegrations
+    .map((integration, index) => {
+      const integrationAccounts = accounts.filter(
+        (account) => account.integration_id === integration.id
+      ).length;
 
-            <td style="${td()}">
-              ${integrationAccounts.toLocaleString()}
-            </td>
+      const integrationCampaigns = mainCampaigns.filter(
+        (campaign) =>
+          campaign.integration_id === integration.id &&
+          campaign.status?.toUpperCase() === "ACTIVE"
+      ).length;
 
-            <td style="${td()}">
-              ${integrationCampaigns.toLocaleString()}
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
+      totalSmartleadAccounts += integrationAccounts;
+      totalSmartleadActiveCampaigns += integrationCampaigns;
 
-  const emailGuardRows =
-    integrations
-      .filter(
-        (integration) =>
-          integration.provider ===
-          "emailguard"
-      )
-      .map((integration) => {
-        const integrationDomains =
-          domains.filter(
-            (domain) =>
-              domain.integration_id ===
-              integration.id
-          ).length;
+      const isConnected = integration.status === "connected";
+      const statusText = isConnected ? "● Active" : `● ${integration.status || "Sync"}`;
+      const statusColor = isConnected ? "#10b981" : "#f59e0b";
 
-        return `
-          <tr>
-            <td style="${td()}">
-              ${escapeHtml(
-                integration.name
-              )}
-            </td>
+      return `
+        <tr style="background-color: ${index % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+          <td style="${td()}">
+            <strong style="color: #0f172a;">${escapeHtml(integration.name)}</strong>
+          </td>
+          <td style="${td()} text-align: center; font-weight: 700; color: #0f172a;">
+            ${integrationAccounts.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: center; font-weight: 700; color: #2563eb;">
+            ${integrationCampaigns.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: right; font-weight: 600; font-size: 11px; color: ${statusColor};">
+            ${escapeHtml(statusText)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
 
-            <td style="${td()}">
-              ${integrationDomains.toLocaleString()}
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
+  const smartleadTotalRow =
+    smartleadIntegrations.length > 1
+      ? `
+        <tr style="background-color: #f1f5f9; font-weight: 700; border-top: 2px solid #e2e8f0;">
+          <td style="${td()} color: #0f172a;">
+            Total Smartlead Fleet
+          </td>
+          <td style="${td()} text-align: center; color: #0f172a;">
+            ${totalSmartleadAccounts.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: center; color: #2563eb;">
+            ${totalSmartleadActiveCampaigns.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: right; color: #64748b; font-size: 11px;">
+            ${smartleadIntegrations.length} Workspaces
+          </td>
+        </tr>
+      `
+      : "";
+
+  const emailGuardIntegrations = integrations.filter(
+    (integration) => integration.provider === "emailguard"
+  );
+
+  const emailGuardRows = emailGuardIntegrations
+    .map((integration, index) => {
+      const integrationDomains = domains.filter(
+        (domain) => domain.integration_id === integration.id
+      );
+      const domainCount = integrationDomains.length;
+      const healthyCount = integrationDomains.filter(
+        (d) => normalize(d.overall_status) === "healthy"
+      ).length;
+      const attentionCount = integrationDomains.filter(
+        (d) => normalize(d.overall_status) === "attention"
+      ).length;
+
+      const isConnected = integration.status === "connected";
+      const statusText = isConnected ? "● Active" : `● ${integration.status || "Sync"}`;
+      const statusColor = isConnected ? "#10b981" : "#f59e0b";
+
+      return `
+        <tr style="background-color: ${index % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+          <td style="${td()}">
+            <strong style="color: #0f172a;">${escapeHtml(integration.name)}</strong>
+          </td>
+          <td style="${td()} text-align: center; font-weight: 700; color: #0f172a;">
+            ${domainCount.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: center; font-weight: 700; color: #10b981;">
+            ${healthyCount.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: center; font-weight: 700; color: ${attentionCount > 0 ? "#ef4444" : "#64748b"};">
+            ${attentionCount.toLocaleString()}
+          </td>
+          <td style="${td()} text-align: right; font-weight: 600; font-size: 11px; color: ${statusColor};">
+            ${escapeHtml(statusText)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
 
   const reportDate =
     new Intl.DateTimeFormat(
@@ -486,20 +425,22 @@ await sendNotificationEmail({
                       smartleadRows
                         ? `
                           <h2 style="${heading()}">
-                            Smartlead Accounts
+                            Smartlead Workspaces (${smartleadIntegrations.length})
                           </h2>
 
-                          <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 8px;">
+                          <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 8px; margin-bottom: 20px;">
                             <table style="${table()}">
                               <thead>
                                 <tr>
-                                  <th style="${th()}">Connection</th>
-                                  <th style="${th()}">Accounts</th>
-                                  <th style="${th()}">Active Campaigns</th>
+                                  <th style="${th()}">Workspace</th>
+                                  <th style="${th()} text-align: center;">Accounts</th>
+                                  <th style="${th()} text-align: center;">Active Campaigns</th>
+                                  <th style="${th()} text-align: right;">Status</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 ${smartleadRows}
+                                ${smartleadTotalRow}
                               </tbody>
                             </table>
                           </div>
@@ -508,18 +449,21 @@ await sendNotificationEmail({
                     }
 
                     ${
-                      emailGuardRows
+                      emailGuardIntegrations.length > 0
                         ? `
                           <h2 style="${heading()}">
-                            EmailGuard DNS
+                            EmailGuard DNS Workspaces (${emailGuardIntegrations.length})
                           </h2>
 
-                          <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 8px;">
+                          <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 8px; margin-bottom: 20px;">
                             <table style="${table()}">
                               <thead>
                                 <tr>
-                                  <th style="${th()}">Connection</th>
-                                  <th style="${th()}">Domains</th>
+                                  <th style="${th()}">Workspace</th>
+                                  <th style="${th()} text-align: center;">Total Domains</th>
+                                  <th style="${th()} text-align: center;">Healthy</th>
+                                  <th style="${th()} text-align: center;">Need Attention</th>
+                                  <th style="${th()} text-align: right;">Status</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -528,7 +472,27 @@ await sendNotificationEmail({
                             </table>
                           </div>
                         `
-                        : ""
+                        : `
+                          <h2 style="${heading()}">
+                            EmailGuard DNS Workspaces
+                          </h2>
+
+                          <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px 16px; background-color: #f8fafc; margin-top: 8px; margin-bottom: 20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td style="font-size: 13px; color: #475569; line-height: 1.5;">
+                                  <span style="display: inline-block; background-color: #f1f5f9; color: #64748b; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-right: 6px; text-transform: uppercase;">
+                                    Not Connected
+                                  </span>
+                                  <strong>EmailGuard:</strong> No workspace connected yet.
+                                  <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">
+                                    Connect your EmailGuard API key in Settings &rarr; Connections to automatically monitor domain SPF, DKIM, DMARC records, and deliverability status in this daily report.
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+                        `
                     }
 
                     ${
@@ -540,9 +504,9 @@ await sendNotificationEmail({
                             </div>
                             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #64748b; line-height: 1.6;">
                               <tr>
-                                <td>Accounts inspected: <strong style="color: #0f172a;">${scanSummary.accountsChecked.toLocaleString()}</strong></td>
-                                <td>Domains verified: <strong style="color: #0f172a;">${scanSummary.domainsChecked.toLocaleString()}</strong></td>
-                                <td>New issues logged: <strong style="color: #0f172a;">${scanSummary.newIssues.toLocaleString()}</strong></td>
+                                <td>Accounts inspected: <strong style="color: #0f172a;">${Math.max(scanSummary.accountsChecked || 0, totalAccounts).toLocaleString()}</strong></td>
+                                <td>Domains verified: <strong style="color: #0f172a;">${Math.max(scanSummary.domainsChecked || 0, domains.length).toLocaleString()}</strong></td>
+                                <td>New issues logged: <strong style="color: #0f172a;">${(scanSummary.newIssues ?? 0).toLocaleString()}</strong></td>
                               </tr>
                             </table>
                           </div>
