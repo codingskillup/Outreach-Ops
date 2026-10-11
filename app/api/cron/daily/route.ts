@@ -773,19 +773,34 @@ async function syncSmartlead(
       ),
     ]);
 
-  if (
-    clients.length ===
-    0
-  ) {
-    throw new Error(
-      "Smartlead client list returned no usable clients. Sync stopped to preserve existing client mappings."
-    );
-  }
-
-  const clientMap =
+  let clientMap =
     buildSmartleadClientMap(
       clients
     );
+
+  // If Smartlead returns no clients but existing accounts in DB had clients mapped,
+  // preserve existing client mappings so we never lose client assignments on API hiccups
+  if (clientMap.size === 0) {
+    const { data: existingAccounts } = await supabase
+      .from("email_accounts")
+      .select("raw_data")
+      .eq("integration_id", integration.id)
+      .not("raw_data->>client_id", "is", null)
+      .limit(1000);
+
+    if (existingAccounts && existingAccounts.length > 0) {
+      for (const row of existingAccounts) {
+        const raw = row.raw_data as JsonObject | null;
+        if (raw) {
+          const cId = getNumber(raw.client_id) ?? getNumber(raw.clientId);
+          const cName = getText(raw.client_name) || getText(raw.clientName);
+          if (cId !== null && cName && !clientMap.has(cId)) {
+            clientMap.set(cId, { id: cId, name: cName });
+          }
+        }
+      }
+    }
+  }
 
   const now =
     new Date()

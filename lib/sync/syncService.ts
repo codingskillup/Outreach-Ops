@@ -354,7 +354,6 @@ export async function syncSmartleadIntegration(integration: {
     .update({
       status: "connected",
       last_synced_at: now,
-      updated_at: now,
     })
     .eq("id", integration.id);
 
@@ -461,7 +460,6 @@ export async function syncEmailguardIntegration(integration: {
     .update({
       status: "connected",
       last_synced_at: now,
-      updated_at: now,
     })
     .eq("id", integration.id);
 
@@ -525,7 +523,7 @@ export async function syncAllUserIntegrations(userId: string): Promise<SyncResul
       try {
         await supabase
           .from("integrations")
-          .update({ status: "error", updated_at: new Date().toISOString() })
+          .update({ status: "error" })
           .eq("id", integration.id);
       } catch {
         // ignore
